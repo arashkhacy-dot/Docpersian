@@ -1,0 +1,112 @@
+{
+  "jobId": "74c4600c-1cc6-4576-86fc-abf9543aa3b8",
+  "originalFileName": "drive_download_sample.pptx",
+  "outputFileName": "drive_download_sample_FA.pptx",
+  "mimeType": "application/octet-stream",
+  "documentType": "pptx",
+  "fileSizeBytes": 3474,
+  "inputPath": "/app/applet/jobs_storage/74c4600c-1cc6-4576-86fc-abf9543aa3b8/input/source_drive_download_sample.pptx",
+  "outputPath": "/app/applet/jobs_storage/74c4600c-1cc6-4576-86fc-abf9543aa3b8/output/drive_download_sample_FA.pptx",
+  "inputHash": "78c2cc930e982d9db5e0cf295f6d860f674b1d7c6c60f5cfb749596f8db304a8",
+  "status": "failed",
+  "progress": 90,
+  "currentStage": "reconstructing",
+  "currentOperation": "شکست در پردازش: خطا در پردازش سند: ENOENT: no such file or directory, open '/app/applet/jobs_storage/74c4600c-1cc6-4576-86fc-abf9543aa3b8/output/drive_download_sample_FA.pptx'",
+  "totalItems": 6,
+  "processedItems": 6,
+  "totalWords": 24,
+  "processedWords": 0,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790457985447,
+  "updatedAt": 1790457985489,
+  "elapsedMs": 41,
+  "retryCount": 0,
+  "warnings": [],
+  "errors": [
+    "ENOENT: no such file or directory, open '/app/applet/jobs_storage/74c4600c-1cc6-4576-86fc-abf9543aa3b8/output/drive_download_sample_FA.pptx'"
+  ],
+  "manifest": {
+    "inputCount": 6,
+    "items": [
+      {
+        "index": 1,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 4,
+        "retryAttempts": 0
+      },
+      {
+        "index": 2,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 4,
+        "retryAttempts": 0
+      },
+      {
+        "index": 3,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 4,
+        "retryAttempts": 0
+      },
+      {
+        "index": 4,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 4,
+        "retryAttempts": 0
+      },
+      {
+        "index": 5,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 4,
+        "retryAttempts": 0
+      },
+      {
+        "index": 6,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 4,
+        "retryAttempts": 0
+      }
+    ]
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-26T21:26:25.447Z",
+      "level": "info",
+      "tag": "JOB_CREATED",
+      "message": "Document registered. Type=pptx, FileSize=3474 bytes"
+    },
+    {
+      "timestamp": "2026-09-26T21:26:25.448Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing drive_download_sample.pptx (pptx)"
+    },
+    {
+      "timestamp": "2026-09-26T21:26:25.456Z",
+      "level": "info",
+      "tag": "ANALYSIS_DONE",
+      "message": "Document analyzed: items=6, words=24"
+    },
+    {
+      "timestamp": "2026-09-26T21:26:25.488Z",
+      "level": "error",
+      "tag": "JOB_ERROR",
+      "message": "ENOENT: no such file or directory, open '/app/applet/jobs_storage/74c4600c-1cc6-4576-86fc-abf9543aa3b8/output/drive_download_sample_FA.pptx'"
+    },
+    {
+      "timestamp": "2026-09-26T21:26:25.489Z",
+      "level": "error",
+      "tag": "JOB_TERMINATE",
+      "message": "Job reached terminal state: failed - خطا در پردازش سند: ENOENT: no such file or directory, open '/app/applet/jobs_storage/74c4600c-1cc6-4576-86fc-abf9543aa3b8/output/drive_download_sample_FA.pptx'"
+    }
+  ],
+  "startedAt": 1790457985448,
+  "lastHeartbeatAt": 1790457985476,
+  "estimatedRemainingMs": 0,
+  "completedAt": 1790457985489
+}

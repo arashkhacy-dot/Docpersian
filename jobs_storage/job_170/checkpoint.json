@@ -1,0 +1,1642 @@
+{
+  "jobId": "job_170",
+  "originalFileName": "big_170_page.pdf",
+  "outputFileName": "big_170_page_FA.pdf",
+  "mimeType": "application/pdf",
+  "documentType": "pdf",
+  "fileSizeBytes": 46570,
+  "inputPath": "/app/applet/jobs_storage/job_170/input/big_170_page.pdf",
+  "outputPath": "/app/applet/jobs_storage/job_170/output/big_170_page_FA.pdf",
+  "inputHash": "ddf52ea51e2e4c8a82a54c472c1cd967dfa8b6d0592286b7e2cddbe685d4b387",
+  "status": "completed",
+  "progress": 100,
+  "currentStage": "idle",
+  "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
+  "totalItems": 170,
+  "processedItems": 170,
+  "totalWords": 0,
+  "processedWords": 0,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790185124267,
+  "updatedAt": 1790185124524,
+  "elapsedMs": 257,
+  "retryCount": 0,
+  "warnings": [
+    "صفحه 1: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 2: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 3: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 4: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 5: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 6: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 7: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 8: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 9: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 10: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 11: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 12: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 13: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 14: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 15: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 16: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 17: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 18: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 19: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 20: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 21: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 22: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 23: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 24: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 25: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 26: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 27: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 28: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 29: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 30: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 31: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 32: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 33: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 34: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 35: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 36: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 37: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 38: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 39: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 40: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 41: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 42: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 43: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 44: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 45: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 46: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 47: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 48: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 49: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 50: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 51: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 52: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 53: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 54: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 55: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 56: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 57: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 58: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 59: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 60: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 61: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 62: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 63: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 64: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 65: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 66: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 67: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 68: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 69: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 70: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 71: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 72: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 73: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 74: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 75: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 76: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 77: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 78: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 79: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 80: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 81: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 82: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 83: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 84: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 85: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 86: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 87: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 88: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 89: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 90: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 91: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 92: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 93: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 94: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 95: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 96: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 97: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 98: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 99: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 100: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 101: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 102: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 103: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 104: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 105: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 106: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 107: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 108: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 109: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 110: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 111: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 112: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 113: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 114: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 115: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 116: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 117: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 118: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 119: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 120: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 121: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 122: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 123: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 124: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 125: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 126: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 127: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 128: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 129: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 130: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 131: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 132: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 133: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 134: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 135: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 136: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 137: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 138: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 139: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 140: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 141: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 142: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 143: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 144: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 145: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 146: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 147: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 148: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 149: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 150: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 151: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 152: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 153: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 154: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 155: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 156: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 157: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 158: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 159: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 160: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 161: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 162: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 163: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 164: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 165: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 166: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 167: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 168: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 169: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 170: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد."
+  ],
+  "errors": [],
+  "manifest": {
+    "inputCount": 170,
+    "items": [
+      {
+        "index": 1,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 2,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 3,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 4,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 5,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 6,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 7,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 8,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 9,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 10,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 11,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 12,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 13,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 14,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 15,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 16,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 17,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 18,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 19,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 20,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 21,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 22,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 23,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 24,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 25,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 26,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 27,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 28,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 29,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 30,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 31,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 32,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 33,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 34,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 35,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 36,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 37,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 38,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 39,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 40,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 41,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 42,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 43,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 44,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 45,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 46,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 47,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 48,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 49,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 50,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 51,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 52,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 53,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 54,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 55,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 56,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 57,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 58,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 59,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 60,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 61,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 62,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 63,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 64,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 65,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 66,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 67,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 68,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 69,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 70,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 71,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 72,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 73,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 74,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 75,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 76,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 77,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 78,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 79,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 80,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 81,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 82,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 83,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 84,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 85,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 86,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 87,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 88,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 89,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 90,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 91,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 92,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 93,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 94,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 95,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 96,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 97,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 98,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 99,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 100,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 101,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 102,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 103,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 104,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 105,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 106,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 107,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 108,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 109,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 110,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 111,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 112,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 113,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 114,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 115,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 116,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 117,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 118,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 119,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 120,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 121,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 122,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 123,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 124,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 125,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 126,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 127,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 128,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 129,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 130,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 131,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 132,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 133,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 134,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 135,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 136,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 137,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 138,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 139,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 140,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 141,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 142,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 143,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 144,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 145,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 146,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 147,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 148,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 149,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 150,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 151,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 152,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 153,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 154,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 155,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 156,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 157,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 158,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 159,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 160,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 161,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 162,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 163,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 164,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 165,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 166,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 167,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 168,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 169,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 170,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      }
+    ]
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-23T17:38:44.267Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing big_170_page.pdf (pdf)"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.284Z",
+      "level": "info",
+      "tag": "EXTRACTION_START",
+      "message": "jobId=job_170 total=170"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.300Z",
+      "level": "info",
+      "tag": "EXTRACTION_END",
+      "message": "jobId=job_170 totalPages=170 pagesWithText=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.300Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_START",
+      "message": "jobId=job_170 item=1 total=170"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.455Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_START",
+      "message": "jobId=job_170 page=170"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.483Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_END",
+      "message": "jobId=job_170 page=170"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.483Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_END",
+      "message": "jobId=job_170"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.503Z",
+      "level": "info",
+      "tag": "VALIDATION_START",
+      "message": "Starting independent output validation"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.524Z",
+      "level": "info",
+      "tag": "VALIDATION_END",
+      "message": "Validation completed. Passed=true, Warnings=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.524Z",
+      "level": "info",
+      "tag": "JOB_COMPLETE",
+      "message": "Job finished successfully as completed"
+    }
+  ],
+  "startedAt": 1790185124267,
+  "lastHeartbeatAt": 1790185124454,
+  "estimatedRemainingMs": 0,
+  "outputHash": "7088640eee7559d1626823a6902c4eea5a91e2f57a7768246c3a302d8ecdc12a",
+  "qualityReport": {
+    "originalCount": 170,
+    "outputCount": 170,
+    "countMatch": true,
+    "translationStatus": "Completed",
+    "imagesPreserved": "preserved",
+    "tablesPreserved": "preserved",
+    "validationStatus": "passed",
+    "notes": [
+      "تطابق کامل: 170 صفحه/اسلاید ورودی به دقت حفظ شد."
+    ]
+  },
+  "completedAt": 1790185124524
+}

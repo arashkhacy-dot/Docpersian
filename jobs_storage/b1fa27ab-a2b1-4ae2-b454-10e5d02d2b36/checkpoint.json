@@ -1,0 +1,68 @@
+{
+  "jobId": "b1fa27ab-a2b1-4ae2-b454-10e5d02d2b36",
+  "originalFileName": "helloworld.pdf",
+  "outputFileName": "helloworld_FA.txt",
+  "mimeType": "application/octet-stream",
+  "documentType": "pdf",
+  "fileSizeBytes": 678,
+  "inputPath": "/app/applet/jobs_storage/b1fa27ab-a2b1-4ae2-b454-10e5d02d2b36/input/source_helloworld.pdf",
+  "outputPath": "/app/applet/jobs_storage/b1fa27ab-a2b1-4ae2-b454-10e5d02d2b36/output/helloworld_FA.txt",
+  "inputHash": "c9efcaa374939ff19fc37974131f1db6d457eb942700c02a63fc9dda983e1400",
+  "status": "processing",
+  "progress": 25,
+  "currentStage": "extracting",
+  "currentOperation": "استخراج ساختاریافته متن (صفحه 1 از 1)",
+  "totalItems": 1,
+  "processedItems": 1,
+  "totalWords": 2,
+  "processedWords": 0,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790413787968,
+  "updatedAt": 1790413787984,
+  "elapsedMs": 16,
+  "retryCount": 0,
+  "warnings": [],
+  "errors": [],
+  "manifest": {
+    "inputCount": 1,
+    "items": [
+      {
+        "index": 1,
+        "status": "pending",
+        "hasTranslatableText": true,
+        "wordCount": 2,
+        "retryAttempts": 0
+      }
+    ]
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-26T09:09:47.968Z",
+      "level": "info",
+      "tag": "JOB_CREATED",
+      "message": "Document registered. Type=pdf, Items=1, Words=2"
+    },
+    {
+      "timestamp": "2026-09-26T09:09:47.968Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing helloworld.pdf (pdf)"
+    },
+    {
+      "timestamp": "2026-09-26T09:09:47.971Z",
+      "level": "info",
+      "tag": "EXTRACTION_START",
+      "message": "jobId=b1fa27ab-a2b1-4ae2-b454-10e5d02d2b36 total=1"
+    },
+    {
+      "timestamp": "2026-09-26T09:09:47.983Z",
+      "level": "info",
+      "tag": "EXTRACTION_END",
+      "message": "jobId=b1fa27ab-a2b1-4ae2-b454-10e5d02d2b36 totalPages=1"
+    }
+  ],
+  "startedAt": 1790413787968,
+  "lastHeartbeatAt": 1790413787984,
+  "estimatedRemainingMs": 45
+}

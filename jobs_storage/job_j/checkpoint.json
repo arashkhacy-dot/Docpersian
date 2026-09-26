@@ -1,0 +1,157 @@
+{
+  "jobId": "job_j",
+  "originalFileName": "mixed_empty.pdf",
+  "outputFileName": "mixed_empty_FA.pdf",
+  "mimeType": "application/pdf",
+  "documentType": "pdf",
+  "fileSizeBytes": 1481,
+  "inputPath": "/app/applet/jobs_storage/job_j/input/mixed_empty.pdf",
+  "outputPath": "/app/applet/jobs_storage/job_j/output/mixed_empty_FA.pdf",
+  "inputHash": "5ba252b358996ad3a16e5244560d2a44dafc65d84c0b0395aa0bb17a0caa6ee5",
+  "status": "completed",
+  "progress": 100,
+  "currentStage": "idle",
+  "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
+  "totalItems": 5,
+  "processedItems": 5,
+  "totalWords": 0,
+  "processedWords": 0,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790185124545,
+  "updatedAt": 1790185124564,
+  "elapsedMs": 19,
+  "retryCount": 0,
+  "warnings": [
+    "صفحه 1: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 2: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 3: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 4: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 5: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد."
+  ],
+  "errors": [],
+  "manifest": {
+    "inputCount": 5,
+    "items": [
+      {
+        "index": 1,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 2,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 3,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 4,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 5,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      }
+    ]
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-23T17:38:44.545Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing mixed_empty.pdf (pdf)"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.546Z",
+      "level": "info",
+      "tag": "EXTRACTION_START",
+      "message": "jobId=job_j total=5"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.548Z",
+      "level": "info",
+      "tag": "EXTRACTION_END",
+      "message": "jobId=job_j totalPages=5 pagesWithText=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.548Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_START",
+      "message": "jobId=job_j item=1 total=5"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.551Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_START",
+      "message": "jobId=job_j page=5"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.560Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_END",
+      "message": "jobId=job_j page=5"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.560Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_END",
+      "message": "jobId=job_j"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.561Z",
+      "level": "info",
+      "tag": "VALIDATION_START",
+      "message": "Starting independent output validation"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.564Z",
+      "level": "info",
+      "tag": "VALIDATION_END",
+      "message": "Validation completed. Passed=true, Warnings=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.564Z",
+      "level": "info",
+      "tag": "JOB_COMPLETE",
+      "message": "Job finished successfully as completed"
+    }
+  ],
+  "startedAt": 1790185124545,
+  "lastHeartbeatAt": 1790185124550,
+  "estimatedRemainingMs": 0,
+  "outputHash": "6093057348257ff112d5daf917dcc9610ed0025803c2c56e9943675db1aab62b",
+  "qualityReport": {
+    "originalCount": 5,
+    "outputCount": 5,
+    "countMatch": true,
+    "translationStatus": "Completed",
+    "imagesPreserved": "preserved",
+    "tablesPreserved": "preserved",
+    "validationStatus": "passed",
+    "notes": [
+      "تطابق کامل: 5 صفحه/اسلاید ورودی به دقت حفظ شد."
+    ]
+  },
+  "completedAt": 1790185124564
+}

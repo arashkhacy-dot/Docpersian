@@ -1,0 +1,139 @@
+{
+  "jobId": "job_a",
+  "originalFileName": "test_a.pdf",
+  "outputFileName": "test_a_FA.pdf",
+  "mimeType": "application/pdf",
+  "documentType": "pdf",
+  "fileSizeBytes": 1458,
+  "inputPath": "/app/applet/jobs_storage/job_a/input/test_a.pdf",
+  "outputPath": "/app/applet/jobs_storage/job_a/output/test_a_FA.pdf",
+  "inputHash": "083dadb6dd89db237ce30b22aafd0596b5ebaf4aa1124e383b6eac10e14fa5c9",
+  "status": "completed",
+  "progress": 100,
+  "currentStage": "idle",
+  "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
+  "totalItems": 3,
+  "processedItems": 3,
+  "totalWords": 0,
+  "processedWords": 0,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790185123998,
+  "updatedAt": 1790185124063,
+  "elapsedMs": 65,
+  "retryCount": 0,
+  "warnings": [
+    "صفحه 1: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 2: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
+    "صفحه 3: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد."
+  ],
+  "errors": [],
+  "manifest": {
+    "inputCount": 3,
+    "items": [
+      {
+        "index": 1,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 2,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      },
+      {
+        "index": 3,
+        "status": "reconstructed",
+        "hasTranslatableText": false,
+        "wordCount": 0,
+        "retryAttempts": 0,
+        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+      }
+    ]
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-23T17:38:43.998Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing test_a.pdf (pdf)"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.003Z",
+      "level": "info",
+      "tag": "EXTRACTION_START",
+      "message": "jobId=job_a total=3"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.011Z",
+      "level": "info",
+      "tag": "EXTRACTION_END",
+      "message": "jobId=job_a totalPages=3 pagesWithText=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.011Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_START",
+      "message": "jobId=job_a item=1 total=3"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.014Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_START",
+      "message": "jobId=job_a page=3"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.050Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_END",
+      "message": "jobId=job_a page=3"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.050Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_END",
+      "message": "jobId=job_a"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.056Z",
+      "level": "info",
+      "tag": "VALIDATION_START",
+      "message": "Starting independent output validation"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.063Z",
+      "level": "info",
+      "tag": "VALIDATION_END",
+      "message": "Validation completed. Passed=true, Warnings=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.063Z",
+      "level": "info",
+      "tag": "JOB_COMPLETE",
+      "message": "Job finished successfully as completed"
+    }
+  ],
+  "startedAt": 1790185123998,
+  "lastHeartbeatAt": 1790185124013,
+  "estimatedRemainingMs": 0,
+  "outputHash": "90a0e21fd16d5f6357e095be1e0f7a15f6b703865ffc44675d121557bbc781e3",
+  "qualityReport": {
+    "originalCount": 3,
+    "outputCount": 3,
+    "countMatch": true,
+    "translationStatus": "Completed",
+    "imagesPreserved": "preserved",
+    "tablesPreserved": "preserved",
+    "validationStatus": "passed",
+    "notes": [
+      "تطابق کامل: 3 صفحه/اسلاید ورودی به دقت حفظ شد."
+    ]
+  },
+  "completedAt": 1790185124063
+}

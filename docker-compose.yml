@@ -1,0 +1,13 @@
+services:
+  docushift:
+    build: .
+    container_name: docushift
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - ./jobs_storage:/app/jobs_storage

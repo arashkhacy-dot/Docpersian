@@ -1,0 +1,115 @@
+{
+  "jobId": "resume_job_456",
+  "originalFileName": "resume.pdf",
+  "outputFileName": "resume_FA.pdf",
+  "mimeType": "application/pdf",
+  "documentType": "pdf",
+  "fileSizeBytes": 2048,
+  "inputPath": "/app/applet/test_artifacts/resume_sample.pdf",
+  "outputPath": "/app/applet/test_artifacts/resume_FA.pdf",
+  "inputHash": "dummy",
+  "status": "completed",
+  "progress": 100,
+  "currentStage": "idle",
+  "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
+  "totalItems": 1,
+  "processedItems": 1,
+  "totalWords": 300,
+  "processedWords": 150,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790185124570,
+  "updatedAt": 1790185124596,
+  "elapsedMs": 24,
+  "retryCount": 0,
+  "warnings": [
+    "صفحه 1: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد."
+  ],
+  "errors": [
+    "Network timeout"
+  ],
+  "manifest": {
+    "inputCount": 1,
+    "items": []
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-23T17:38:44.572Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing resume.pdf (pdf)"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.576Z",
+      "level": "info",
+      "tag": "EXTRACTION_START",
+      "message": "jobId=resume_job_456 total=1"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.577Z",
+      "level": "info",
+      "tag": "EXTRACTION_END",
+      "message": "jobId=resume_job_456 totalPages=1 pagesWithText=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.577Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_START",
+      "message": "jobId=resume_job_456 item=1 total=1"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.578Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_START",
+      "message": "jobId=resume_job_456 page=1"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.587Z",
+      "level": "info",
+      "tag": "PAGE_SAVE_END",
+      "message": "jobId=resume_job_456 page=1"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.587Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_END",
+      "message": "jobId=resume_job_456"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.590Z",
+      "level": "info",
+      "tag": "VALIDATION_START",
+      "message": "Starting independent output validation"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.596Z",
+      "level": "info",
+      "tag": "VALIDATION_END",
+      "message": "Validation completed. Passed=true, Warnings=0"
+    },
+    {
+      "timestamp": "2026-09-23T17:38:44.596Z",
+      "level": "info",
+      "tag": "JOB_COMPLETE",
+      "message": "Job finished successfully as completed"
+    }
+  ],
+  "cancellationRequested": false,
+  "startedAt": 1790185124572,
+  "lastHeartbeatAt": 1790185124577,
+  "estimatedRemainingMs": 0,
+  "outputHash": "8212dcc23f982508311d4b071321a1d8dffe64e3f2809fdb2a64fa28f90896b3",
+  "qualityReport": {
+    "originalCount": 1,
+    "outputCount": 1,
+    "countMatch": true,
+    "translationStatus": "Completed",
+    "imagesPreserved": "preserved",
+    "tablesPreserved": "preserved",
+    "validationStatus": "passed",
+    "notes": [
+      "تطابق کامل: 1 صفحه/اسلاید ورودی به دقت حفظ شد."
+    ]
+  },
+  "completedAt": 1790185124596
+}

@@ -1,0 +1,32 @@
+{
+  "jobId": "reconnect_job_123",
+  "originalFileName": "reconnect.pdf",
+  "outputFileName": "reconnect_FA.pdf",
+  "mimeType": "application/pdf",
+  "documentType": "pdf",
+  "fileSizeBytes": 2048,
+  "inputPath": "/tmp/in.pdf",
+  "outputPath": "/tmp/out.pdf",
+  "inputHash": "dummy",
+  "status": "translating",
+  "progress": 45,
+  "currentStage": "translation",
+  "currentOperation": "صفحه ۵ از ۱۰",
+  "totalItems": 10,
+  "processedItems": 5,
+  "totalWords": 300,
+  "processedWords": 150,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790185124567,
+  "updatedAt": 1790185124567,
+  "elapsedMs": 15000,
+  "retryCount": 0,
+  "warnings": [],
+  "errors": [],
+  "manifest": {
+    "inputCount": 10,
+    "items": []
+  },
+  "debugLogs": []
+}

@@ -1,0 +1,6 @@
+{
+  "name": "DocuShift",
+  "description": "Enterprise-grade document translation into Persian (PDF, DOCX, PPTX) preserving layout, formatting, and page count.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
