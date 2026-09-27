@@ -194,9 +194,6 @@ async function detectFileType(filePath: string, originalName: string): Promise<'
 
 function getOutputFilename(originalName: string, ext: string): string {
   const base = path.basename(originalName, path.extname(originalName));
-  if (ext === 'pdf') {
-    return `${base}_FA.txt`;
-  }
   return `${base}_FA.${ext}`;
 }
 
