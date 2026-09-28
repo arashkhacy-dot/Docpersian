@@ -7,7 +7,7 @@
   "fileSizeBytes": 3474,
   "inputPath": "/app/applet/jobs_storage/job_pptx/input/presentation_6.pptx",
   "outputPath": "/app/applet/jobs_storage/job_pptx/output/presentation_6_FA.pptx",
-  "inputHash": "78c2cc930e982d9db5e0cf295f6d860f674b1d7c6c60f5cfb749596f8db304a8",
+  "inputHash": "0cff967c8331081df6468e7b514e2298b72dbe9481b4ab46cd282b05ed34d816",
   "status": "completed",
   "progress": 100,
   "currentStage": "idle",
@@ -18,9 +18,9 @@
   "processedWords": 0,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790185124596,
-  "updatedAt": 1790185124616,
-  "elapsedMs": 20,
+  "createdAt": 1790598110694,
+  "updatedAt": 1790598110723,
+  "elapsedMs": 29,
   "retryCount": 0,
   "warnings": [],
   "errors": [],
@@ -73,34 +73,67 @@
   },
   "debugLogs": [
     {
-      "timestamp": "2026-09-23T17:38:44.596Z",
+      "timestamp": "2026-09-28T12:21:50.694Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing presentation_6.pptx (pptx)"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.614Z",
+      "timestamp": "2026-09-28T12:21:50.721Z",
       "level": "info",
       "tag": "VALIDATION_START",
       "message": "Starting independent output validation"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.616Z",
+      "timestamp": "2026-09-28T12:21:50.723Z",
       "level": "info",
       "tag": "VALIDATION_END",
       "message": "Validation completed. Passed=true, Warnings=0"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.616Z",
+      "timestamp": "2026-09-28T12:21:50.723Z",
       "level": "info",
       "tag": "JOB_COMPLETE",
       "message": "Job finished successfully as completed"
     }
   ],
-  "startedAt": 1790185124596,
-  "lastHeartbeatAt": 1790185124607,
+  "startedAt": 1790598110694,
+  "lastHeartbeatAt": 1790598110710,
   "estimatedRemainingMs": 0,
-  "outputHash": "c741508539a225249760e77e0e5da24fd0eac8b4b9ff436710e1fb0c1f6cb8b6",
+  "translatedText": "﻿======================================================================\r\nDocuShift | ترجمه کامل و استخراج اختصاصی اسلایدهای ارائه: presentation_6.pptx\r\nتعداد اسلایدها: 6 | کلمات ترجمه‌شده: ۳۰\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 1 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید ۱ نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 2 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید ۲ نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 3 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید 3 نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 4 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید 4 نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 5 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید ۵ نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 6 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید 6 نقشه راه استراتژیک\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل اسلایدهای ارائه\r\n======================================================================\r\n",
+  "pageTranslations": [
+    {
+      "pageNumber": 1,
+      "text": "Slide 1 Strategic Roadmap",
+      "translatedText": "اسلاید ۱ نقشه راه استراتژیک"
+    },
+    {
+      "pageNumber": 2,
+      "text": "Slide 2 Strategic Roadmap",
+      "translatedText": "اسلاید ۲ نقشه راه استراتژیک"
+    },
+    {
+      "pageNumber": 3,
+      "text": "Slide 3 Strategic Roadmap",
+      "translatedText": "اسلاید 3 نقشه راه استراتژیک"
+    },
+    {
+      "pageNumber": 4,
+      "text": "Slide 4 Strategic Roadmap",
+      "translatedText": "اسلاید 4 نقشه راه استراتژیک"
+    },
+    {
+      "pageNumber": 5,
+      "text": "Slide 5 Strategic Roadmap",
+      "translatedText": "اسلاید ۵ نقشه راه استراتژیک"
+    },
+    {
+      "pageNumber": 6,
+      "text": "Slide 6 Strategic Roadmap",
+      "translatedText": "اسلاید 6 نقشه راه استراتژیک"
+    }
+  ],
+  "outputHash": "a545f1b92db76de9b80097363a123726d905bf26943e5b7af81ae592cdbb78e9",
   "qualityReport": {
     "originalCount": 6,
     "outputCount": 6,
@@ -113,5 +146,5 @@
       "تطابق کامل: 6 صفحه/اسلاید ورودی به دقت حفظ شد."
     ]
   },
-  "completedAt": 1790185124616
+  "completedAt": 1790598110723
 }

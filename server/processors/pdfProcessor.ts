@@ -4,7 +4,7 @@ import os from 'os';
 import util from 'util';
 import { exec } from 'child_process';
 import zlib from 'zlib';
-import { PDFDocument, rgb, PDFName } from 'pdf-lib';
+import { PDFDocument, rgb, PDFName, PDFNumber } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFParse } from 'pdf-parse';
 import { DocumentProcessor } from './documentProcessor';
@@ -179,6 +179,311 @@ function wrapPersianText(text: string, font: any, fontSize: number, maxWidth: nu
   }
 
   return lines;
+}
+
+function getStreamObjects(page: any, doc: any): any[] {
+  try {
+    const contents = page.node.Contents();
+    if (!contents) return [];
+    const resolved = doc.context.lookup(contents);
+    if (!resolved) return [];
+
+    if (resolved.constructor.name === 'PDFArray' || typeof (resolved as any).size === 'function') {
+      const list: any[] = [];
+      const size = typeof (resolved as any).size === 'function' ? (resolved as any).size() : (resolved as any).array?.length || 0;
+      for (let i = 0; i < size; i++) {
+        const ref = (resolved as any).get ? (resolved as any).get(i) : (resolved as any).array[i];
+        const s = doc.context.lookup(ref);
+        if (s) list.push(s);
+      }
+      return list;
+    }
+    return [resolved];
+  } catch {
+    return [];
+  }
+}
+
+function stripTextFromPageStreams(
+  page: any,
+  doc: any
+): {
+  maxY: number | null;
+  minY: number | null;
+  hasTopImage: boolean;
+  imageBottomY: number | null;
+} {
+  try {
+    const streams = getStreamObjects(page, doc);
+    if (streams.length === 0) {
+      return { maxY: null, minY: null, hasTopImage: false, imageBottomY: null };
+    }
+
+    const allYs: number[] = [];
+    const imageBottoms: number[] = [];
+    const { height } = page.getSize();
+
+    for (const streamObj of streams) {
+      const rawBytes: Uint8Array =
+        typeof (streamObj as any).getContents === 'function'
+          ? (streamObj as any).getContents()
+          : (streamObj as any).contents;
+
+      if (!rawBytes || rawBytes.length === 0) continue;
+
+      let decompressed: Buffer;
+      let isCompressed = false;
+      try {
+        decompressed = zlib.inflateSync(Buffer.from(rawBytes));
+        isCompressed = true;
+      } catch {
+        decompressed = Buffer.from(rawBytes);
+      }
+
+      const streamText = decompressed.toString('latin1');
+
+      // 1. Detect images and their vertical positions
+      // cm transformation matrix: a b c d e f cm ... /Name Do
+      const cmDoRegex = /([-+]?\d*\.?\d+)\s+[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+cm\s*(?:[^\n\r]*?)?\/([^\s\/]+)\s+Do/g;
+      let imgM: RegExpExecArray | null;
+      while ((imgM = cmDoRegex.exec(streamText)) !== null) {
+        const h = Math.abs(parseFloat(imgM[2]));
+        const y = parseFloat(imgM[4]);
+        if (!isNaN(y) && !isNaN(h) && h > 40) {
+          if (y + h > height * 0.45) {
+            imageBottoms.push(y);
+          }
+        }
+      }
+
+      // 2. Detect text vertical positions before stripping
+      // Match 6-param Tm: a b c d e f Tm (f is y-position)
+      const tm6Regex = /[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+Tm/g;
+      let m: RegExpExecArray | null;
+      while ((m = tm6Regex.exec(streamText)) !== null) {
+        const y = parseFloat(m[2]);
+        if (!isNaN(y) && y > 15 && y < height - 15) {
+          allYs.push(y);
+        }
+      }
+
+      // Match 2-param Td or TD: tx ty Td
+      const tdRegex = /[-+]?\d*\.?\d+\s+([-+]?\d*\.?\d+)\s+(?:Td|TD)/g;
+      while ((m = tdRegex.exec(streamText)) !== null) {
+        const y = parseFloat(m[1]);
+        if (!isNaN(y) && y > 15 && y < height - 15) {
+          allYs.push(y);
+        }
+      }
+
+      // 3. Strip all BT ... ET text blocks
+      const stripped = streamText.replace(/BT[\s\S]*?ET/g, '');
+
+      // Recompress and update stream
+      const newBytes = isCompressed
+        ? zlib.deflateSync(Buffer.from(stripped, 'latin1'))
+        : Buffer.from(stripped, 'latin1');
+
+      (streamObj as any).contents = new Uint8Array(newBytes);
+      if ((streamObj as any).dict) {
+        (streamObj as any).dict.set(PDFName.of('Length'), PDFNumber.of(newBytes.length));
+      }
+    }
+
+    const hasTopImg = imageBottoms.length > 0;
+    const minImgBottom = hasTopImg ? Math.min(...imageBottoms) : null;
+
+    return {
+      maxY: allYs.length > 0 ? Math.max(...allYs) : null,
+      minY: allYs.length > 0 ? Math.min(...allYs) : null,
+      hasTopImage: hasTopImg,
+      imageBottomY: minImgBottom,
+    };
+  } catch {
+    return { maxY: null, minY: null, hasTopImage: false, imageBottomY: null };
+  }
+}
+
+function renderPersianTextToPage(
+  page: any,
+  paragraphs: string[],
+  persianFont: any,
+  textBounds: {
+    maxY: number | null;
+    minY: number | null;
+    hasTopImage: boolean;
+    imageBottomY: number | null;
+  },
+  pageIndex: number,
+  totalPages: number
+) {
+  const { width, height } = page.getSize();
+  const marginX = 32;
+  const bottomMargin = 28;
+
+  // Determine starting vertical position
+  let startY: number;
+  if (textBounds.hasTopImage && textBounds.imageBottomY !== null) {
+    // There is an image at the top (e.g. instrument panel, key fob, engine);
+    // start strictly below it!
+    startY = Math.min(textBounds.imageBottomY - 14, height * 0.58);
+  } else if (textBounds.maxY !== null && textBounds.maxY < height - 70) {
+    // English text was located only in lower part; start where it began
+    startY = Math.min(textBounds.maxY, height - 42);
+  } else {
+    // Standard full-page document
+    startY = height - 42;
+  }
+
+  // Ensure minimum room
+  startY = Math.max(bottomMargin + 60, Math.min(startY, height - 35));
+
+  let curY = startY;
+
+  // Check if first paragraph is a page title / heading
+  const hasTitle =
+    paragraphs.length > 1 &&
+    paragraphs[0].length < 110 &&
+    !/^\d+[\.\-]/.test(paragraphs[0]) &&
+    !paragraphs[0].startsWith('-');
+
+  let listParas = paragraphs;
+  if (hasTitle) {
+    const title = paragraphs[0];
+    listParas = paragraphs.slice(1);
+    const titleFontSize = 11.5;
+    const titleLines = wrapPersianText(title, persianFont, titleFontSize, width - marginX * 2);
+    for (const line of titleLines) {
+      if (curY < bottomMargin + 20) break;
+      drawSegmentedRtlLine(page, line, persianFont, titleFontSize, width - marginX, curY, rgb(0.08, 0.15, 0.3));
+      curY -= 16;
+    }
+    curY -= 5;
+  }
+
+  const availableHeight = Math.max(60, curY - bottomMargin);
+
+  // Check if content is a list of items (e.g. numbered 1..20 instrument parts, short bullets)
+  const isItemList =
+    listParas.length >= 6 &&
+    listParas.filter((p) => /^\d+[\.\-]/.test(p) || p.startsWith('-') || p.length < 80).length / listParas.length > 0.55;
+
+  const useTwoColumns =
+    (isItemList && width >= 450 && listParas.length >= 8) ||
+    (listParas.length >= 14 && width >= 450);
+
+  if (useTwoColumns) {
+    // 2-column layout: right column first in RTL, then left column
+    const colGap = 20;
+    const colW = (width - marginX * 2 - colGap) / 2;
+    const rightColX = width - marginX;
+    const leftColX = width - marginX - colW - colGap;
+
+    const mid = Math.ceil(listParas.length / 2);
+    const rightParas = listParas.slice(0, mid);
+    const leftParas = listParas.slice(mid);
+
+    let fontSize = 9.5;
+    let lineHeight = 13.5;
+
+    const calcColH = (paras: string[], fSize: number, lHeight: number) => {
+      let h = 0;
+      for (const p of paras) {
+        const lines = wrapPersianText(p, persianFont, fSize, colW);
+        h += lines.length * lHeight + 3;
+      }
+      return h;
+    };
+
+    // Auto-fit font size to guarantee NO text is ever clipped
+    while (
+      Math.max(
+        calcColH(rightParas, fontSize, lineHeight),
+        calcColH(leftParas, fontSize, lineHeight)
+      ) > availableHeight &&
+      fontSize > 6.8
+    ) {
+      fontSize -= 0.4;
+      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
+    }
+
+    // Render Right Column
+    let rightY = curY;
+    for (const p of rightParas) {
+      const isSubHeading = p.length < 35 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p);
+      const f = isSubHeading ? fontSize + 1 : fontSize;
+      const lh = isSubHeading ? lineHeight + 2 : lineHeight;
+      const lines = wrapPersianText(p, persianFont, f, colW);
+      const color = isSubHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.12, 0.16, 0.24);
+
+      for (const line of lines) {
+        if (rightY < bottomMargin) break;
+        drawSegmentedRtlLine(page, line, persianFont, f, rightColX, rightY, color);
+        rightY -= lh;
+      }
+      rightY -= 2;
+    }
+
+    // Render Left Column
+    let leftY = curY;
+    for (const p of leftParas) {
+      const isSubHeading = p.length < 35 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p);
+      const f = isSubHeading ? fontSize + 1 : fontSize;
+      const lh = isSubHeading ? lineHeight + 2 : lineHeight;
+      const lines = wrapPersianText(p, persianFont, f, colW);
+      const color = isSubHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.12, 0.16, 0.24);
+
+      for (const line of lines) {
+        if (leftY < bottomMargin) break;
+        drawSegmentedRtlLine(page, line, persianFont, f, leftColX, leftY, color);
+        leftY -= lh;
+      }
+      leftY -= 2;
+    }
+  } else {
+    // Single-column layout
+    const contentW = width - marginX * 2;
+    const rightX = width - marginX;
+
+    let fontSize = 11;
+    let lineHeight = 16.5;
+
+    const calcTotalH = (fSize: number, lHeight: number) => {
+      let h = 0;
+      for (const p of listParas) {
+        const isHeading = p.length < 45 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p);
+        const f = isHeading ? fSize + 1.5 : fSize;
+        const lh = isHeading ? lHeight + 2.5 : lHeight;
+        const lines = wrapPersianText(p, persianFont, f, contentW);
+        h += lines.length * lh + (isHeading ? 5 : 3);
+      }
+      return h;
+    };
+
+    while (calcTotalH(fontSize, lineHeight) > availableHeight && fontSize > 7.0) {
+      fontSize -= 0.4;
+      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
+    }
+
+    for (let uIdx = 0; uIdx < listParas.length; uIdx++) {
+      const p = listParas[uIdx];
+      const isHeading =
+        (uIdx === 0 && p.length < 75) ||
+        (p.length < 45 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p));
+      const f = isHeading ? fontSize + 1.5 : fontSize;
+      const lh = isHeading ? lineHeight + 2.5 : lineHeight;
+      const lines = wrapPersianText(p, persianFont, f, contentW);
+      const color = isHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.12, 0.16, 0.24);
+
+      for (const line of lines) {
+        if (curY < bottomMargin) break;
+        drawSegmentedRtlLine(page, line, persianFont, f, rightX, curY, color);
+        curY -= lh;
+      }
+      curY -= isHeading ? 5 : 3;
+      if (curY < bottomMargin) break;
+    }
+  }
 }
 
 export class PDFProcessor implements DocumentProcessor {
@@ -592,146 +897,24 @@ export class PDFProcessor implements DocumentProcessor {
       // RTL reconstruction and rendering with visual preservation
       log('info', 'PAGE_RENDER_START', `jobId=${job.jobId} page=${pageIndex}`);
 
-      const { width, height } = page.getSize();
-      const marginX = 28;
-      const marginY = 28;
-
       const paragraphs = fullFaText
         .split(/\r?\n/)
         .map((p) => p.trim())
         .filter((p) => p.length > 0);
 
-      if (paragraphs.length === 0) {
-        // Pure visual / blank page with no text or diagram callouts: leave original page 100% intact!
-        log('info', 'PAGE_EMPTY_PASS', `jobId=${job.jobId} page=${pageIndex}`);
-        if (manifestItem) manifestItem.status = 'reconstructed';
-        continue;
-      }
+      // Strip original English text from page content streams to avoid text collision,
+      // while keeping all original raster photos, schematics, lines, and drawings 100% intact!
+      const textBounds = stripTextFromPageStreams(page, outputDoc);
 
-      // Check if page has images/diagrams:
-      const hasImages = pageHasImages(page, outputDoc);
-      const isDiagramPage = words < 120 || hasImages;
-
-      let cardX: number;
-      let cardY: number;
-      let cardW = width - (marginX * 2);
-      let cardH: number;
-      const maxContentW = cardW - 32;
-
-      // Wrap paragraphs cleanly:
-      const wrappedParagraphs = paragraphs.map((uText, uIdx) => {
-        const isHeading = !isDiagramPage && ((uIdx === 0 && uText.length < 80) || uText.length < 40);
-        const fontSize = isHeading ? 14 : isDiagramPage ? 10.5 : 11.5;
-        const lineHeight = isHeading ? 20 : isDiagramPage ? 15 : 17;
-        const lines = wrapPersianText(uText, persianFont, fontSize, maxContentW);
-        return { uText, isHeading, fontSize, lineHeight, lines };
-      });
-
-      const totalContentHeight = wrappedParagraphs.reduce(
-        (sum, p) => sum + p.lines.length * p.lineHeight + (p.isHeading ? 10 : 6),
-        0
-      );
-
-      const headerHeight = isDiagramPage ? 24 : 30;
-      const totalNeededCardHeight = totalContentHeight + headerHeight + 25;
-
-      if (isDiagramPage) {
-        // DIAGRAM / VEHICLE SCHEMATICS / IMAGE PAGE:
-        // NEVER paint over the car photos or engine bay!
-        // The car photos occupy the upper 68% of the page and remain 100% visible and untouched.
-        cardH = Math.max(75, Math.min(height * 0.32, totalNeededCardHeight));
-        cardX = marginX;
-        cardY = marginY;
-
-        // Draw callout drawer at the bottom:
-        page.drawRectangle({
-          x: cardX,
-          y: cardY,
-          width: cardW,
-          height: cardH,
-          color: rgb(1.0, 1.0, 1.0),
-          borderColor: rgb(0.18, 0.32, 0.55),
-          borderWidth: 1.5,
-          opacity: 0.96,
-        });
-
-        page.drawRectangle({
-          x: cardX,
-          y: cardY + cardH - 24,
-          width: cardW,
-          height: 24,
-          color: rgb(0.12, 0.22, 0.38),
-        });
-
-        drawSegmentedRtlLine(
+      if (paragraphs.length > 0) {
+        renderPersianTextToPage(
           page,
-          `راهنمای بخش‌ها و علائم این صفحه | صفحه ${pageIndex} از ${totalPages}`,
+          paragraphs,
           persianFont,
-          9.5,
-          cardX + cardW - 15,
-          cardY + cardH - 16,
-          rgb(0.95, 0.98, 1.0)
+          textBounds,
+          pageIndex,
+          totalPages
         );
-      } else {
-        // PURE TEXT DOCUMENT PAGE:
-        // Card starts from the top and ONLY extends down as much as text needs!
-        cardH = Math.min(height - (marginY * 2), Math.max(120, totalNeededCardHeight));
-        cardX = marginX;
-        cardY = height - marginY - cardH;
-
-        page.drawRectangle({
-          x: cardX,
-          y: cardY,
-          width: cardW,
-          height: cardH,
-          color: rgb(0.995, 0.998, 1.0),
-          borderColor: rgb(0.8, 0.85, 0.92),
-          borderWidth: 1.5,
-        });
-
-        page.drawRectangle({
-          x: cardX,
-          y: cardY + cardH - 30,
-          width: cardW,
-          height: 30,
-          color: rgb(0.12, 0.18, 0.28),
-        });
-
-        drawSegmentedRtlLine(
-          page,
-          `ترجمه اختصاصی فارسی - صفحه ${pageIndex} از ${totalPages}`,
-          persianFont,
-          10.5,
-          cardX + cardW - 20,
-          cardY + cardH - 20,
-          rgb(0.95, 0.97, 1.0)
-        );
-      }
-
-      // Render translated text with segmented RTL typography:
-      let currentY = isDiagramPage ? cardY + cardH - 40 : cardY + cardH - 52;
-
-      for (const p of wrappedParagraphs) {
-        const textColor = p.isHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.15, 0.2, 0.28);
-
-        for (const lineText of p.lines) {
-          if (currentY < cardY + 16) break;
-
-          drawSegmentedRtlLine(
-            page,
-            lineText,
-            persianFont,
-            p.fontSize,
-            cardX + cardW - 16,
-            currentY,
-            textColor
-          );
-
-          currentY -= p.lineHeight;
-        }
-
-        currentY -= p.isHeading ? 8 : 5;
-        if (currentY < cardY + 16) break;
       }
 
       log('info', 'PAGE_RENDER_END', `jobId=${job.jobId} page=${pageIndex}`);

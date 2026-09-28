@@ -7,27 +7,24 @@
   "fileSizeBytes": 1481,
   "inputPath": "/app/applet/jobs_storage/job_j/input/mixed_empty.pdf",
   "outputPath": "/app/applet/jobs_storage/job_j/output/mixed_empty_FA.pdf",
-  "inputHash": "5ba252b358996ad3a16e5244560d2a44dafc65d84c0b0395aa0bb17a0caa6ee5",
+  "inputHash": "311f74d29fe47698619f7ef5156019962d0e52f70745ed943e266a5c7c1a15ff",
   "status": "completed",
   "progress": 100,
   "currentStage": "idle",
   "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
   "totalItems": 5,
   "processedItems": 5,
-  "totalWords": 0,
+  "totalWords": 24,
   "processedWords": 0,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790185124545,
-  "updatedAt": 1790185124564,
-  "elapsedMs": 19,
+  "createdAt": 1790598101922,
+  "updatedAt": 1790598110664,
+  "elapsedMs": 8742,
   "retryCount": 0,
   "warnings": [
-    "صفحه 1: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
     "صفحه 2: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
-    "صفحه 3: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
-    "صفحه 4: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
-    "صفحه 5: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد."
+    "صفحه 4: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد."
   ],
   "errors": [],
   "manifest": {
@@ -36,10 +33,9 @@
       {
         "index": 1,
         "status": "reconstructed",
-        "hasTranslatableText": false,
-        "wordCount": 0,
-        "retryAttempts": 0,
-        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "hasTranslatableText": true,
+        "wordCount": 8,
+        "retryAttempts": 0
       },
       {
         "index": 2,
@@ -47,15 +43,14 @@
         "hasTranslatableText": false,
         "wordCount": 0,
         "retryAttempts": 0,
-        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "warning": "صفحه فاقد متن بود؛ محتوای بصری اصلی عیناً حفظ گردید."
       },
       {
         "index": 3,
         "status": "reconstructed",
-        "hasTranslatableText": false,
-        "wordCount": 0,
-        "retryAttempts": 0,
-        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "hasTranslatableText": true,
+        "wordCount": 8,
+        "retryAttempts": 0
       },
       {
         "index": 4,
@@ -63,84 +58,165 @@
         "hasTranslatableText": false,
         "wordCount": 0,
         "retryAttempts": 0,
-        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "warning": "صفحه فاقد متن بود؛ محتوای بصری اصلی عیناً حفظ گردید."
       },
       {
         "index": 5,
         "status": "reconstructed",
-        "hasTranslatableText": false,
-        "wordCount": 0,
-        "retryAttempts": 0,
-        "warning": "صفحه فاقد متن قابل استخراج بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "hasTranslatableText": true,
+        "wordCount": 8,
+        "retryAttempts": 0
       }
     ]
   },
   "debugLogs": [
     {
-      "timestamp": "2026-09-23T17:38:44.545Z",
+      "timestamp": "2026-09-28T12:21:41.922Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing mixed_empty.pdf (pdf)"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.546Z",
+      "timestamp": "2026-09-28T12:21:41.924Z",
       "level": "info",
       "tag": "EXTRACTION_START",
       "message": "jobId=job_j total=5"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.548Z",
+      "timestamp": "2026-09-28T12:21:41.934Z",
       "level": "info",
       "tag": "EXTRACTION_END",
-      "message": "jobId=job_j totalPages=5 pagesWithText=0"
+      "message": "jobId=job_j totalPages=5"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.548Z",
+      "timestamp": "2026-09-28T12:21:41.938Z",
+      "level": "info",
+      "tag": "BATCH_TRANSLATION_START",
+      "message": "jobId=job_j textPages=3 visualPages=2"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:43.477Z",
+      "level": "info",
+      "tag": "DIAGRAM_VISION_START",
+      "message": "jobId=job_j diagrams=2"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:46.923Z",
+      "level": "info",
+      "tag": "JOB_HEARTBEAT",
+      "message": "jobId=job_j stage=extracting page=1/2 progress=65% timestamp=2026-09-28T12:21:46.923Z"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:50.608Z",
       "level": "info",
       "tag": "RECONSTRUCTION_START",
       "message": "jobId=job_j item=1 total=5"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.551Z",
+      "timestamp": "2026-09-28T12:21:50.608Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_START",
+      "message": "jobId=job_j page=1"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:50.619Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_END",
+      "message": "jobId=job_j page=1"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:50.623Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_START",
+      "message": "jobId=job_j page=3"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:50.625Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_END",
+      "message": "jobId=job_j page=3"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:50.625Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_START",
+      "message": "jobId=job_j page=5"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:50.628Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_END",
+      "message": "jobId=job_j page=5"
+    },
+    {
+      "timestamp": "2026-09-28T12:21:50.628Z",
       "level": "info",
       "tag": "PAGE_SAVE_START",
       "message": "jobId=job_j page=5"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.560Z",
+      "timestamp": "2026-09-28T12:21:50.661Z",
       "level": "info",
       "tag": "PAGE_SAVE_END",
       "message": "jobId=job_j page=5"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.560Z",
+      "timestamp": "2026-09-28T12:21:50.661Z",
       "level": "info",
       "tag": "RECONSTRUCTION_END",
       "message": "jobId=job_j"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.561Z",
+      "timestamp": "2026-09-28T12:21:50.662Z",
       "level": "info",
       "tag": "VALIDATION_START",
       "message": "Starting independent output validation"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.564Z",
+      "timestamp": "2026-09-28T12:21:50.664Z",
       "level": "info",
       "tag": "VALIDATION_END",
       "message": "Validation completed. Passed=true, Warnings=0"
     },
     {
-      "timestamp": "2026-09-23T17:38:44.564Z",
+      "timestamp": "2026-09-28T12:21:50.664Z",
       "level": "info",
       "tag": "JOB_COMPLETE",
       "message": "Job finished successfully as completed"
     }
   ],
-  "startedAt": 1790185124545,
-  "lastHeartbeatAt": 1790185124550,
+  "startedAt": 1790598101922,
+  "lastHeartbeatAt": 1790598110628,
   "estimatedRemainingMs": 0,
-  "outputHash": "6093057348257ff112d5daf917dcc9610ed0025803c2c56e9943675db1aab62b",
+  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: mixed_empty.pdf\r\nتعداد صفحات: 5 | تاریخ: ۱۴۰۵/۷/۶\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۱: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 2 از 5\r\n----------------------------------------------------------------------\r\n\r\n(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 3 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۳: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 4 از 5\r\n----------------------------------------------------------------------\r\n\r\n(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 5 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۵: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
+  "pageTranslations": [
+    {
+      "pageNumber": 1,
+      "text": "Page 1 content: Introduction and technical analysis of architecture.",
+      "translatedText": "محتوای صفحه ۱: مقدمه و تحلیل فنی معماری."
+    },
+    {
+      "pageNumber": 2,
+      "text": "",
+      "translatedText": "(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)"
+    },
+    {
+      "pageNumber": 3,
+      "text": "Page 3 content: Introduction and technical analysis of architecture.",
+      "translatedText": "محتوای صفحه ۳: مقدمه و تحلیل فنی معماری."
+    },
+    {
+      "pageNumber": 4,
+      "text": "",
+      "translatedText": "(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)"
+    },
+    {
+      "pageNumber": 5,
+      "text": "Page 5 content: Introduction and technical analysis of architecture.",
+      "translatedText": "محتوای صفحه ۵: مقدمه و تحلیل فنی معماری."
+    }
+  ],
+  "outputHash": "63366aa38959c557bbd05a4905985937b20ba1a81a47b3a869d993eb76fc9739",
   "qualityReport": {
     "originalCount": 5,
     "outputCount": 5,
@@ -153,5 +229,5 @@
       "تطابق کامل: 5 صفحه/اسلاید ورودی به دقت حفظ شد."
     ]
   },
-  "completedAt": 1790185124564
+  "completedAt": 1790598110664
 }
