@@ -32,8 +32,11 @@ function pageHasImages(page: any, doc: any): boolean {
     if (xObj && (xObj as any).dict) {
       for (const [, ref] of (xObj as any).dict.entries()) {
         const obj = doc.context.lookup(ref);
-        const subtype = obj?.dict?.get(PDFName.of('Subtype'))?.toString();
-        if (subtype === '/Image') return true;
+        const subtypeObj =
+          obj?.dict?.get?.(PDFName.of('Subtype')) ||
+          obj?.get?.(PDFName.of('Subtype'));
+        const subtype = subtypeObj ? subtypeObj.toString() : '';
+        if (subtype === '/Image' || subtype === 'Image') return true;
       }
     }
   } catch {}
