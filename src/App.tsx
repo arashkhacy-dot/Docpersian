@@ -87,13 +87,10 @@ export default function App() {
         .then((res) => (res.ok ? res.json() : null))
         .then((job: JobState | null) => {
           if (job) {
+            setCurrentJob(job);
             const isTerminal = ['completed', 'completed_with_warnings', 'failed', 'cancelled'].includes(job.status);
-            // Only resume to processing view if job is actually still active:
             if (!isTerminal) {
-              setCurrentJob(job);
               subscribeToJobEvents(job.jobId);
-            } else {
-              localStorage.removeItem(ACTIVE_JOB_KEY);
             }
           }
         })

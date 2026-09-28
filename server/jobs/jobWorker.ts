@@ -37,8 +37,8 @@ export class JobWorker extends EventEmitter {
       message,
     };
     job.debugLogs.push(entry);
-    // Keep max 200 logs per job
-    if (job.debugLogs.length > 200) {
+    // Keep max 50 logs per job to maintain ultra-fast serialization
+    if (job.debugLogs.length > 50) {
       job.debugLogs.shift();
     }
   }
@@ -173,7 +173,8 @@ export class JobWorker extends EventEmitter {
           }
 
           const itemRatio = totalItems > 0 ? Math.min(1, currentItem / totalItems) : 0;
-          job.progress = Math.min(90, Math.round(stageBase + itemRatio * stageSpan));
+          const calculatedProgress = Math.min(90, Math.round(stageBase + itemRatio * stageSpan));
+          job.progress = Math.max(job.progress, calculatedProgress);
 
           // Estimate remaining time
           if (job.progress > 10) {

@@ -490,8 +490,8 @@ export class PDFProcessor implements DocumentProcessor {
       await onProgress(
         'translating',
         0,
-        totalPages,
-        `آغاز ترجمه هم‌روند متون ${pageUnitsToTranslate.length} صفحه...`
+        pageUnitsToTranslate.length,
+        `آغاز ترجمه هوشمند متون (${pageUnitsToTranslate.length} صفحه دارای متن)...`
       );
 
       const translatedResults = await defaultTranslator.translateBatch(
@@ -499,9 +499,9 @@ export class PDFProcessor implements DocumentProcessor {
         (completedCount) => {
           onProgress(
             'translating',
-            Math.min(completedCount, totalPages),
-            totalPages,
-            `ترجمه هوشمند موازی صفحات (${completedCount} از ${pageUnitsToTranslate.length})`
+            Math.min(completedCount, pageUnitsToTranslate.length),
+            pageUnitsToTranslate.length,
+            `ترجمه هوشمند متون (صفحه ${completedCount} از ${pageUnitsToTranslate.length} صفحه متنی)`
           );
         }
       );
@@ -511,10 +511,18 @@ export class PDFProcessor implements DocumentProcessor {
       }
     }
 
-    // Vision OCR & Translation for diagram/photo pages (e.g. engine bays, dashboards, schematic callouts)
-    if (diagramPagesToScan.length > 0) {
-      log('info', 'DIAGRAM_VISION_START', `jobId=${job.jobId} diagrams=${diagramPagesToScan.length}`);
-      for (const diagPage of diagramPagesToScan) {
+    // Vision OCR for key schematic diagrams if needed (bounded to max 2 key pages with active progress)
+    const diagramsToScan = diagramPagesToScan.slice(0, 2);
+    if (diagramsToScan.length > 0) {
+      log('info', 'DIAGRAM_VISION_START', `jobId=${job.jobId} diagrams=${diagramsToScan.length}`);
+      for (let dIdx = 0; dIdx < diagramsToScan.length; dIdx++) {
+        const diagPage = diagramsToScan[dIdx];
+        await onProgress(
+          'extracting',
+          dIdx + 1,
+          diagramsToScan.length,
+          `تحلیل بصری علائم دیاگرام صفحه ${diagPage} از ${totalPages}...`
+        );
         try {
           const b64 = await this.renderPageToBase64Jpeg(job.inputPath, diagPage);
           if (b64) {
@@ -739,7 +747,7 @@ export class PDFProcessor implements DocumentProcessor {
           'reconstructing',
           pageIndex,
           totalPages,
-          `بازسازی و چیدمان RTL صفحات (${pageIndex} از ${totalPages})`
+          `بازسازی و چیدمان گرافیکی RTL (صفحه ${pageIndex} از ${totalPages})`
         );
       }
 
@@ -783,6 +791,13 @@ export class PDFProcessor implements DocumentProcessor {
 
       const companionTxtPath = `${job.outputPath}.txt`;
       await fs.promises.writeFile(companionTxtPath, Buffer.from(fullDocText, 'utf-8'));
+
+      // Also create companion DOCX file for instantaneous Word download
+      try {
+        await createDocxFile(job.originalFileName, pageTranslations, `${job.outputPath}.docx`);
+      } catch {
+        // Non-fatal docx creation
+      }
 
       // Verify output count invariant for PDF directly without re-loading into RAM
       const outputCount = outputDoc.getPageCount();

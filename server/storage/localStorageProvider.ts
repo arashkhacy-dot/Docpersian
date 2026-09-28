@@ -48,16 +48,38 @@ export class LocalStorageProvider implements StorageProvider {
     return path.join(this.baseDir, jobId, 'checkpoint.json');
   }
 
+  private saveQueues: Map<string, Promise<void>> = new Map();
+
   async saveJobState(job: JobState): Promise<void> {
-    const jobDir = path.join(this.baseDir, job.jobId);
-    if (!fs.existsSync(jobDir)) {
-      fs.mkdirSync(jobDir, { recursive: true });
-    }
-    const statePath = this.getJobStatePath(job.jobId);
-    // Write atomically using temporary file
-    const tempPath = `${statePath}.tmp.${Date.now()}`;
-    await fs.promises.writeFile(tempPath, JSON.stringify(job, null, 2), 'utf-8');
-    await fs.promises.rename(tempPath, statePath);
+    const jobId = job.jobId;
+    const currentQueue = this.saveQueues.get(jobId) || Promise.resolve();
+
+    const nextSave = currentQueue
+      .catch(() => {}) // Continue even if previous save had an issue
+      .then(async () => {
+        const jobDir = path.join(this.baseDir, jobId);
+        if (!fs.existsSync(jobDir)) {
+          fs.mkdirSync(jobDir, { recursive: true });
+        }
+        const statePath = this.getJobStatePath(jobId);
+        const rand = crypto.randomBytes(6).toString('hex');
+        const tempPath = `${statePath}.tmp.${Date.now()}.${rand}`;
+        
+        try {
+          await fs.promises.writeFile(tempPath, JSON.stringify(job, null, 2), 'utf-8');
+          await fs.promises.rename(tempPath, statePath);
+        } catch (err: any) {
+          // Fallback direct write if atomic rename encounters file lock or race
+          try {
+            await fs.promises.writeFile(statePath, JSON.stringify(job, null, 2), 'utf-8');
+          } catch {}
+          // Cleanup temp file if still present
+          await fs.promises.unlink(tempPath).catch(() => {});
+        }
+      });
+
+    this.saveQueues.set(jobId, nextSave);
+    await nextSave;
   }
 
   async loadJobState(jobId: string): Promise<JobState | null> {

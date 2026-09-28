@@ -434,6 +434,15 @@ app.get('/api/jobs', async (_req: Request, res: Response) => {
   res.json(jobs);
 });
 
+// Helper to serialize job state cleanly for client UI (omits massive translated text dumps & caps logs)
+function serializeJobForClient(job: JobState) {
+  const { translatedText, pageTranslations, ...rest } = job;
+  return {
+    ...rest,
+    debugLogs: (job.debugLogs || []).slice(-35),
+  };
+}
+
 // 3. Get Job State
 app.get('/api/jobs/:id', async (req: Request, res: Response) => {
   const job = await defaultJobQueue.getJob(req.params.id);
@@ -441,7 +450,7 @@ app.get('/api/jobs/:id', async (req: Request, res: Response) => {
     res.status(404).json({ error: 'کار درخواستی یافت نشد.' });
     return;
   }
-  res.json(job);
+  res.json(serializeJobForClient(job));
 });
 
 // 4. SSE Stream for Live Updates
@@ -458,12 +467,12 @@ app.get('/api/jobs/:id/events', async (req: Request, res: Response) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  // Send current state immediately
-  res.write(`data: ${JSON.stringify(initialJob)}\n\n`);
+  // Send current state immediately (lightweight payload < 5KB)
+  res.write(`data: ${JSON.stringify(serializeJobForClient(initialJob))}\n\n`);
 
   const onUpdate = (job: JobState) => {
     if (job.jobId === jobId) {
-      res.write(`data: ${JSON.stringify(job)}\n\n`);
+      res.write(`data: ${JSON.stringify(serializeJobForClient(job))}\n\n`);
       if (isTerminalStatus(job.status)) {
         // Keep stream open briefly then finish
       }

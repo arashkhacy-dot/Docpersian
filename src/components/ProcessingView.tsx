@@ -81,8 +81,14 @@ export const ProcessingView: React.FC<ProcessingViewProps> = ({ job, onCancel })
                 </span>
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
-                <span>
-                  {job.totalItems > 0
+                <span className="font-medium text-slate-300">
+                  {job.currentStage === 'translating'
+                    ? `ترجمه متون: ${job.processedItems} از ${job.totalItems} ${itemLabel}`
+                    : job.currentStage === 'reconstructing'
+                    ? `بازسازی گرافیکی RTL: ${itemLabel} ${job.processedItems} از ${job.totalItems}`
+                    : job.currentStage === 'validation'
+                    ? `صحت‌سنجی نهایی صفحات (${job.totalItems || job.manifest?.inputCount || 170} ${itemLabel})`
+                    : job.totalItems > 0
                     ? `${itemLabel} ${job.processedItems} از ${job.totalItems}`
                     : 'در حال خواندن مشخصات سند...'}
                 </span>
