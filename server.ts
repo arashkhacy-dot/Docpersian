@@ -790,6 +790,17 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// VPS Update Script Endpoint
+app.get('/api/update.sh', (_req: Request, res: Response) => {
+  const scriptPath = path.join(process.cwd(), 'update_vps.sh');
+  if (fs.existsSync(scriptPath)) {
+    res.setHeader('Content-Type', 'text/x-shellscript; charset=utf-8');
+    res.sendFile(scriptPath);
+  } else {
+    res.status(404).send('#!/bin/bash\necho "Update script not found"\n');
+  }
+});
+
 // Multer and file upload error handling middleware
 app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
   if (err instanceof multer.MulterError) {

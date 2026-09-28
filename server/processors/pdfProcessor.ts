@@ -10,7 +10,7 @@ import { PDFParse } from 'pdf-parse';
 import { DocumentProcessor } from './documentProcessor';
 import { JobState, PageManifestItem } from '../jobs/jobState';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator';
-import { segmentBidiText } from './persianShaper';
+import { prepareRtlText, sanitizePersianSymbols } from './persianShaper';
 import { config } from '../config/env';
 import { createDocxFile } from './docxHelper.js';
 
@@ -52,27 +52,16 @@ function drawSegmentedRtlLine(
   y: number,
   color: any
 ) {
-  const segments = segmentBidiText(lineText);
-  if (segments.length === 0) return;
-
-  const segmentWidths: number[] = [];
-  for (const seg of segments) {
-    segmentWidths.push(font.widthOfTextAtSize(seg.text, fontSize));
-  }
-
-  let cursorX = rightX;
-  for (let s = 0; s < segments.length; s++) {
-    const seg = segments[s];
-    const w = segmentWidths[s];
-    cursorX -= w;
-    page.drawText(seg.text, {
-      x: cursorX,
-      y,
-      size: fontSize,
-      font,
-      color,
-    });
-  }
+  if (!lineText || !lineText.trim()) return;
+  const clean = prepareRtlText(lineText);
+  const w = font.widthOfTextAtSize(clean, fontSize);
+  page.drawText(clean, {
+    x: rightX - w,
+    y,
+    size: fontSize,
+    font,
+    color,
+  });
 }
 
 let cachedFontBytes: Buffer | null = null;
