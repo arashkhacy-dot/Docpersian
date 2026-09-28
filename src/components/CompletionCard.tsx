@@ -146,7 +146,10 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
                 href={`/api/jobs/${job.jobId}/download?format=pptx`}
                 download={`${baseName}_FA.pptx`}
                 target="_self"
-                onClick={() => handleInstantDownload('pptx')}
+                onClick={() => {
+                  setDownloadSuccess('دانلود فایل پاورپوینت (PPTX) آغاز شد.');
+                  setTimeout(() => setDownloadSuccess(null), 5000);
+                }}
                 className="col-span-1 sm:col-span-1 inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-gradient-to-r from-amber-600 via-orange-500 to-amber-500 hover:from-amber-500 hover:to-orange-400 text-white font-black text-xs sm:text-sm shadow-lg shadow-amber-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-center"
               >
                 <Presentation className="w-5 h-5 shrink-0" />
@@ -159,7 +162,10 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
                 href={`/api/jobs/${job.jobId}/download?format=pdf`}
                 download={`${baseName}_FA.pdf`}
                 target="_self"
-                onClick={() => handleInstantDownload('pdf')}
+                onClick={() => {
+                  setDownloadSuccess('دانلود مستقیم فایل PDF آغاز شد.');
+                  setTimeout(() => setDownloadSuccess(null), 5000);
+                }}
                 className="col-span-1 sm:col-span-1 inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white font-black text-xs sm:text-sm shadow-lg shadow-rose-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-center"
               >
                 <FileText className="w-5 h-5 shrink-0" />
@@ -172,7 +178,10 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
                 href={`/api/jobs/${job.jobId}/download?format=docx`}
                 download={`${baseName}_FA.docx`}
                 target="_self"
-                onClick={() => handleInstantDownload('docx')}
+                onClick={() => {
+                  setDownloadSuccess('دانلود فایل Word (DOCX) آغاز شد.');
+                  setTimeout(() => setDownloadSuccess(null), 5000);
+                }}
                 className="col-span-1 sm:col-span-1 inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-center"
               >
                 <FileCheck className="w-5 h-5 shrink-0" />
@@ -186,7 +195,10 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
                 href={`/api/jobs/${job.jobId}/download?format=docx`}
                 download={`${baseName}_FA.docx`}
                 target="_self"
-                onClick={() => handleInstantDownload('docx')}
+                onClick={() => {
+                  setDownloadSuccess('دانلود فایل Word (DOCX) آغاز شد.');
+                  setTimeout(() => setDownloadSuccess(null), 5000);
+                }}
                 className="col-span-1 sm:col-span-1 inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-center"
               >
                 <FileCheck className="w-5 h-5 shrink-0" />
@@ -199,7 +211,10 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
               href={`/api/jobs/${job.jobId}/download?format=txt`}
               download={`${baseName}_FA.txt`}
               target="_self"
-              onClick={() => handleInstantDownload('txt')}
+              onClick={() => {
+                setDownloadSuccess('دانلود فایل متنی (TXT) آغاز شد.');
+                setTimeout(() => setDownloadSuccess(null), 5000);
+              }}
               className={`col-span-1 sm:col-span-1 inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl ${
                 isDocx ? 'sm:col-span-2' : ''
               } bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-center`}

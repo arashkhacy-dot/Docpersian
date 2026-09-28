@@ -87,10 +87,13 @@ export default function App() {
         .then((res) => (res.ok ? res.json() : null))
         .then((job: JobState | null) => {
           if (job) {
-            setCurrentJob(job);
             const isTerminal = ['completed', 'completed_with_warnings', 'failed', 'cancelled'].includes(job.status);
+            // Only resume to processing view if job is actually still active:
             if (!isTerminal) {
+              setCurrentJob(job);
               subscribeToJobEvents(job.jobId);
+            } else {
+              localStorage.removeItem(ACTIVE_JOB_KEY);
             }
           }
         })
@@ -115,7 +118,22 @@ export default function App() {
         const res = await fetch(`/api/jobs/${currentJob.jobId}`);
         if (res.ok) {
           const freshJob: JobState = await res.json();
-          setCurrentJob(freshJob);
+          setCurrentJob((prev) => {
+            if (!prev) return freshJob;
+            if (['completed', 'completed_with_warnings', 'failed', 'cancelled'].includes(prev.status)) {
+              return prev;
+            }
+            if (
+              prev.status === freshJob.status &&
+              prev.currentStage === freshJob.currentStage &&
+              prev.processedItems === freshJob.processedItems &&
+              prev.progress === freshJob.progress &&
+              prev.currentOperation === freshJob.currentOperation
+            ) {
+              return prev; // Identical state -> keep reference, zero re-renders!
+            }
+            return freshJob;
+          });
           if (['completed', 'completed_with_warnings', 'failed', 'cancelled'].includes(freshJob.status)) {
             clearInterval(interval);
             fetchRecentJobs();

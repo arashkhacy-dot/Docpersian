@@ -1,15 +1,20 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import util from 'util';
+import { exec } from 'child_process';
 import zlib from 'zlib';
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, rgb, PDFName } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFParse } from 'pdf-parse';
 import { DocumentProcessor } from './documentProcessor';
 import { JobState, PageManifestItem } from '../jobs/jobState';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator';
-import { shapePersianText } from './persianShaper';
+import { segmentBidiText } from './persianShaper';
 import { config } from '../config/env';
 import { createDocxFile } from './docxHelper.js';
+
+const execPromise = util.promisify(exec);
 
 const standardFontDataUrl = path.join(process.cwd(), 'node_modules/pdfjs-dist/standard_fonts/');
 
@@ -20,6 +25,53 @@ function createPdfParser(data: Uint8Array | Buffer): PDFParse {
   });
 }
 
+function pageHasImages(page: any, doc: any): boolean {
+  try {
+    const resources = page.node.Resources();
+    const xObj = resources?.get(PDFName.of('XObject'));
+    if (xObj && (xObj as any).dict) {
+      for (const [, ref] of (xObj as any).dict.entries()) {
+        const obj = doc.context.lookup(ref);
+        const subtype = obj?.dict?.get(PDFName.of('Subtype'))?.toString();
+        if (subtype === '/Image') return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
+function drawSegmentedRtlLine(
+  page: any,
+  lineText: string,
+  font: any,
+  fontSize: number,
+  rightX: number,
+  y: number,
+  color: any
+) {
+  const segments = segmentBidiText(lineText);
+  if (segments.length === 0) return;
+
+  const segmentWidths: number[] = [];
+  for (const seg of segments) {
+    segmentWidths.push(font.widthOfTextAtSize(seg.text, fontSize));
+  }
+
+  let cursorX = rightX;
+  for (let s = 0; s < segments.length; s++) {
+    const seg = segments[s];
+    const w = segmentWidths[s];
+    cursorX -= w;
+    page.drawText(seg.text, {
+      x: cursorX,
+      y,
+      size: fontSize,
+      font,
+      color,
+    });
+  }
+}
+
 let cachedFontBytes: Buffer | null = null;
 
 async function getCachedPersianFont(): Promise<Buffer> {
@@ -27,16 +79,34 @@ async function getCachedPersianFont(): Promise<Buffer> {
     return cachedFontBytes;
   }
 
-  const primaryPath = path.resolve(process.cwd(), 'server/assets/fonts/persian-font.ttf');
-  if (fs.existsSync(primaryPath)) {
-    cachedFontBytes = await fs.promises.readFile(primaryPath);
-    return cachedFontBytes;
+  const candidatePaths = [
+    path.resolve(process.cwd(), 'server/assets/fonts/persian-font.ttf'),
+    '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf',
+    '/usr/share/fonts/truetype/scheherazade/Scheherazade-Regular.ttf',
+    '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf',
+    '/usr/share/fonts/truetype/kacst/KacstBook.ttf',
+  ];
+
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        const bytes = await fs.promises.readFile(p);
+        const font = fontkit.create(bytes);
+        if (font.hasGlyphForCodePoint(0x067E) && font.hasGlyphForCodePoint(0x06AF)) {
+          cachedFontBytes = bytes;
+          return cachedFontBytes;
+        }
+      } catch {
+        // try next
+      }
+    }
   }
 
-  const fallbackPath = '/usr/share/fonts/truetype/kacst/KacstBook.ttf';
-  if (fs.existsSync(fallbackPath)) {
-    cachedFontBytes = await fs.promises.readFile(fallbackPath);
-    return cachedFontBytes;
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) {
+      cachedFontBytes = await fs.promises.readFile(p);
+      return cachedFontBytes;
+    }
   }
 
   throw new Error('Persian TrueType font file not found.');
@@ -62,27 +132,49 @@ async function runWithTimeout<T>(
   }
 }
 
-function wrapPersianText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let currentLine = '';
+const textWidthCache = new Map<string, number>();
 
-  for (const word of words) {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-    const shaped = shapePersianText(candidate);
-    const width = font.widthOfTextAtSize(shaped, fontSize);
-    if (width <= maxWidth) {
-      currentLine = candidate;
-    } else {
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      currentLine = word;
+function getWordWidth(word: string, font: any, fontSize: number): number {
+  const key = `${fontSize}:${word}`;
+  let w = textWidthCache.get(key);
+  if (w === undefined) {
+    w = font.widthOfTextAtSize(word, fontSize);
+    if (textWidthCache.size < 50000) {
+      textWidthCache.set(key, w as number);
     }
   }
-  if (currentLine) {
-    lines.push(currentLine);
+  return w ?? 0;
+}
+
+function wrapPersianText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const spaceWidth = getWordWidth(' ', font, fontSize);
+  const lines: string[] = [];
+  let currentWords: string[] = [];
+  let currentLineWidth = 0;
+
+  for (const word of words) {
+    const wordWidth = getWordWidth(word, font, fontSize);
+    const neededWidth = currentWords.length === 0 ? wordWidth : currentLineWidth + spaceWidth + wordWidth;
+
+    if (neededWidth <= maxWidth) {
+      currentWords.push(word);
+      currentLineWidth = neededWidth;
+    } else {
+      if (currentWords.length > 0) {
+        lines.push(currentWords.join(' '));
+      }
+      currentWords = [word];
+      currentLineWidth = wordWidth;
+    }
   }
+
+  if (currentWords.length > 0) {
+    lines.push(currentWords.join(' '));
+  }
+
   return lines;
 }
 
@@ -222,6 +314,21 @@ export class PDFProcessor implements DocumentProcessor {
     return result;
   }
 
+  private async renderPageToBase64Jpeg(pdfPath: string, pageNumber: number): Promise<string> {
+    const tmpOut = path.join(os.tmpdir(), `page_${Date.now()}_${pageNumber}_${Math.random().toString(36).substring(2)}.jpg`);
+    try {
+      await execPromise(`gs -dBATCH -dNOPAUSE -sDEVICE=jpeg -dFirstPage=${pageNumber} -dLastPage=${pageNumber} -r120 -sOutputFile="${tmpOut}" "${pdfPath}"`);
+      if (fs.existsSync(tmpOut)) {
+        const buf = await fs.promises.readFile(tmpOut);
+        await fs.promises.unlink(tmpOut).catch(() => {});
+        return buf.toString('base64');
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  }
+
   private decodePdfString(str: string): string {
     return str
       .replace(/\\([0-7]{1,3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)))
@@ -342,6 +449,7 @@ export class PDFProcessor implements DocumentProcessor {
 
     const pageRawTexts: string[] = new Array(totalPages).fill('');
     const pageUnitsToTranslate: TranslationUnit[] = [];
+    const diagramPagesToScan: number[] = [];
 
     for (let i = 0; i < totalPages; i++) {
       if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
@@ -349,12 +457,14 @@ export class PDFProcessor implements DocumentProcessor {
       const rawPageText = (fastPageTexts[i] || '').trim();
       pageRawTexts[i] = rawPageText;
 
-      if (rawPageText) {
+      if (rawPageText.length >= 25) {
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
           context: `صفحه ${pageIndex} از سند ${job.originalFileName}`,
         });
+      } else {
+        diagramPagesToScan.push(pageIndex);
       }
     }
 
@@ -362,7 +472,7 @@ export class PDFProcessor implements DocumentProcessor {
       'extracting',
       totalPages,
       totalPages,
-      `استخراج متون تمام ${totalPages} صفحه با موفقیت پایان یافت (${pageUnitsToTranslate.length} صفحه حاوی متن)`
+      `استخراج متون تمام ${totalPages} صفحه با موفقیت پایان یافت (${pageUnitsToTranslate.length} صفحه متن، ${diagramPagesToScan.length} صفحه دیاگرام تصویری)`
     );
 
     // Phase 2: Parallel Batch Translation (10x-20x speedup)
@@ -395,6 +505,27 @@ export class PDFProcessor implements DocumentProcessor {
 
       for (const res of translatedResults) {
         translatedResultsMap.set(res.id, res.translatedText);
+      }
+    }
+
+    // Vision OCR & Translation for diagram/photo pages (e.g. engine bays, dashboards, schematic callouts)
+    if (diagramPagesToScan.length > 0) {
+      log('info', 'DIAGRAM_VISION_START', `jobId=${job.jobId} diagrams=${diagramPagesToScan.length}`);
+      for (const diagPage of diagramPagesToScan) {
+        try {
+          const b64 = await this.renderPageToBase64Jpeg(job.inputPath, diagPage);
+          if (b64) {
+            const visionFa = await defaultTranslator.extractAndTranslateFromImage(
+              b64,
+              `صفحه دیاگرام ${diagPage} از دفترچه خودرو ${job.originalFileName}`
+            );
+            if (visionFa && visionFa.trim()) {
+              translatedResultsMap.set(`page_${diagPage}`, visionFa.trim());
+            }
+          }
+        } catch (diagErr) {
+          log('warn', 'DIAGRAM_VISION_ERROR', `page=${diagPage} err=${diagErr}`);
+        }
       }
     }
 
@@ -447,105 +578,150 @@ export class PDFProcessor implements DocumentProcessor {
         translatedText: fullFaText,
       });
 
-      // RTL reconstruction and rendering
+      // RTL reconstruction and rendering with visual preservation
       log('info', 'PAGE_RENDER_START', `jobId=${job.jobId} page=${pageIndex}`);
 
       const { width, height } = page.getSize();
-      const marginX = 36;
-      const marginY = 36;
-      const cardW = width - (marginX * 2);
-      const cardH = height - (marginY * 2);
-
-      // Cleanly blank out original English background text across entire page
-      page.drawRectangle({
-        x: 0,
-        y: 0,
-        width: width,
-        height: height,
-        color: rgb(1.0, 1.0, 1.0),
-      });
-
-      // Render crisp, high-contrast Persian translated content card
-      page.drawRectangle({
-        x: marginX,
-        y: marginY,
-        width: cardW,
-        height: cardH,
-        color: rgb(0.995, 0.998, 1.0),
-        borderColor: rgb(0.8, 0.85, 0.92),
-        borderWidth: 1.5,
-      });
-
-      // Modern subtle header ribbon
-      page.drawRectangle({
-        x: marginX,
-        y: marginY + cardH - 38,
-        width: cardW,
-        height: 38,
-        color: rgb(0.12, 0.18, 0.28),
-      });
-
-      const headerTitle = shapePersianText(`ترجمه اختصاصی فارسی DocuShift | صفحه ${pageIndex} از ${totalPages}`);
-      const headerW = persianFont.widthOfTextAtSize(headerTitle, 11);
-      page.drawText(headerTitle, {
-        x: Math.max(marginX + 15, marginX + cardW - 20 - headerW),
-        y: marginY + cardH - 24,
-        size: 11,
-        font: persianFont,
-        color: rgb(0.95, 0.97, 1.0),
-      });
-
-      // Render translated text with intelligent RTL typography
-      let currentY = marginY + cardH - 65;
-      const maxContentW = cardW - 40;
+      const marginX = 28;
+      const marginY = 28;
 
       const paragraphs = fullFaText
         .split(/\r?\n/)
         .map((p) => p.trim())
         .filter((p) => p.length > 0);
 
-      for (let uIdx = 0; uIdx < paragraphs.length; uIdx++) {
-        const uText = paragraphs[uIdx];
-        if (!uText) continue;
-
-        const isHeading = (uIdx === 0 && uText.length < 80) || uText.length < 40;
-        const fontSize = isHeading ? 16 : 12;
-        const lineHeight = isHeading ? 24 : 18;
-        const textColor = isHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.18, 0.22, 0.3);
-
-        const wrappedLines = wrapPersianText(uText, persianFont, fontSize, maxContentW);
-
-        for (const lineText of wrappedLines) {
-          if (currentY < marginY + 40) break; // Keep inside card
-
-          const shapedLine = shapePersianText(lineText);
-          const textWidth = persianFont.widthOfTextAtSize(shapedLine, fontSize);
-          const textX = marginX + cardW - 20 - textWidth;
-
-          page.drawText(shapedLine, {
-            x: Math.max(marginX + 20, textX),
-            y: currentY,
-            size: fontSize,
-            font: persianFont,
-            color: textColor,
-          });
-
-          currentY -= lineHeight;
-        }
-
-        currentY -= isHeading ? 12 : 8;
-        if (currentY < marginY + 40) break;
+      if (paragraphs.length === 0) {
+        // Pure visual / blank page with no text or diagram callouts: leave original page 100% intact!
+        log('info', 'PAGE_EMPTY_PASS', `jobId=${job.jobId} page=${pageIndex}`);
+        if (manifestItem) manifestItem.status = 'reconstructed';
+        continue;
       }
 
-      // Footer marker in Persian
-      const markerText = shapePersianText(`سند بازسازی‌شده RTL با هوش مصنوعی | صفحه ${pageIndex}`);
-      page.drawText(markerText, {
-        x: Math.max(marginX + 20, marginX + cardW - 220),
-        y: marginY + 12,
-        size: 8,
-        font: persianFont,
-        color: rgb(0.4, 0.45, 0.55),
+      // Check if page has images/diagrams:
+      const hasImages = pageHasImages(page, outputDoc);
+      const isDiagramPage = words < 120 || hasImages;
+
+      let cardX: number;
+      let cardY: number;
+      let cardW = width - (marginX * 2);
+      let cardH: number;
+      const maxContentW = cardW - 32;
+
+      // Wrap paragraphs cleanly:
+      const wrappedParagraphs = paragraphs.map((uText, uIdx) => {
+        const isHeading = !isDiagramPage && ((uIdx === 0 && uText.length < 80) || uText.length < 40);
+        const fontSize = isHeading ? 14 : isDiagramPage ? 10.5 : 11.5;
+        const lineHeight = isHeading ? 20 : isDiagramPage ? 15 : 17;
+        const lines = wrapPersianText(uText, persianFont, fontSize, maxContentW);
+        return { uText, isHeading, fontSize, lineHeight, lines };
       });
+
+      const totalContentHeight = wrappedParagraphs.reduce(
+        (sum, p) => sum + p.lines.length * p.lineHeight + (p.isHeading ? 10 : 6),
+        0
+      );
+
+      const headerHeight = isDiagramPage ? 24 : 30;
+      const totalNeededCardHeight = totalContentHeight + headerHeight + 25;
+
+      if (isDiagramPage) {
+        // DIAGRAM / VEHICLE SCHEMATICS / IMAGE PAGE:
+        // NEVER paint over the car photos or engine bay!
+        // The car photos occupy the upper 68% of the page and remain 100% visible and untouched.
+        cardH = Math.max(75, Math.min(height * 0.32, totalNeededCardHeight));
+        cardX = marginX;
+        cardY = marginY;
+
+        // Draw callout drawer at the bottom:
+        page.drawRectangle({
+          x: cardX,
+          y: cardY,
+          width: cardW,
+          height: cardH,
+          color: rgb(1.0, 1.0, 1.0),
+          borderColor: rgb(0.18, 0.32, 0.55),
+          borderWidth: 1.5,
+          opacity: 0.96,
+        });
+
+        page.drawRectangle({
+          x: cardX,
+          y: cardY + cardH - 24,
+          width: cardW,
+          height: 24,
+          color: rgb(0.12, 0.22, 0.38),
+        });
+
+        drawSegmentedRtlLine(
+          page,
+          `راهنمای بخش‌ها و علائم این صفحه | صفحه ${pageIndex} از ${totalPages}`,
+          persianFont,
+          9.5,
+          cardX + cardW - 15,
+          cardY + cardH - 16,
+          rgb(0.95, 0.98, 1.0)
+        );
+      } else {
+        // PURE TEXT DOCUMENT PAGE:
+        // Card starts from the top and ONLY extends down as much as text needs!
+        cardH = Math.min(height - (marginY * 2), Math.max(120, totalNeededCardHeight));
+        cardX = marginX;
+        cardY = height - marginY - cardH;
+
+        page.drawRectangle({
+          x: cardX,
+          y: cardY,
+          width: cardW,
+          height: cardH,
+          color: rgb(0.995, 0.998, 1.0),
+          borderColor: rgb(0.8, 0.85, 0.92),
+          borderWidth: 1.5,
+        });
+
+        page.drawRectangle({
+          x: cardX,
+          y: cardY + cardH - 30,
+          width: cardW,
+          height: 30,
+          color: rgb(0.12, 0.18, 0.28),
+        });
+
+        drawSegmentedRtlLine(
+          page,
+          `ترجمه اختصاصی فارسی - صفحه ${pageIndex} از ${totalPages}`,
+          persianFont,
+          10.5,
+          cardX + cardW - 20,
+          cardY + cardH - 20,
+          rgb(0.95, 0.97, 1.0)
+        );
+      }
+
+      // Render translated text with segmented RTL typography:
+      let currentY = isDiagramPage ? cardY + cardH - 40 : cardY + cardH - 52;
+
+      for (const p of wrappedParagraphs) {
+        const textColor = p.isHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.15, 0.2, 0.28);
+
+        for (const lineText of p.lines) {
+          if (currentY < cardY + 16) break;
+
+          drawSegmentedRtlLine(
+            page,
+            lineText,
+            persianFont,
+            p.fontSize,
+            cardX + cardW - 16,
+            currentY,
+            textColor
+          );
+
+          currentY -= p.lineHeight;
+        }
+
+        currentY -= p.isHeading ? 8 : 5;
+        if (currentY < cardY + 16) break;
+      }
 
       log('info', 'PAGE_RENDER_END', `jobId=${job.jobId} page=${pageIndex}`);
 
@@ -555,21 +731,24 @@ export class PDFProcessor implements DocumentProcessor {
         manifestItem.wordCount = words;
       }
 
-      if (i % 10 === 0 || i === totalPages - 1) {
+      if (i % 2 === 0 || i === totalPages - 1) {
         await onProgress(
           'reconstructing',
           pageIndex,
           totalPages,
-          `بازسازی و چیدمان صفحات (${pageIndex} از ${totalPages})`
+          `بازسازی و چیدمان RTL صفحات (${pageIndex} از ${totalPages})`
         );
       }
+
+      // Yield execution to the Node event loop so SSE never freezes
+      await new Promise((resolve) => setImmediate(resolve));
     }
 
     log('info', 'PAGE_SAVE_START', `jobId=${job.jobId} page=${totalPages}`);
 
     // Build the complete, beautiful, flawless Persian text document with UTF-8 BOM
     let fullDocText = '\uFEFF======================================================================\r\n';
-    fullDocText += `DocuShift | ترجمه کامل و هوشمند سند: ${job.originalFileName}\r\n`;
+    fullDocText += `ترجمه کامل و هوشمند سند: ${job.originalFileName}\r\n`;
     fullDocText += `تعداد صفحات: ${totalPages} | تاریخ: ${new Date().toLocaleDateString('fa-IR')}\r\n`;
     fullDocText += '======================================================================\r\n\r\n';
 

@@ -301,8 +301,13 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
           {/* Start Button */}
           <div className="flex justify-center">
             <button
+              type="button"
               disabled={!selectedFile || isUploading}
-              onClick={() => selectedFile && onFileSelect(selectedFile)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (selectedFile) onFileSelect(selectedFile);
+              }}
               className={`flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm transition-all duration-200 shadow-lg ${
                 isUploading
                   ? 'bg-indigo-600/80 text-white shadow-indigo-600/40 cursor-wait'

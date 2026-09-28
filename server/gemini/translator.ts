@@ -228,7 +228,11 @@ CRITICAL INSTRUCTIONS:
    * Directly transcribes and translates all text, titles, tables, and notes from a page/slide screenshot
    * into fluent, professional Persian in ONE SINGLE API CALL.
    */
-  async extractAndTranslateFromImage(base64Png: string, pageContext?: string): Promise<string> {
+  async extractAndTranslateFromImage(
+    base64Image: string,
+    pageContext?: string,
+    mimeType = 'image/jpeg'
+  ): Promise<string> {
     if (!this.ai || !this.isApiKeyValid()) {
       return '';
     }
@@ -239,12 +243,14 @@ CRITICAL INSTRUCTIONS:
       'gemini-flash-latest',
     ];
 
-    const prompt = `You are a professional enterprise document translator specializing in Persian (فارسی).
-Transcribe all text, titles, bullet points, headers, tables, diagrams, and presentation notes visible on this slide or page image and translate them accurately, naturally, and faithfully into fluent, professional Persian (فارسی روان).
+    const prompt = `You are an expert technical vehicle and document translator specializing in Persian (فارسی).
+Transcribe all text, labels, callouts, arrows, part names, diagrams, tables, and notes visible on this vehicle manual or diagram image.
+For technical schematics/diagrams, provide a crisp, clear component list in Persian:
+• [Latin/Original Label] ◄ [نام و معادل دقیق فارسی قطعه]
 ${pageContext ? `Context: ${pageContext}` : ''}
 RULES:
-1. Output ONLY the translated Persian content. Do not include intro, conversational filler, or commentary.
-2. Preserve numbers, acronyms, formulas, and bullet structures.`;
+1. Output ONLY the translated Persian content and part names. Do not include introductory or conversational filler.
+2. Keep numbers, technical codes, and part numbers intact.`;
 
     for (const model of modelsToTry) {
       try {
@@ -253,8 +259,8 @@ RULES:
           contents: [
             {
               inlineData: {
-                mimeType: 'image/png',
-                data: base64Png,
+                mimeType,
+                data: base64Image,
               },
             },
             {

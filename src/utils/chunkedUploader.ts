@@ -10,13 +10,11 @@ export interface UploadProgressInfo {
   isDirect?: boolean;
 }
 
-// Files up to 25 MB use direct single-stream turbo upload.
-// This bypasses chunking entirely for 99.9% of user documents (PPTX, DOCX, PDF)
-// and eliminates any risk of getting stuck on chunk/package 1.
-const DIRECT_UPLOAD_THRESHOLD = 25 * 1024 * 1024;
+// Direct upload for all files up to 50 MB (lightning fast, single stream, no chunking issues)
+const DIRECT_UPLOAD_THRESHOLD = 50 * 1024 * 1024;
 
-// For very large files (> 25 MB), use 10 MB chunks
-const CHUNK_SIZE = 10 * 1024 * 1024;
+// 512 KB chunks are guaranteed to stay well below Nginx default 1M limit and mobile DPI drops
+const CHUNK_SIZE = 512 * 1024;
 
 // 1 sequential worker for chunked uploads to prevent mobile upstream contention and stalls
 const CONCURRENCY = 1;
@@ -106,7 +104,7 @@ function uploadDirectFile(
           totalChunks: 1,
           speedFormatted: formatUploadSpeed(smoothedSpeed),
           isDirect: true,
-          statusMessage: 'ارسال مستقیم و یکپارچه به سرور...',
+          statusMessage: 'در حال ارسال مستقیم سند به سرور...',
         });
       }
     };
@@ -152,7 +150,7 @@ function uploadDirectFile(
       reject(new Error('مهلت ارسال مستقیم به پایان رسید.'));
     };
 
-    xhr.timeout = 240000; // 4 minutes timeout
+    xhr.timeout = 300000; // 5 minutes timeout
     xhr.open('POST', '/api/jobs');
     xhr.send(formData);
   });
