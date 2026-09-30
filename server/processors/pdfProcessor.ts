@@ -74,9 +74,11 @@ async function getCachedPersianFont(): Promise<Buffer> {
   const candidatePaths = [
     path.resolve(process.cwd(), 'server/assets/fonts/persian-font.ttf'),
     '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf',
-    '/usr/share/fonts/truetype/scheherazade/Scheherazade-Regular.ttf',
     '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf',
-    '/usr/share/fonts/truetype/kacst/KacstBook.ttf',
+    '/usr/share/fonts/truetype/scheherazade/Scheherazade-Regular.ttf',
+    '/usr/share/fonts/opentype/noto/NotoSansArabic-Regular.otf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
   ];
 
   for (const p of candidatePaths) {

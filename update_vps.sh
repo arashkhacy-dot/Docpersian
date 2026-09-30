@@ -23,18 +23,24 @@ echo "========================================="
 
 # ۱. دریافت آخرین تغییرات از گیت‌هاب
 echo "--> ۱. دریافت آخرین تغییرات از گیت‌هاب (git pull)..."
-git pull origin main || git pull
+git reset --hard origin/main 2>/dev/null || git pull origin main || git pull
 
-# ۲. دانلود فونت وزیرمتن در صورت عدم وجود
-if [ ! -f "server/assets/fonts/persian-font.ttf" ]; then
-  echo "--> ۲. بررسی و دانلود فونت وزیرمتن..."
-  mkdir -p server/assets/fonts
-  curl -sL https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Regular.ttf -o server/assets/fonts/persian-font.ttf || true
+# ۲. اطمینان از نصب فونت‌های استاندارد فارسی در اوبونتو (بدون فیلتر)
+echo "--> ۲. نصب و بررسی فونت‌های رسمی فارسی (Noto Sans Arabic)..."
+sudo apt-get update -qq 2>/dev/null || true
+sudo apt-get install -y -qq fonts-noto-core fonts-noto-extra fonts-sil-scheherazade 2>/dev/null || true
+
+# بررسی و دانلود فونت وزیرمتن در صورت نیاز
+mkdir -p server/assets/fonts
+if [ ! -s "server/assets/fonts/persian-font.ttf" ] || [ $(wc -c < "server/assets/fonts/persian-font.ttf" 2>/dev/null || echo 0) -lt 20000 ]; then
+  echo "--> دانلود فونت وزیرمتن از شبکه CDN..."
+  curl -sL "https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || \
+  curl -sL "https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || true
 fi
 
-# ۳. نصب پکیج‌های جدید احتمالی
-echo "--> ۳. نصب و به‌روزرسانی وابستگی‌ها (npm install)..."
-npm install
+# ۳. نصب و به‌روزرسانی وابستگی‌ها
+echo "--> ۳. نصب پکیج‌ها (npm install)..."
+npm install --legacy-peer-deps
 
 # ۴. بیلد مجدد فرانت‌اند
 echo "--> ۴. کامپایل و ساخت فرانت‌اند (npm run build)..."

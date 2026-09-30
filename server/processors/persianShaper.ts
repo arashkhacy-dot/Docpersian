@@ -1,3 +1,9 @@
+import bidiFactory from 'bidi-js';
+import pkg from 'arabic-persian-reshaper';
+
+const { PersianShaper } = pkg;
+const bidi = bidiFactory();
+
 export function sanitizePersianSymbols(raw: string): string {
   if (!raw) return "";
   return raw
@@ -11,12 +17,18 @@ export function sanitizePersianSymbols(raw: string): string {
 }
 
 export function prepareRtlText(text: string): string {
-  if (!text) return "";
-  let clean = sanitizePersianSymbols(text);
-  clean = clean.replace(/[a-zA-Z0-9]+(?:[\.\-_/][a-zA-Z0-9]+)*/g, (match) => {
-    return match.split("").reverse().join("");
-  });
-  return clean;
+  if (!text || !text.trim()) return "";
+  const clean = sanitizePersianSymbols(text);
+  try {
+    // 1. Reshape Persian and Arabic letters to their connected contextual forms (initial, medial, final, isolated)
+    const reshaped = PersianShaper.convertArabic(clean);
+    // 2. Apply Unicode Bidirectional Algorithm (Bidi) so RTL runs are flipped for left-to-right PDF streams
+    // while keeping Latin characters (codes, formulas, acronyms) and numbers in natural LTR order
+    const levels = bidi.getEmbeddingLevels(reshaped, 'rtl');
+    return bidi.getReorderedString(reshaped, levels);
+  } catch {
+    return clean;
+  }
 }
 
 export interface BidiSegment {
