@@ -21,6 +21,7 @@ export default function App() {
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
+  const uploadAbortRef = useRef<AbortController | null>(null);
 
   // Fetch recent jobs list
   const fetchRecentJobs = useCallback(async () => {
@@ -144,10 +145,28 @@ export default function App() {
     return () => clearInterval(interval);
   }, [currentJob?.jobId, currentJob?.status, fetchRecentJobs]);
 
+  // Handle cancelling upload
+  const handleCancelUpload = () => {
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current.abort();
+      uploadAbortRef.current = null;
+    }
+    setIsUploading(false);
+    setUploadProgress(null);
+    setGlobalError('ارسال فایل توسط کاربر متوقف شد.');
+  };
+
   // Handle document upload with smart chunking (supports large files up to 500MB without Cloud Run 32MB limits)
   const handleFileSelect = async (file: File) => {
     setIsUploading(true);
     setGlobalError(null);
+
+    const abortController = new AbortController();
+    uploadAbortRef.current = abortController;
+
+    const isDirectCandidate = file.size <= 20 * 1024 * 1024;
+    const estChunks = isDirectCandidate ? 1 : Math.max(1, Math.ceil(file.size / (2 * 1024 * 1024)));
+
     setUploadProgress((prev) =>
       prev && prev.percent > 0
         ? { ...prev, statusMessage: 'در حال برقراری مجدد ارتباط...' }
@@ -156,17 +175,22 @@ export default function App() {
             uploadedBytes: 0,
             totalBytes: file.size,
             currentChunk: 1,
-            totalChunks: file.size <= 25 * 1024 * 1024 ? 1 : Math.max(1, Math.ceil(file.size / (10 * 1024 * 1024))),
-            isDirect: file.size <= 25 * 1024 * 1024,
-            statusMessage: 'آغاز ارسال مستقیم و پرسرعت...',
+            totalChunks: estChunks,
+            isDirect: isDirectCandidate,
+            statusMessage: isDirectCandidate ? 'آغاز ارسال مستقیم و پرسرعت...' : 'آغاز ارسال قطعه‌ای هوشمند...',
           }
     );
 
     try {
-      const newJob: JobState = await uploadFileInChunks(file, (info) => {
-        setUploadProgress(info);
-      });
+      const newJob: JobState = await uploadFileInChunks(
+        file,
+        (info) => {
+          setUploadProgress(info);
+        },
+        abortController.signal
+      );
 
+      uploadAbortRef.current = null;
       setCurrentJob(newJob);
       localStorage.setItem(ACTIVE_JOB_KEY, newJob.jobId);
       setJobsList((prev) => [newJob, ...prev]);
@@ -176,6 +200,7 @@ export default function App() {
       setIsUploading(false);
       setUploadProgress(null);
     } catch (err: any) {
+      uploadAbortRef.current = null;
       console.error('[UPLOAD_FAILED]', err);
       setGlobalError(
         err?.message ||
@@ -289,6 +314,7 @@ export default function App() {
           onImportUrl={handleImportUrl}
           isUploading={isUploading}
           uploadProgress={uploadProgress}
+          onCancelUpload={handleCancelUpload}
         />
       );
     }
@@ -330,6 +356,7 @@ export default function App() {
             onImportUrl={handleImportUrl}
             isUploading={isUploading}
             uploadProgress={uploadProgress}
+            onCancelUpload={handleCancelUpload}
           />
         );
     }

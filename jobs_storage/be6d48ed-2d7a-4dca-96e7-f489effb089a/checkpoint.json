@@ -1,0 +1,47 @@
+{
+  "jobId": "be6d48ed-2d7a-4dca-96e7-f489effb089a",
+  "originalFileName": "test_a.pdf",
+  "outputFileName": "test_a_FA.pdf",
+  "mimeType": "application/pdf",
+  "documentType": "pdf",
+  "fileSizeBytes": 1457,
+  "inputPath": "/app/applet/jobs_storage/be6d48ed-2d7a-4dca-96e7-f489effb089a/input/source_test_a.pdf",
+  "outputPath": "/app/applet/jobs_storage/be6d48ed-2d7a-4dca-96e7-f489effb089a/output/test_a_FA.pdf",
+  "inputHash": "",
+  "status": "processing",
+  "progress": 0,
+  "currentStage": "idle",
+  "currentOperation": "در صف آماده‌سازی و استخراج...",
+  "totalItems": 0,
+  "processedItems": 0,
+  "totalWords": 0,
+  "processedWords": 0,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790749902898,
+  "updatedAt": 1790749902899,
+  "elapsedMs": 0,
+  "retryCount": 0,
+  "warnings": [],
+  "errors": [],
+  "manifest": {
+    "inputCount": 0,
+    "items": []
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-30T06:31:42.898Z",
+      "level": "info",
+      "tag": "JOB_CREATED",
+      "message": "Document registered. Type=pdf, FileSize=1457 bytes"
+    },
+    {
+      "timestamp": "2026-09-30T06:31:42.899Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing test_a.pdf (pdf)"
+    }
+  ],
+  "startedAt": 1790749902899,
+  "lastHeartbeatAt": 1790749902899
+}

@@ -79,6 +79,20 @@ setInterval(async () => {
   }
 }, 30 * 60 * 1000);
 
+// Helper to safely move files across filesystems (handles EXDEV in docker/cloud environments)
+async function safeMoveFile(src: string, dest: string): Promise<void> {
+  try {
+    await fs.promises.rename(src, dest);
+  } catch (err: any) {
+    if (err.code === 'EXDEV' || err.code === 'EPERM' || err.code === 'EBUSY') {
+      await fs.promises.copyFile(src, dest);
+      await fs.promises.unlink(src).catch(() => {});
+    } else {
+      throw err;
+    }
+  }
+}
+
 // Helper to create and enqueue job from an uploaded/assembled file
 async function createJobFromUploadedFile(
   tempFilePath: string,
@@ -87,22 +101,27 @@ async function createJobFromUploadedFile(
   mimeType: string
 ): Promise<JobState> {
   const docType = await detectFileType(tempFilePath, originalFileName);
-  let safeOriginalName = originalFileName;
-  const currentExt = path.extname(originalFileName).toLowerCase();
-  if (docType === 'pptx' && currentExt !== '.pptx') {
-    safeOriginalName = `${path.basename(originalFileName, currentExt)}.pptx`;
-  } else if (docType === 'docx' && currentExt !== '.docx') {
-    safeOriginalName = `${path.basename(originalFileName, currentExt)}.docx`;
-  } else if (docType === 'pdf' && currentExt !== '.pdf') {
-    safeOriginalName = `${path.basename(originalFileName, currentExt)}.pdf`;
-  }
+
+  // Sanitize filename and extract base name safely
+  const rawBaseName = path.basename(originalFileName || 'document.pdf');
+  let decodedName = rawBaseName;
+  try {
+    if (/[\xC0-\xFF]/.test(rawBaseName)) {
+      decodedName = Buffer.from(rawBaseName, 'latin1').toString('utf8');
+    }
+  } catch {}
+
+  const currentExt = path.extname(decodedName).toLowerCase();
+  const baseWithoutExt = path.basename(decodedName, currentExt).replace(/[^\w\.\-\u0600-\u06FF\s]/g, '_') || 'document';
+  const targetExt = currentExt || `.${docType}`;
+  const safeOriginalName = `${baseWithoutExt}${targetExt}`;
 
   const jobId = crypto.randomUUID();
   const { inputDir, outputDir } = await defaultStorage.createJobFolders(jobId);
 
   const safeInputName = `source_${safeOriginalName}`;
   const destinationInputPath = path.join(inputDir, safeInputName);
-  await fs.promises.rename(tempFilePath, destinationInputPath);
+  await safeMoveFile(tempFilePath, destinationInputPath);
 
   const outputFileName = getOutputFilename(safeOriginalName, docType);
   const destinationOutputPath = path.join(outputDir, outputFileName);
@@ -153,18 +172,27 @@ async function createJobFromUploadedFile(
 
 // Detect document type using magic bytes, ZIP structure inspection, and extension
 async function detectFileType(filePath: string, originalName: string): Promise<'pdf' | 'docx' | 'pptx'> {
-  const ext = path.extname(originalName).toLowerCase();
+  const ext = path.extname(originalName || '').toLowerCase();
   const buffer = Buffer.alloc(16);
-  const fd = fs.openSync(filePath, 'r');
-  fs.readSync(fd, buffer, 0, 16, 0);
-  fs.closeSync(fd);
+  try {
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, 16, 0);
+    fs.closeSync(fd);
+  } catch (readErr) {
+    console.warn('[DETECT_FILE_TYPE_READ_ERR]', readErr);
+  }
 
   // PDF check: %PDF (0x25 0x50 0x44 0x46)
   if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
     return 'pdf';
   }
 
-  // ZIP check: PK\x03\x04
+  // Fast-track for standard extensions
+  if (ext === '.pdf') return 'pdf';
+  if (ext === '.docx') return 'docx';
+  if (ext === '.pptx') return 'pptx';
+
+  // ZIP check: PK\x03\x04 for extensionless or renamed office documents
   if (buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04) {
     try {
       const fileBuffer = await fs.promises.readFile(filePath);
@@ -179,15 +207,8 @@ async function detectFileType(filePath: string, originalName: string): Promise<'
     } catch (zipErr) {
       console.warn('[ZIP_DETECT_ERR]', zipErr);
     }
-
-    if (ext === '.pptx') return 'pptx';
-    if (ext === '.docx') return 'docx';
     return 'pptx';
   }
-
-  if (ext === '.pdf') return 'pdf';
-  if (ext === '.pptx') return 'pptx';
-  if (ext === '.docx') return 'docx';
 
   throw new Error(`قالب فایل پشتیبانی نمی‌شود. فقط PDF، Word (DOCX) و PowerPoint (PPTX) مجاز است.`);
 }
@@ -361,28 +382,23 @@ app.post('/api/upload/complete', async (req: Request, res: Response) => {
       }
     }
 
-    // Merge chunks into a single file with fast streaming pipeline
-    const mergedFilePath = path.join(tempUploadsDir, `${uploadId}_${metadata.fileName}`);
-    const writeStream = fs.createWriteStream(mergedFilePath, {
-      highWaterMark: 2 * 1024 * 1024,
-    });
+    // Merge chunks into a single file with fast, robust sequential write
+    const safeTargetFileName = path.basename(metadata.fileName || 'document.pdf');
+    const mergedFilePath = path.join(tempUploadsDir, `${uploadId}_${safeTargetFileName}`);
+    const destFd = await fs.promises.open(mergedFilePath, 'w');
 
-    for (let i = 0; i < metadata.totalChunks; i++) {
-      const chunkPath = path.join(uploadDir, `chunk_${i}.part`);
-      await new Promise<void>((resolve, reject) => {
-        const readStream = fs.createReadStream(chunkPath, { highWaterMark: 1024 * 1024 });
-        readStream.pipe(writeStream, { end: false });
-        readStream.on('end', () => resolve());
-        readStream.on('error', reject);
-      });
+    try {
+      for (let i = 0; i < metadata.totalChunks; i++) {
+        const chunkPath = path.join(uploadDir, `chunk_${i}.part`);
+        if (!fs.existsSync(chunkPath)) {
+          throw new Error(`قطعه شماره ${i + 1} از ${metadata.totalChunks} بر روی سرور یافت نشد.`);
+        }
+        const chunkBuffer = await fs.promises.readFile(chunkPath);
+        await destFd.write(chunkBuffer);
+      }
+    } finally {
+      await destFd.close();
     }
-
-    await new Promise<void>((resolve, reject) => {
-      writeStream.end((err?: any) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Cleanup part files and upload session directory
     await fs.promises.rm(uploadDir, { recursive: true, force: true }).catch(() => {});
@@ -430,6 +446,12 @@ app.post('/api/jobs/import-url', async (req: Request, res: Response) => {
 
 // 2. List Recent Jobs
 app.get('/api/jobs', async (_req: Request, res: Response) => {
+  const jobs = await defaultJobQueue.listRecentJobs();
+  res.json(jobs);
+});
+
+// 2.1 Alias for recent jobs
+app.get('/api/jobs/recent', async (_req: Request, res: Response) => {
   const jobs = await defaultJobQueue.listRecentJobs();
   res.json(jobs);
 });

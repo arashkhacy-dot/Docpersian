@@ -1,0 +1,136 @@
+{
+  "jobId": "9404541b-110c-423c-9035-841b856bdcb7",
+  "originalFileName": "test_a.pdf",
+  "outputFileName": "test_a_FA.pdf",
+  "mimeType": "application/pdf",
+  "documentType": "pdf",
+  "fileSizeBytes": 1457,
+  "inputPath": "/app/applet/jobs_storage/9404541b-110c-423c-9035-841b856bdcb7/input/source_test_a.pdf",
+  "outputPath": "/app/applet/jobs_storage/9404541b-110c-423c-9035-841b856bdcb7/output/test_a_FA.pdf",
+  "inputHash": "bf701f17a52b8712e099e781ddc449c1fda278c9c7304c4e105fecdd4859e1f4",
+  "status": "processing",
+  "progress": 90,
+  "currentStage": "reconstructing",
+  "currentOperation": "بازسازی و چیدمان گرافیکی RTL (صفحه 3 از 3)",
+  "totalItems": 3,
+  "processedItems": 3,
+  "totalWords": 27,
+  "processedWords": 0,
+  "sourceLanguage": "auto",
+  "targetLanguage": "fa",
+  "createdAt": 1790749920081,
+  "updatedAt": 1790749920186,
+  "elapsedMs": 104,
+  "retryCount": 0,
+  "warnings": [],
+  "errors": [],
+  "manifest": {
+    "inputCount": 3,
+    "items": [
+      {
+        "index": 1,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 8,
+        "retryAttempts": 0
+      },
+      {
+        "index": 2,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 8,
+        "retryAttempts": 0
+      },
+      {
+        "index": 3,
+        "status": "reconstructed",
+        "hasTranslatableText": true,
+        "wordCount": 8,
+        "retryAttempts": 0
+      }
+    ]
+  },
+  "debugLogs": [
+    {
+      "timestamp": "2026-09-30T06:32:00.081Z",
+      "level": "info",
+      "tag": "JOB_CREATED",
+      "message": "Document registered. Type=pdf, FileSize=1457 bytes"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.082Z",
+      "level": "info",
+      "tag": "JOB_START",
+      "message": "Started processing test_a.pdf (pdf)"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.123Z",
+      "level": "info",
+      "tag": "ANALYSIS_DONE",
+      "message": "Document analyzed: items=3, words=27"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.126Z",
+      "level": "info",
+      "tag": "EXTRACTION_START",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 total=3"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.148Z",
+      "level": "info",
+      "tag": "EXTRACTION_END",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 totalPages=3"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.149Z",
+      "level": "info",
+      "tag": "BATCH_TRANSLATION_START",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 textPages=3 visualPages=0"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.151Z",
+      "level": "info",
+      "tag": "RECONSTRUCTION_START",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 item=1 total=3"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.151Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_START",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 page=1"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.160Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_END",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 page=1"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.161Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_START",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 page=2"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.183Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_END",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 page=2"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.183Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_START",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 page=3"
+    },
+    {
+      "timestamp": "2026-09-30T06:32:00.186Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_END",
+      "message": "jobId=9404541b-110c-423c-9035-841b856bdcb7 page=3"
+    }
+  ],
+  "startedAt": 1790749920082,
+  "lastHeartbeatAt": 1790749920186,
+  "estimatedRemainingMs": 6
+}

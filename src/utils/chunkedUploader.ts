@@ -10,16 +10,16 @@ export interface UploadProgressInfo {
   isDirect?: boolean;
 }
 
-// Direct upload for all files up to 50 MB (lightning fast, single stream, no chunking issues)
-const DIRECT_UPLOAD_THRESHOLD = 50 * 1024 * 1024;
+// Direct upload for all files up to 20 MB (lightning fast, single stream, safe for Cloud Run & mobile)
+const DIRECT_UPLOAD_THRESHOLD = 20 * 1024 * 1024;
 
-// 512 KB chunks are guaranteed to stay well below Nginx default 1M limit and mobile DPI drops
-const CHUNK_SIZE = 512 * 1024;
-
-// 1 sequential worker for chunked uploads to prevent mobile upstream contention and stalls
-const CONCURRENCY = 1;
+// 2 MB chunks: Fast throughput without high HTTP overhead (10-20x fewer requests than 512KB)
+const CHUNK_SIZE = 2 * 1024 * 1024;
 
 const SESSION_STORAGE_PREFIX = 'docushift_upload_session_';
+
+// Track files that failed direct upload in this session so we don't retry direct on them
+const directUploadFailedFiles = new Set<string>();
 
 function getSessionStorageKey(file: File): string {
   return `${SESSION_STORAGE_PREFIX}${encodeURIComponent(file.name)}_${file.size}`;
@@ -50,8 +50,9 @@ async function getUploadedChunksFromServer(uploadId: string): Promise<number[]> 
 }
 
 /**
- * Direct Single-Stream Turbo Upload (Best for files <= 25MB)
+ * Direct Single-Stream Turbo Upload (Best for files <= 20MB)
  * Fast, reliable, no chunking overhead, directly supported by browser native upload engine.
+ * Includes a 12-second stall watchdog to failover instantly if connection stalls.
  */
 function uploadDirectFile(
   file: File,
@@ -68,9 +69,19 @@ function uploadDirectFile(
     const formData = new FormData();
     formData.append('file', file, file.name);
 
+    let stallTimer: any = null;
+    const resetStallWatchdog = () => {
+      if (stallTimer) clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => {
+        xhr.abort();
+        reject(new Error('DIRECT_UPLOAD_STALL'));
+      }, 15000); // 15 seconds without any bytes transferred triggers instant fallback
+    };
+
     const abortHandler = () => {
+      if (stallTimer) clearTimeout(stallTimer);
       xhr.abort();
-      reject(new Error('آپلود متوقف شد.'));
+      reject(new Error('آپلود توسط کاربر متوقف شد.'));
     };
     signal?.addEventListener('abort', abortHandler);
 
@@ -79,7 +90,11 @@ function uploadDirectFile(
     let lastTime = startTime;
     let smoothedSpeed = 0;
 
+    resetStallWatchdog();
+
     xhr.upload.onprogress = (e) => {
+      resetStallWatchdog();
+
       if (e.lengthComputable) {
         const now = Date.now();
         const elapsedTotal = Math.max(0.1, (now - startTime) / 1000);
@@ -95,7 +110,9 @@ function uploadDirectFile(
           smoothedSpeed = e.loaded / elapsedTotal;
         }
 
-        const percent = Math.min(99, Math.round((e.loaded / e.total) * 100));
+        const isBytesDone = e.loaded >= e.total;
+        const percent = isBytesDone ? 99 : Math.min(98, Math.round((e.loaded / e.total) * 100));
+
         onProgress?.({
           percent,
           uploadedBytes: e.loaded,
@@ -104,13 +121,17 @@ function uploadDirectFile(
           totalChunks: 1,
           speedFormatted: formatUploadSpeed(smoothedSpeed),
           isDirect: true,
-          statusMessage: 'در حال ارسال مستقیم سند به سرور...',
+          statusMessage: isBytesDone
+            ? 'ارسال فایل کامل شد؛ در حال ثبت و آغاز در سرور...'
+            : 'در حال ارسال مستقیم سند به سرور...',
         });
       }
     };
 
     xhr.onload = () => {
+      if (stallTimer) clearTimeout(stallTimer);
       signal?.removeEventListener('abort', abortHandler);
+
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const job = JSON.parse(xhr.responseText);
@@ -122,7 +143,7 @@ function uploadDirectFile(
             totalChunks: 1,
             speedFormatted: formatUploadSpeed(smoothedSpeed),
             isDirect: true,
-            statusMessage: 'فایل با موفقیت ارسال شد.',
+            statusMessage: 'فایل با موفقیت ثبت شد؛ ورود به میزکار...',
           });
           resolve(job);
         } catch (parseErr) {
@@ -141,23 +162,25 @@ function uploadDirectFile(
     };
 
     xhr.onerror = () => {
+      if (stallTimer) clearTimeout(stallTimer);
       signal?.removeEventListener('abort', abortHandler);
       reject(new Error('نوسان اتصال شبکه در ارسال مستقیم'));
     };
 
     xhr.ontimeout = () => {
+      if (stallTimer) clearTimeout(stallTimer);
       signal?.removeEventListener('abort', abortHandler);
       reject(new Error('مهلت ارسال مستقیم به پایان رسید.'));
     };
 
-    xhr.timeout = 300000; // 5 minutes timeout
+    xhr.timeout = 60000; // 60 seconds total timeout
     xhr.open('POST', '/api/jobs');
     xhr.send(formData);
   });
 }
 
 /**
- * Upload single chunk with progress tracking
+ * Upload single 2MB chunk with progress tracking and 35s watchdog
  */
 function uploadSingleChunkXhr(
   uploadId: string,
@@ -178,19 +201,33 @@ function uploadSingleChunkXhr(
     formData.append('chunkIndex', chunkIndex.toString());
     formData.append('chunk', chunkBlob, `chunk_${chunkIndex}.part`);
 
+    let chunkWatchdog: any = null;
+    const resetWatchdog = () => {
+      if (chunkWatchdog) clearTimeout(chunkWatchdog);
+      chunkWatchdog = setTimeout(() => {
+        xhr.abort();
+        reject(new Error(`تاخیر در ارسال قطعه ${chunkIndex + 1}`));
+      }, 35000);
+    };
+
     const abortHandler = () => {
+      if (chunkWatchdog) clearTimeout(chunkWatchdog);
       xhr.abort();
       reject(new Error('آپلود متوقف شد.'));
     };
     signal?.addEventListener('abort', abortHandler);
 
+    resetWatchdog();
+
     xhr.upload.onprogress = (e) => {
+      resetWatchdog();
       if (e.lengthComputable) {
         onChunkProgress(e.loaded);
       }
     };
 
     xhr.onload = () => {
+      if (chunkWatchdog) clearTimeout(chunkWatchdog);
       signal?.removeEventListener('abort', abortHandler);
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
@@ -207,24 +244,26 @@ function uploadSingleChunkXhr(
     };
 
     xhr.onerror = () => {
+      if (chunkWatchdog) clearTimeout(chunkWatchdog);
       signal?.removeEventListener('abort', abortHandler);
       reject(new Error(`نوسان شبکه در ارسال قطعه ${chunkIndex + 1}`));
     };
 
     xhr.ontimeout = () => {
+      if (chunkWatchdog) clearTimeout(chunkWatchdog);
       signal?.removeEventListener('abort', abortHandler);
       reject(new Error(`تاخیر اتصال شبکه در ارسال قطعه ${chunkIndex + 1}`));
     };
 
-    xhr.timeout = 180000;
+    xhr.timeout = 45000;
     xhr.open('POST', '/api/upload/chunk');
     xhr.send(formData);
   });
 }
 
 /**
- * Sequential Resilient Chunked File Uploader (for files > 25MB)
- * Slices large files into 10MB chunks and uploads sequentially to prevent mobile stalls.
+ * Sequential Resilient 2MB Chunked File Uploader
+ * Slices files into 2MB chunks and uploads sequentially with auto-resume.
  */
 async function uploadFileInParallelChunks(
   file: File,
@@ -341,6 +380,7 @@ async function uploadFileInParallelChunks(
       totalChunks,
       speedFormatted: formatUploadSpeed(currentSpeed),
       statusMessage: statusMsg,
+      isDirect: false,
     });
   };
 
@@ -358,7 +398,7 @@ async function uploadFileInParallelChunks(
     }
   }
 
-  const retryDelays = [1000, 2000, 4000, 8000];
+  const retryDelays = [800, 1500, 3000];
 
   for (const chunkIndex of pendingIndices) {
     if (signal?.aborted) throw new Error('آپلود توسط کاربر لغو گردید.');
@@ -370,10 +410,18 @@ async function uploadFileInParallelChunks(
     let chunkUploaded = false;
     let lastErr: any = null;
 
-    for (let attempt = 1; attempt <= retryDelays.length; attempt++) {
+    for (let attempt = 1; attempt <= retryDelays.length + 1; attempt++) {
       if (signal?.aborted) throw new Error('آپلود توسط کاربر لغو گردید.');
 
       try {
+        notifyProgress(
+          attempt > 1
+            ? `تلاش مجدد برای قطعه ${chunkIndex + 1} از ${totalChunks} (نوبت ${attempt})...`
+            : totalChunks > 1
+            ? `در حال ارسال قطعه ${chunkIndex + 1} از ${totalChunks}...`
+            : 'در حال ارسال فایل به سرور...'
+        );
+
         await uploadSingleChunkXhr(
           uploadId!,
           chunkIndex,
@@ -398,7 +446,7 @@ async function uploadFileInParallelChunks(
         lastErr = err;
         activeChunkProgress.delete(chunkIndex);
 
-        // Check if server actually accepted chunk
+        // Check if server actually accepted chunk despite network blip
         const serverChunks = await getUploadedChunksFromServer(uploadId!);
         if (serverChunks.includes(chunkIndex)) {
           completedChunksSet.add(chunkIndex);
@@ -407,7 +455,8 @@ async function uploadFileInParallelChunks(
           break;
         }
 
-        if (attempt < retryDelays.length) {
+        if (attempt <= retryDelays.length) {
+          notifyProgress(`نوسان شبکه؛ تلاش مجدد برای قطعه ${chunkIndex + 1} پس از وقفه کوتاه...`);
           await new Promise((r) => setTimeout(r, retryDelays[attempt - 1]));
         }
       }
@@ -426,15 +475,16 @@ async function uploadFileInParallelChunks(
     }
   }
 
-  // 3. Final completion call (instantaneous response)
+  // 3. Final completion call
   onProgress?.({
-    percent: 100,
+    percent: 99,
     uploadedBytes: file.size,
     totalBytes: file.size,
     currentChunk: totalChunks,
     totalChunks,
     speedFormatted: formatUploadSpeed(currentSpeed),
-    statusMessage: 'ارسال با موفقیت پایان یافت؛ ورود به میزکار ترجمه...',
+    statusMessage: 'ارسال پایان یافت؛ در حال یکپارچه‌سازی و اعتبارسنجی سند در سرور...',
+    isDirect: false,
   });
 
   const compRes = await fetch('/api/upload/complete', {
@@ -461,15 +511,28 @@ async function uploadFileInParallelChunks(
     // Non-fatal
   }
 
-  return await compRes.json();
+  const job = await compRes.json();
+  onProgress?.({
+    percent: 100,
+    uploadedBytes: file.size,
+    totalBytes: file.size,
+    currentChunk: totalChunks,
+    totalChunks,
+    speedFormatted: formatUploadSpeed(currentSpeed),
+    statusMessage: 'سند با موفقیت تایید شد؛ ورود به میزکار...',
+    isDirect: false,
+  });
+
+  return job;
 }
 
 /**
  * Main Entry Point: Intelligent High-Speed File Uploader
  * 
  * Automatically selects the optimal strategy:
- * - Files <= 25 MB: Single-shot direct turbo stream (instantaneous, 0 packages to get stuck)
- * - Files > 25 MB: Sequential 10MB chunk uploads (stable, resilient on mobile connections)
+ * - Files <= 20 MB: Single-shot direct turbo stream (instantaneous, 1 request)
+ * - Files > 20 MB: Sequential 2MB chunk uploads (stable, resilient on mobile connections)
+ * - Instant fallback to chunked upload if direct upload ever stalls
  */
 export async function uploadFileInChunks(
   file: File,
@@ -478,14 +541,20 @@ export async function uploadFileInChunks(
 ): Promise<any> {
   const sessionKey = getSessionStorageKey(file);
 
-  // For files <= 25MB (99.9% of all documents), ALWAYS use direct single stream.
-  // This completely eliminates "stuck on package 1" issues.
+  // If this file previously failed direct upload, jump directly to chunked
+  if (directUploadFailedFiles.has(sessionKey)) {
+    return await uploadFileInParallelChunks(file, onProgress, signal);
+  }
+
+  // For files <= 20MB, try direct single stream with fast fallback
   if (file.size <= DIRECT_UPLOAD_THRESHOLD) {
     try {
       return await uploadDirectFile(file, onProgress, signal);
     } catch (err: any) {
       if (signal?.aborted) throw err;
-      console.warn('[DIRECT_UPLOAD_FAILED_FALLING_BACK_TO_CHUNKS]', err);
+      console.warn('[DIRECT_UPLOAD_FALLBACK_TO_CHUNKS]', err);
+      directUploadFailedFiles.add(sessionKey);
+
       // Clean any stale session key before fallback
       try {
         localStorage.removeItem(sessionKey);

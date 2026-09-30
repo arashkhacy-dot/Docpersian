@@ -22,6 +22,7 @@ interface UploadZoneProps {
   onImportUrl: (url: string) => Promise<void>;
   isUploading: boolean;
   uploadProgress?: UploadProgressInfo | null;
+  onCancelUpload?: () => void;
 }
 
 export const UploadZone: React.FC<UploadZoneProps> = ({
@@ -29,6 +30,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   onImportUrl,
   isUploading,
   uploadProgress,
+  onCancelUpload,
 }) => {
   const [activeTab, setActiveTab] = useState<'device' | 'cloud'>('device');
   const [cloudUrl, setCloudUrl] = useState('');
@@ -43,8 +45,16 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   const validateAndSetFile = (file: File) => {
     setError(null);
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isKnownExt = allowedExtensions.includes(ext);
+    const isKnownMime = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/msword',
+      'application/vnd.ms-powerpoint',
+    ].includes(file.type);
 
-    if (!allowedExtensions.includes(ext)) {
+    if (!isKnownExt && !isKnownMime) {
       setError('قالب فایل مجاز نیست. لطفاً یکی از فرمت‌های PDF، DOCX یا PPTX را انتخاب نمایید.');
       setSelectedFile(null);
       return;
@@ -189,7 +199,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.docx,.pptx"
+              accept=".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.ms-powerpoint"
               onChange={handleChange}
               className="hidden"
               disabled={isUploading}
@@ -298,8 +308,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             </div>
           )}
 
-          {/* Start Button */}
-          <div className="flex justify-center">
+          {/* Action Buttons: Start and Cancel */}
+          <div className="flex items-center justify-center gap-3">
             <button
               type="button"
               disabled={!selectedFile || isUploading}
@@ -320,11 +330,11 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>
-                    {uploadProgress && uploadProgress.percent < 100
+                    {uploadProgress && uploadProgress.percent < 99
                       ? uploadProgress.speedFormatted
-                        ? `در حال ارسال با سرعت ${uploadProgress.speedFormatted} (${uploadProgress.percent}٪)...`
-                        : `در حال ارسال با حداکثر سرعت (${uploadProgress.percent}٪)...`
-                      : 'در حال یکپارچه‌سازی و اعتبارسنجی سند...'}
+                        ? `در حال ارسال (${uploadProgress.speedFormatted} - ${uploadProgress.percent}٪)...`
+                        : `در حال ارسال (${uploadProgress.percent}٪)...`
+                      : 'در حال اعتبارسنجی سند و ورود به میزکار...'}
                   </span>
                 </>
               ) : uploadProgress && uploadProgress.percent > 0 ? (
@@ -341,6 +351,20 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                 </>
               )}
             </button>
+
+            {isUploading && onCancelUpload && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onCancelUpload();
+                }}
+                className="px-4 py-3.5 rounded-xl text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer"
+              >
+                لغو ارسال
+              </button>
+            )}
           </div>
         </div>
       )}

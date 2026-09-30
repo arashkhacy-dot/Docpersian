@@ -1,24 +1,21 @@
 export function sanitizePersianSymbols(raw: string): string {
-  if (!raw) return '';
+  if (!raw) return "";
   return raw
-    .replace(/[\uFEFF\u200B\u200E\u200F]/g, '')
-    .replace(/[«»“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-    .replace(/[••●■▪◦∙]/g, '-')
-    .replace(/[—–]/g, '-')
-    .replace(/\|/g, ' - ')
-    .replace(/[⚠️⚠]/g, '[!]');
+    .replace(/[\uFEFF\u200B\u200E\u200F]/g, "")
+    .replace(/[«»“”]/g, "\"")
+    .replace(/[‘’]/g, "\x27")
+    .replace(/[••●■▪◦∙]/g, "-")
+    .replace(/[—–]/g, "-")
+    .replace(/\|/g, " - ")
+    .replace(/[⚠️⚠]/g, "[!]");
 }
 
 export function prepareRtlText(text: string): string {
-  if (!text) return '';
+  if (!text) return "";
   let clean = sanitizePersianSymbols(text);
-
-  // Reverse Latin words so fontkit's RTL layout engine renders them in correct LTR direction
   clean = clean.replace(/[a-zA-Z0-9]+(?:[\.\-_/][a-zA-Z0-9]+)*/g, (match) => {
-    return match.split('').reverse().join('');
+    return match.split("").reverse().join("");
   });
-
   return clean;
 }
 
@@ -32,7 +29,6 @@ export function segmentBidiText(line: string): BidiSegment[] {
   const clean = sanitizePersianSymbols(line);
   const regex = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿‌]+|[^؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿‌]+/g;
   const matches = clean.match(regex) || [];
-  
   return matches.map((token) => ({
     text: token,
     isRtl: /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/.test(token),
