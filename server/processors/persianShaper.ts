@@ -10,10 +10,14 @@ export function sanitizePersianSymbols(raw: string): string {
     .replace(/[\uFEFF\u200B\u200E\u200F]/g, "")
     .replace(/[«»“”]/g, "\"")
     .replace(/[‘’]/g, "\x27")
-    .replace(/[••●■▪◦∙]/g, "-")
+    .replace(/[•●■▪◦∙]/g, "-")
     .replace(/[—–]/g, "-")
     .replace(/\|/g, " - ")
-    .replace(/[⚠️⚠]/g, "[!]");
+    .replace(/[⚠️⚠]/g, "[!]")
+    .replace(/[◄►◀▶→←⇒⇐►▼▲]/g, " : ")
+    .replace(/[※]/g, "[*]")
+    .replace(/[★☆✓✔✕✖]/g, "-")
+    .replace(/[λ]/g, "lambda");
 }
 
 export function prepareRtlText(text: string): string {

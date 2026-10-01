@@ -66,44 +66,91 @@ function drawSegmentedRtlLine(
 
 let cachedFontBytes: Buffer | null = null;
 
-async function getCachedPersianFont(): Promise<Buffer> {
-  if (cachedFontBytes) {
+export async function ensurePersianFont(): Promise<Buffer> {
+  if (cachedFontBytes && cachedFontBytes.length > 50000) {
     return cachedFontBytes;
   }
 
-  const candidatePaths = [
-    path.resolve(process.cwd(), 'server/assets/fonts/persian-font.ttf'),
+  const primaryPath = path.resolve(process.cwd(), 'server/assets/fonts/persian-font.ttf');
+
+  // 1. Check if primary file exists and is valid Vazirmatn font
+  if (fs.existsSync(primaryPath)) {
+    try {
+      const bytes = await fs.promises.readFile(primaryPath);
+      if (bytes.length > 50000) {
+        const font = fontkit.create(bytes);
+        if (font.hasGlyphForCodePoint(0x067E) && font.hasGlyphForCodePoint(0x06AF) && font.hasGlyphForCodePoint(0xFB7C)) {
+          cachedFontBytes = bytes;
+          return cachedFontBytes;
+        }
+      }
+    } catch {
+      // invalid, will re-download or search
+    }
+  }
+
+  // 2. Try candidate system fonts
+  const systemCandidates = [
     '/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf',
     '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf',
     '/usr/share/fonts/truetype/scheherazade/Scheherazade-Regular.ttf',
     '/usr/share/fonts/opentype/noto/NotoSansArabic-Regular.otf',
-    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-    '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
   ];
 
-  for (const p of candidatePaths) {
-    if (fs.existsSync(p)) {
+  for (const sp of systemCandidates) {
+    if (fs.existsSync(sp)) {
       try {
-        const bytes = await fs.promises.readFile(p);
+        const bytes = await fs.promises.readFile(sp);
         const font = fontkit.create(bytes);
-        if (font.hasGlyphForCodePoint(0x067E) && font.hasGlyphForCodePoint(0x06AF)) {
+        if (font.hasGlyphForCodePoint(0x067E) && font.hasGlyphForCodePoint(0x06AF) && font.hasGlyphForCodePoint(0xFB7C)) {
           cachedFontBytes = bytes;
           return cachedFontBytes;
         }
-      } catch {
-        // try next
-      }
+      } catch {}
     }
   }
 
-  for (const p of candidatePaths) {
-    if (fs.existsSync(p)) {
-      cachedFontBytes = await fs.promises.readFile(p);
-      return cachedFontBytes;
+  // 3. Auto-download official Persian Vazirmatn font from reliable CDN mirrors
+  console.log('[FONT_INIT] Downloading official Persian Vazirmatn font...');
+  const cdnUrls = [
+    'https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@master/fonts/ttf/Vazirmatn-Regular.ttf',
+    'https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Regular.ttf',
+    'https://cdnjs.cloudflare.com/ajax/libs/vazirmatn/33.0.3/Vazirmatn-Regular.ttf',
+  ];
+
+  await fs.promises.mkdir(path.dirname(primaryPath), { recursive: true });
+
+  for (const url of cdnUrls) {
+    try {
+      const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (resp.ok) {
+        const arrayBuf = await resp.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        if (buf.length > 50000) {
+          const font = fontkit.create(buf);
+          if (font.hasGlyphForCodePoint(0x067E) && font.hasGlyphForCodePoint(0x06AF)) {
+            await fs.promises.writeFile(primaryPath, buf);
+            cachedFontBytes = buf;
+            console.log('[FONT_INIT] Successfully downloaded & cached Vazirmatn Persian font.');
+            return cachedFontBytes;
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[FONT_INIT] Mirror failed (${url}):`, e?.message);
     }
+  }
+
+  if (fs.existsSync(primaryPath)) {
+    cachedFontBytes = await fs.promises.readFile(primaryPath);
+    return cachedFontBytes;
   }
 
   throw new Error('Persian TrueType font file not found.');
+}
+
+async function getCachedPersianFont(): Promise<Buffer> {
+  return ensurePersianFont();
 }
 
 async function runWithTimeout<T>(
@@ -203,15 +250,17 @@ function stripTextFromPageStreams(
   minY: number | null;
   hasTopImage: boolean;
   imageBottomY: number | null;
+  imageTopY: number | null;
 } {
   try {
     const streams = getStreamObjects(page, doc);
     if (streams.length === 0) {
-      return { maxY: null, minY: null, hasTopImage: false, imageBottomY: null };
+      return { maxY: null, minY: null, hasTopImage: false, imageBottomY: null, imageTopY: null };
     }
 
     const allYs: number[] = [];
     const imageBottoms: number[] = [];
+    const imageTops: number[] = [];
     const { height } = page.getSize();
 
     for (const streamObj of streams) {
@@ -238,11 +287,16 @@ function stripTextFromPageStreams(
       const cmDoRegex = /([-+]?\d*\.?\d+)\s+[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+cm\s*(?:[^\n\r]*?)?\/([^\s\/]+)\s+Do/g;
       let imgM: RegExpExecArray | null;
       while ((imgM = cmDoRegex.exec(streamText)) !== null) {
+        const w = Math.abs(parseFloat(imgM[1]));
         const h = Math.abs(parseFloat(imgM[2]));
+        const d = parseFloat(imgM[2]);
         const y = parseFloat(imgM[4]);
-        if (!isNaN(y) && !isNaN(h) && h > 40) {
-          if (y + h > height * 0.45) {
-            imageBottoms.push(y);
+        if (!isNaN(y) && !isNaN(h) && h > 60 && w > 80) {
+          const bottom = d < 0 ? y - h : y;
+          const top = d < 0 ? y : y + h;
+          if (top > height * 0.40) {
+            imageBottoms.push(bottom);
+            imageTops.push(top);
           }
         }
       }
@@ -283,16 +337,78 @@ function stripTextFromPageStreams(
 
     const hasTopImg = imageBottoms.length > 0;
     const minImgBottom = hasTopImg ? Math.min(...imageBottoms) : null;
+    const maxImgTop = hasTopImg ? Math.max(...imageTops) : null;
 
     return {
       maxY: allYs.length > 0 ? Math.max(...allYs) : null,
       minY: allYs.length > 0 ? Math.min(...allYs) : null,
       hasTopImage: hasTopImg,
       imageBottomY: minImgBottom,
+      imageTopY: maxImgTop,
     };
   } catch {
-    return { maxY: null, minY: null, hasTopImage: false, imageBottomY: null };
+    return { maxY: null, minY: null, hasTopImage: false, imageBottomY: null, imageTopY: null };
   }
+}
+
+function normalizeDiagramParagraphs(paragraphs: string[]): string[] {
+  const result: string[] = [];
+  for (const p of paragraphs) {
+    if (!p || !p.trim()) continue;
+    const trimmed = p.trim();
+
+    // 1. If paragraph contains multiple bullet points: • or -
+    if ((trimmed.match(/[•\-]\s+/g) || []).length >= 2) {
+      const items = trimmed.split(/(?=[•\-]\s+)/).map((s) => s.trim()).filter(Boolean);
+      result.push(...items);
+      continue;
+    }
+
+    // 2. If paragraph contains numbered items: 1. or 1- or 1) or ۱.
+    if ((trimmed.match(/(?:^|\s+)(?:\d+|[\u06F0-\u06F9]+)[\.\-\)]\s+/g) || []).length >= 2) {
+      const items = trimmed
+        .split(/(?=(?:^|\s+)(?:\d+|[\u06F0-\u06F9]+)[\.\-\)]\s+)/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      result.push(...items);
+      continue;
+    }
+
+    // 3. If paragraph contains multiple comma or semicolon separated parts:
+    if (trimmed.includes('،') || trimmed.includes('؛')) {
+      const parts = trimmed.split(/[،؛]/).map((s) => s.trim()).filter(Boolean);
+      if (parts.length >= 3 && parts.every((pt) => pt.length < 50)) {
+        result.push(...parts.map((pt, idx) => `${idx + 1}. ${pt}`));
+        continue;
+      }
+    }
+
+    // 4. Vehicle parts list without punctuation:
+    if (trimmed.length > 45 && !trimmed.includes('.') && !trimmed.includes('،')) {
+      const headerMatch = trimmed.match(/^([A-Z0-9\s]{2,15}\d*)\s+(.*)/i);
+      if (headerMatch && headerMatch[2].length > 35) {
+        const header = headerMatch[1].trim();
+        const rest = headerMatch[2].trim();
+        const keywords = [
+          'چراغ‌های', 'چراغ', 'قفل درب', 'سانروف', 'برف‌پاک‌کن', 'کاپوت موتور',
+          'درب باک', 'شیشه‌های برقی', 'آینه بغل', 'آینه دید', 'آفتاب‌گیر',
+          'کلید سانروف', 'کلید قفل', 'کلید شیشه', 'سیستم چندرسانه‌ای', 'صندلی جلو',
+          'زیرآرنجی', 'اهرم کنترل', 'دکمه‌های', 'تنظیم آینه', 'دریچه هوا',
+          'داشبورد', 'مخزن مایع', 'درپوش پرکن', 'باتری', 'گیج روغن', 'فیلتر هوا', 'جعبه فیوز'
+        ];
+        const pattern = new RegExp('\\s+(?=(?:' + keywords.join('|') + '))', 'g');
+        const parts = rest.split(pattern).map((s) => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          result.push(header);
+          result.push(...parts.map((pt, idx) => `${idx + 1}. ${pt}`));
+          continue;
+        }
+      }
+    }
+
+    result.push(trimmed);
+  }
+  return result;
 }
 
 function renderPersianTextToPage(
@@ -304,67 +420,127 @@ function renderPersianTextToPage(
     minY: number | null;
     hasTopImage: boolean;
     imageBottomY: number | null;
+    imageTopY?: number | null;
   },
   pageIndex: number,
   totalPages: number
 ) {
   const { width, height } = page.getSize();
   const marginX = 32;
-  const bottomMargin = 28;
+  const bottomMargin = 26;
 
-  // Determine starting vertical position
-  let startY: number;
-  if (textBounds.hasTopImage && textBounds.imageBottomY !== null) {
-    // There is an image at the top (e.g. instrument panel, key fob, engine);
-    // start strictly below it!
-    startY = Math.min(textBounds.imageBottomY - 14, height * 0.58);
-  } else if (textBounds.maxY !== null && textBounds.maxY < height - 70) {
-    // English text was located only in lower part; start where it began
-    startY = Math.min(textBounds.maxY, height - 42);
-  } else {
-    // Standard full-page document
-    startY = height - 42;
-  }
+  const normalized = normalizeDiagramParagraphs(paragraphs);
+  if (normalized.length === 0) return;
 
-  // Ensure minimum room
-  startY = Math.max(bottomMargin + 60, Math.min(startY, height - 35));
-
-  let curY = startY;
-
-  // Check if first paragraph is a page title / heading
+  // 1. Detect title / page header
   const hasTitle =
-    paragraphs.length > 1 &&
-    paragraphs[0].length < 110 &&
-    !/^\d+[\.\-]/.test(paragraphs[0]) &&
-    !paragraphs[0].startsWith('-');
+    normalized.length > 1 &&
+    normalized[0].length < 110 &&
+    !/^\d+[\.\-]/.test(normalized[0]) &&
+    !normalized[0].startsWith('•') &&
+    !normalized[0].startsWith('-');
 
-  let listParas = paragraphs;
+  let listParas = normalized;
   if (hasTitle) {
-    const title = paragraphs[0];
-    listParas = paragraphs.slice(1);
+    const title = normalized[0];
+    listParas = normalized.slice(1);
+    // Draw title at the top of the page so page header is clearly restored
     const titleFontSize = 11.5;
     const titleLines = wrapPersianText(title, persianFont, titleFontSize, width - marginX * 2);
+    let titleY = height - 36;
     for (const line of titleLines) {
-      if (curY < bottomMargin + 20) break;
-      drawSegmentedRtlLine(page, line, persianFont, titleFontSize, width - marginX, curY, rgb(0.08, 0.15, 0.3));
-      curY -= 16;
+      drawSegmentedRtlLine(page, line, persianFont, titleFontSize, width - marginX, titleY, rgb(0.08, 0.15, 0.3));
+      titleY -= 15;
     }
-    curY -= 5;
   }
 
-  const availableHeight = Math.max(60, curY - bottomMargin);
+  if (listParas.length === 0) return;
 
-  // Check if content is a list of items (e.g. numbered 1..20 instrument parts, short bullets)
+  // 2. Determine starting position for descriptions/content
+  let startY: number;
+  if (textBounds.hasTopImage && textBounds.imageBottomY !== null) {
+    if (textBounds.imageBottomY > bottomMargin + 110) {
+      startY = Math.min(textBounds.imageBottomY - 12, height * 0.58);
+    } else {
+      startY = hasTitle ? height - 60 : height - 42;
+    }
+  } else if (textBounds.maxY !== null && textBounds.maxY < height - 70) {
+    startY = Math.min(textBounds.maxY, height - 42);
+  } else {
+    startY = hasTitle ? height - 60 : height - 42;
+  }
+
+  startY = Math.max(bottomMargin + 75, Math.min(startY, height - 35));
+  let curY = startY;
+  const availableHeight = Math.max(70, curY - bottomMargin);
+
+  // 3. Layout: Single-column or Multi-column
   const isItemList =
-    listParas.length >= 6 &&
-    listParas.filter((p) => /^\d+[\.\-]/.test(p) || p.startsWith('-') || p.length < 80).length / listParas.length > 0.55;
+    listParas.length >= 4 &&
+    listParas.filter((p) => /^\d+[\.\-]/.test(p) || p.startsWith('•') || p.startsWith('-') || p.length < 80).length /
+      listParas.length >
+      0.5;
 
+  const useThreeColumns = width >= 520 && listParas.length >= 15;
   const useTwoColumns =
-    (isItemList && width >= 450 && listParas.length >= 8) ||
-    (listParas.length >= 14 && width >= 450);
+    !useThreeColumns &&
+    ((isItemList && width >= 420 && listParas.length >= 4) ||
+      (textBounds.hasTopImage && width >= 420 && listParas.length >= 4) ||
+      (listParas.length >= 10 && width >= 420));
 
-  if (useTwoColumns) {
-    // 2-column layout: right column first in RTL, then left column
+  if (useThreeColumns) {
+    // 3-Column Layout: Right, Middle, Left
+    const colGap = 16;
+    const colW = (width - marginX * 2 - colGap * 2) / 3;
+    const perCol = Math.ceil(listParas.length / 3);
+    const col1 = listParas.slice(0, perCol);
+    const col2 = listParas.slice(perCol, perCol * 2);
+    const col3 = listParas.slice(perCol * 2);
+
+    let fontSize = 8.5;
+    let lineHeight = 11.8;
+
+    const calcColH = (paras: string[], fSize: number, lHeight: number) => {
+      let h = 0;
+      for (const p of paras) {
+        const lines = wrapPersianText(p, persianFont, fSize, colW);
+        h += lines.length * lHeight + 2;
+      }
+      return h;
+    };
+
+    while (
+      Math.max(
+        calcColH(col1, fontSize, lineHeight),
+        calcColH(col2, fontSize, lineHeight),
+        calcColH(col3, fontSize, lineHeight)
+      ) > availableHeight &&
+      fontSize > 6.5
+    ) {
+      fontSize -= 0.3;
+      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
+    }
+
+    const cols = [
+      { paras: col1, rightX: width - marginX },
+      { paras: col2, rightX: width - marginX - colW - colGap },
+      { paras: col3, rightX: width - marginX - (colW + colGap) * 2 },
+    ];
+
+    for (const col of cols) {
+      let colY = curY;
+      for (const p of col.paras) {
+        const lines = wrapPersianText(p, persianFont, fontSize, colW);
+        for (const line of lines) {
+          if (colY < bottomMargin) break;
+          drawSegmentedRtlLine(page, line, persianFont, fontSize, col.rightX, colY, rgb(0.12, 0.16, 0.24));
+          colY -= lineHeight;
+        }
+        colY -= 2;
+      }
+    }
+  } else if (useTwoColumns) {
+    // 2-Column Layout: Right column first (RTL), then Left column
     const colGap = 20;
     const colW = (width - marginX * 2 - colGap) / 2;
     const rightColX = width - marginX;
@@ -386,7 +562,6 @@ function renderPersianTextToPage(
       return h;
     };
 
-    // Auto-fit font size to guarantee NO text is ever clipped
     while (
       Math.max(
         calcColH(rightParas, fontSize, lineHeight),
@@ -394,14 +569,14 @@ function renderPersianTextToPage(
       ) > availableHeight &&
       fontSize > 6.8
     ) {
-      fontSize -= 0.4;
+      fontSize -= 0.3;
       lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
     }
 
     // Render Right Column
     let rightY = curY;
     for (const p of rightParas) {
-      const isSubHeading = p.length < 35 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p);
+      const isSubHeading = p.length < 35 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
       const f = isSubHeading ? fontSize + 1 : fontSize;
       const lh = isSubHeading ? lineHeight + 2 : lineHeight;
       const lines = wrapPersianText(p, persianFont, f, colW);
@@ -418,7 +593,7 @@ function renderPersianTextToPage(
     // Render Left Column
     let leftY = curY;
     for (const p of leftParas) {
-      const isSubHeading = p.length < 35 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p);
+      const isSubHeading = p.length < 35 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
       const f = isSubHeading ? fontSize + 1 : fontSize;
       const lh = isSubHeading ? lineHeight + 2 : lineHeight;
       const lines = wrapPersianText(p, persianFont, f, colW);
@@ -436,13 +611,13 @@ function renderPersianTextToPage(
     const contentW = width - marginX * 2;
     const rightX = width - marginX;
 
-    let fontSize = 11;
-    let lineHeight = 16.5;
+    let fontSize = 10.5;
+    let lineHeight = 15.5;
 
     const calcTotalH = (fSize: number, lHeight: number) => {
       let h = 0;
       for (const p of listParas) {
-        const isHeading = p.length < 45 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p);
+        const isHeading = p.length < 45 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
         const f = isHeading ? fSize + 1.5 : fSize;
         const lh = isHeading ? lHeight + 2.5 : lHeight;
         const lines = wrapPersianText(p, persianFont, f, contentW);
@@ -451,8 +626,8 @@ function renderPersianTextToPage(
       return h;
     };
 
-    while (calcTotalH(fontSize, lineHeight) > availableHeight && fontSize > 7.0) {
-      fontSize -= 0.4;
+    while (calcTotalH(fontSize, lineHeight) > availableHeight && fontSize > 6.8) {
+      fontSize -= 0.3;
       lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
     }
 
@@ -460,7 +635,7 @@ function renderPersianTextToPage(
       const p = listParas[uIdx];
       const isHeading =
         (uIdx === 0 && p.length < 75) ||
-        (p.length < 45 && !p.startsWith('-') && !/^\d+[\.\-]/.test(p));
+        (p.length < 45 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p));
       const f = isHeading ? fontSize + 1.5 : fontSize;
       const lh = isHeading ? lineHeight + 2.5 : lineHeight;
       const lines = wrapPersianText(p, persianFont, f, contentW);
@@ -547,7 +722,7 @@ export class PDFProcessor implements DocumentProcessor {
       if (line.trim()) textPieces.push(line.trim());
     }
 
-    return textPieces.join(' ');
+    return textPieces.join('\n');
   }
 
   /**
@@ -564,9 +739,9 @@ export class PDFProcessor implements DocumentProcessor {
       for (const s of streams) {
         const streamObj = doc.context.lookup(s);
         if (streamObj && typeof (streamObj as any).asUint8Array === 'function') {
-          text += ' ' + this.extractTextFromStreamData((streamObj as any).asUint8Array());
+          text += '\n' + this.extractTextFromStreamData((streamObj as any).asUint8Array());
         } else if (streamObj && (streamObj as any).contents) {
-          text += ' ' + this.extractTextFromStreamData((streamObj as any).contents);
+          text += '\n' + this.extractTextFromStreamData((streamObj as any).contents);
         }
       }
       return text.trim();
@@ -756,7 +931,7 @@ export class PDFProcessor implements DocumentProcessor {
       const rawPageText = (fastPageTexts[i] || '').trim();
       pageRawTexts[i] = rawPageText;
 
-      if (rawPageText.length >= 25) {
+      if (rawPageText.length > 0) {
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
@@ -807,8 +982,8 @@ export class PDFProcessor implements DocumentProcessor {
       }
     }
 
-    // Vision OCR for key schematic diagrams if needed (bounded to max 2 key pages with active progress)
-    const diagramsToScan = diagramPagesToScan.slice(0, 2);
+    // Vision OCR for key schematic diagrams if needed (supports up to 15 key diagram pages)
+    const diagramsToScan = diagramPagesToScan.slice(0, 15);
     if (diagramsToScan.length > 0) {
       log('info', 'DIAGRAM_VISION_START', `jobId=${job.jobId} diagrams=${diagramsToScan.length}`);
       for (let dIdx = 0; dIdx < diagramsToScan.length; dIdx++) {
@@ -856,7 +1031,11 @@ export class PDFProcessor implements DocumentProcessor {
       const rawPageText = pageRawTexts[i];
       const manifestItem = job.manifest.items.find((it) => it.index === pageIndex);
 
-      if (!rawPageText) {
+      const fullFaText =
+        translatedResultsMap.get(`page_${pageIndex}`) ||
+        rawPageText;
+
+      if (!fullFaText || !fullFaText.trim()) {
         pageTranslations.push({
           pageNumber: pageIndex,
           text: '',
@@ -871,10 +1050,6 @@ export class PDFProcessor implements DocumentProcessor {
         warnings.push(`صفحه ${pageIndex}: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.`);
         continue;
       }
-
-      const fullFaText =
-        translatedResultsMap.get(`page_${pageIndex}`) ||
-        rawPageText;
 
       const words = fullFaText.split(/\s+/).filter(Boolean).length;
       processedWordCount += words;

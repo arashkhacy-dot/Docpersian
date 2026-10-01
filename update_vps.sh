@@ -22,7 +22,8 @@ echo "  DocuShift - به‌روزرسانی سرور از گیت‌هاب"
 echo "========================================="
 
 # ۱. دریافت آخرین تغییرات از گیت‌هاب
-echo "--> ۱. دریافت آخرین تغییرات از گیت‌هاب (git pull)..."
+echo "--> ۱. دریافت آخرین تغییرات از گیت‌هاب (git fetch & reset)..."
+git fetch --all 2>/dev/null || git fetch origin main 2>/dev/null || true
 git reset --hard origin/main 2>/dev/null || git pull origin main || git pull
 
 # ۲. اطمینان از نصب فونت‌های استاندارد فارسی در اوبونتو (بدون فیلتر)

@@ -9,7 +9,7 @@ import { defaultStorage } from './server/storage/localStorageProvider.js';
 import { defaultJobQueue } from './server/jobs/jobQueue.js';
 import { defaultWorker } from './server/jobs/jobWorker.js';
 import { JobState, isTerminalStatus } from './server/jobs/jobState.js';
-import { PDFProcessor } from './server/processors/pdfProcessor.js';
+import { PDFProcessor, ensurePersianFont } from './server/processors/pdfProcessor.js';
 import { DOCXProcessor } from './server/processors/docxProcessor.js';
 import { PPTXProcessor } from './server/processors/pptxProcessor.js';
 import { downloadFileFromUrl } from './server/utils/urlDownloader.js';
@@ -36,8 +36,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Initialize storage
+// Initialize storage and ensure high-fidelity Persian font
 await defaultStorage.init();
+await ensurePersianFont().catch((err) => console.warn('[FONT_INIT_WARNING]', err));
 const startupCheck = validateStartupConfig();
 if (startupCheck.warnings.length > 0) {
   console.warn('[CONFIG_WARNINGS]', startupCheck.warnings);
