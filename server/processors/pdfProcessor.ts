@@ -143,13 +143,26 @@ function renderInPlaceLines(
     .map((s) => s.trim().replace(/^\[\d+\]\s*/, ''))
     .filter(Boolean);
 
+  let candidateLines = linesByNewline;
+  if (transMap.size === 0 && candidateLines.length < lines.length) {
+    const normalized = normalizeDiagramParagraphs(candidateLines);
+    if (normalized.length >= candidateLines.length) {
+      candidateLines = normalized;
+    }
+  }
+
+  // Prevent dumping a single run-on block into line 0 when multiple lines exist
+  if (transMap.size === 0 && candidateLines.length === 1 && lines.length >= 3) {
+    return false;
+  }
+
   let renderedCount = 0;
 
   for (let idx = 0; idx < lines.length; idx++) {
     const orig = lines[idx];
     let fa = transMap.get(idx + 1);
-    if (!fa && linesByNewline[idx]) {
-      fa = linesByNewline[idx];
+    if (!fa && candidateLines[idx]) {
+      fa = candidateLines[idx];
     }
     if (!fa || !fa.trim()) continue;
 
@@ -182,7 +195,8 @@ function renderInPlaceLines(
     } catch {}
   }
 
-  return renderedCount > 0;
+  // Only consider in-place successful if a significant portion of page lines were placed
+  return renderedCount >= Math.min(Math.ceil(lines.length * 0.5), 3);
 }
 
 let cachedFontBytes: Buffer | null = null;
@@ -508,6 +522,16 @@ function normalizeDiagramParagraphs(paragraphs: string[]): string[] {
         .filter(Boolean);
       result.push(...items);
       continue;
+    }
+
+    // 4. If paragraph contains multiple unpunctuated diagram callout labels (common in automotive/schematic manuals)
+    const carPartsRegex = /(?=(?:چراغ‌های|چراغ مطالعه|قفل درب|سانروف|کاپوت|برف‌پاک‌کن|آینه|شیشه‌های|درب باک|فیلتر|رادیاتور|جعبه فیوز|مخزن|صفحه نمایش|صفحه کیلومتر|کلید|اهرم|فرمان|دکمه‌های|داشبورد|صندلی|آفتاب‌گیر|دریچه هوا|زیرآرنجی|گیج روغن|درپوش پرکن|باتری))/;
+    if (trimmed.length >= 45 && (trimmed.match(new RegExp(carPartsRegex.source, 'g')) || []).length >= 3) {
+      const items = trimmed.split(carPartsRegex).map((s) => s.trim()).filter(Boolean);
+      if (items.length >= 3) {
+        result.push(...items);
+        continue;
+      }
     }
 
     result.push(trimmed);
