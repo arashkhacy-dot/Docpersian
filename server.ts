@@ -599,9 +599,18 @@ app.get('/api/jobs/:id/download', async (req: Request, res: Response) => {
       targetFileName = job.outputFileName.replace(/\.(txt|docx|pdf)$/i, '.pptx');
       contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
     } else if (requestedFormat === 'pdf' || (!requestedFormat && isOutputPdf)) {
-      targetPath = job.outputPath;
-      targetFileName = job.outputFileName.replace(/\.(txt|docx|pptx)$/i, '.pdf');
       contentType = 'application/pdf';
+      targetFileName = job.outputFileName.replace(/\.(txt|docx|pptx)$/i, '.pdf');
+      if (isOutputPdf) {
+        targetPath = job.outputPath;
+      } else {
+        const candidatePdf = job.outputPath.replace(/\.(txt|docx|pptx)$/i, '.pdf');
+        if (fs.existsSync(candidatePdf)) {
+          targetPath = candidatePdf;
+        } else {
+          targetPath = job.outputPath;
+        }
+      }
     } else if (requestedFormat === 'docx' || (!requestedFormat && isOutputDocx)) {
       contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       targetFileName = job.outputFileName.replace(/\.(txt|pdf|pptx)$/i, '.docx');

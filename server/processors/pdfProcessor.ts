@@ -50,18 +50,23 @@ function drawSegmentedRtlLine(
   fontSize: number,
   rightX: number,
   y: number,
-  color: any
+  color: any,
+  leftMargin = 28
 ) {
   if (!lineText || !lineText.trim()) return;
   const clean = prepareRtlText(lineText);
-  const w = font.widthOfTextAtSize(clean, fontSize);
-  page.drawText(clean, {
-    x: rightX - w,
-    y,
-    size: fontSize,
-    font,
-    color,
-  });
+  if (!clean) return;
+  try {
+    const w = font.widthOfTextAtSize(clean, fontSize);
+    const drawX = Math.max(leftMargin, rightX - w);
+    page.drawText(clean, {
+      x: drawX,
+      y,
+      size: fontSize,
+      font,
+      color,
+    });
+  } catch {}
 }
 
 let cachedFontBytes: Buffer | null = null;
@@ -188,35 +193,43 @@ function getWordWidth(word: string, font: any, fontSize: number): number {
 }
 
 function wrapPersianText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-
+  if (!text || !text.trim()) return [];
+  const rawParagraphs = text.split(/\r?\n/);
+  const resultLines: string[] = [];
   const spaceWidth = getWordWidth(' ', font, fontSize);
-  const lines: string[] = [];
-  let currentWords: string[] = [];
-  let currentLineWidth = 0;
 
-  for (const word of words) {
-    const wordWidth = getWordWidth(word, font, fontSize);
-    const neededWidth = currentWords.length === 0 ? wordWidth : currentLineWidth + spaceWidth + wordWidth;
+  for (const rawP of rawParagraphs) {
+    const trimmed = rawP.trim();
+    if (!trimmed) continue;
 
-    if (neededWidth <= maxWidth) {
-      currentWords.push(word);
-      currentLineWidth = neededWidth;
-    } else {
-      if (currentWords.length > 0) {
-        lines.push(currentWords.join(' '));
+    const words = trimmed.split(/\s+/).filter(Boolean);
+    if (words.length === 0) continue;
+
+    let currentWords: string[] = [];
+    let currentLineWidth = 0;
+
+    for (const word of words) {
+      const wordWidth = getWordWidth(word, font, fontSize);
+      const neededWidth = currentWords.length === 0 ? wordWidth : currentLineWidth + spaceWidth + wordWidth;
+
+      if (neededWidth <= maxWidth) {
+        currentWords.push(word);
+        currentLineWidth = neededWidth;
+      } else {
+        if (currentWords.length > 0) {
+          resultLines.push(currentWords.join(' '));
+        }
+        currentWords = [word];
+        currentLineWidth = wordWidth;
       }
-      currentWords = [word];
-      currentLineWidth = wordWidth;
+    }
+
+    if (currentWords.length > 0) {
+      resultLines.push(currentWords.join(' '));
     }
   }
 
-  if (currentWords.length > 0) {
-    lines.push(currentWords.join(' '));
-  }
-
-  return lines;
+  return resultLines;
 }
 
 function getStreamObjects(page: any, doc: any): any[] {
@@ -357,14 +370,21 @@ function normalizeDiagramParagraphs(paragraphs: string[]): string[] {
     if (!p || !p.trim()) continue;
     const trimmed = p.trim();
 
-    // 1. If paragraph contains multiple bullet points: • or -
+    // 1. If paragraph contains internal line breaks, split them cleanly
+    if (trimmed.includes('\n')) {
+      const subLines = trimmed.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      result.push(...normalizeDiagramParagraphs(subLines));
+      continue;
+    }
+
+    // 2. If paragraph contains multiple bullet points on the same line: • or -
     if ((trimmed.match(/[•\-]\s+/g) || []).length >= 2) {
       const items = trimmed.split(/(?=[•\-]\s+)/).map((s) => s.trim()).filter(Boolean);
       result.push(...items);
       continue;
     }
 
-    // 2. If paragraph contains numbered items: 1. or 1- or 1) or ۱.
+    // 3. If paragraph contains multiple numbered items on the same line: 1. or 1- or 1) or ۱.
     if ((trimmed.match(/(?:^|\s+)(?:\d+|[\u06F0-\u06F9]+)[\.\-\)]\s+/g) || []).length >= 2) {
       const items = trimmed
         .split(/(?=(?:^|\s+)(?:\d+|[\u06F0-\u06F9]+)[\.\-\)]\s+)/)
@@ -372,38 +392,6 @@ function normalizeDiagramParagraphs(paragraphs: string[]): string[] {
         .filter(Boolean);
       result.push(...items);
       continue;
-    }
-
-    // 3. If paragraph contains multiple comma or semicolon separated parts:
-    if (trimmed.includes('،') || trimmed.includes('؛')) {
-      const parts = trimmed.split(/[،؛]/).map((s) => s.trim()).filter(Boolean);
-      if (parts.length >= 3 && parts.every((pt) => pt.length < 50)) {
-        result.push(...parts.map((pt, idx) => `${idx + 1}. ${pt}`));
-        continue;
-      }
-    }
-
-    // 4. Vehicle parts list without punctuation:
-    if (trimmed.length > 45 && !trimmed.includes('.') && !trimmed.includes('،')) {
-      const headerMatch = trimmed.match(/^([A-Z0-9\s]{2,15}\d*)\s+(.*)/i);
-      if (headerMatch && headerMatch[2].length > 35) {
-        const header = headerMatch[1].trim();
-        const rest = headerMatch[2].trim();
-        const keywords = [
-          'چراغ‌های', 'چراغ', 'قفل درب', 'سانروف', 'برف‌پاک‌کن', 'کاپوت موتور',
-          'درب باک', 'شیشه‌های برقی', 'آینه بغل', 'آینه دید', 'آفتاب‌گیر',
-          'کلید سانروف', 'کلید قفل', 'کلید شیشه', 'سیستم چندرسانه‌ای', 'صندلی جلو',
-          'زیرآرنجی', 'اهرم کنترل', 'دکمه‌های', 'تنظیم آینه', 'دریچه هوا',
-          'داشبورد', 'مخزن مایع', 'درپوش پرکن', 'باتری', 'گیج روغن', 'فیلتر هوا', 'جعبه فیوز'
-        ];
-        const pattern = new RegExp('\\s+(?=(?:' + keywords.join('|') + '))', 'g');
-        const parts = rest.split(pattern).map((s) => s.trim()).filter(Boolean);
-        if (parts.length >= 2) {
-          result.push(header);
-          result.push(...parts.map((pt, idx) => `${idx + 1}. ${pt}`));
-          continue;
-        }
-      }
     }
 
     result.push(trimmed);
@@ -426,228 +414,209 @@ function renderPersianTextToPage(
   totalPages: number
 ) {
   const { width, height } = page.getSize();
-  const marginX = 32;
-  const bottomMargin = 26;
+  const marginX = 36;
+  const bottomMargin = 24;
+  const contentWidth = width - marginX * 2;
+  const rightX = width - marginX;
 
   const normalized = normalizeDiagramParagraphs(paragraphs);
   if (normalized.length === 0) return;
 
   // 1. Detect title / page header
-  const hasTitle =
+  const isFirstItemTitle =
     normalized.length > 1 &&
-    normalized[0].length < 110 &&
-    !/^\d+[\.\-]/.test(normalized[0]) &&
+    normalized[0].length < 90 &&
+    !/^\d+[\.\-\)]/.test(normalized[0]) &&
+    !/^[\u06F0-\u06F9]+[\.\-\)]/.test(normalized[0]) &&
     !normalized[0].startsWith('•') &&
     !normalized[0].startsWith('-');
 
   let listParas = normalized;
-  if (hasTitle) {
+  let hasTitle = false;
+
+  if (isFirstItemTitle) {
+    hasTitle = true;
     const title = normalized[0];
     listParas = normalized.slice(1);
-    // Draw title at the top of the page so page header is clearly restored
+
+    // Draw page title / header banner cleanly at the top of the page
     const titleFontSize = 11.5;
-    const titleLines = wrapPersianText(title, persianFont, titleFontSize, width - marginX * 2);
-    let titleY = height - 36;
+    const titleLines = wrapPersianText(title, persianFont, titleFontSize, contentWidth);
+    let titleY = height - 34;
     for (const line of titleLines) {
-      drawSegmentedRtlLine(page, line, persianFont, titleFontSize, width - marginX, titleY, rgb(0.08, 0.15, 0.3));
-      titleY -= 15;
+      drawSegmentedRtlLine(page, line, persianFont, titleFontSize, rightX, titleY, rgb(0.08, 0.16, 0.32), marginX);
+      titleY -= 14;
     }
+
+    // Subtle header separator line
+    try {
+      page.drawLine({
+        start: { x: marginX, y: height - 44 },
+        end: { x: rightX, y: height - 44 },
+        thickness: 0.6,
+        color: rgb(0.85, 0.88, 0.92),
+      });
+    } catch {}
   }
 
   if (listParas.length === 0) return;
 
-  // 2. Determine starting position for descriptions/content
+  // 2. Classify page type: Diagram / Schematic page vs Standard content page
+  const isPureShortItems = listParas.length >= 4 && listParas.every((p) => p.length < 85);
+  const isDiagramPage =
+    (textBounds.hasTopImage && textBounds.imageBottomY !== null && textBounds.imageBottomY > height * 0.35) ||
+    (textBounds.hasTopImage && isPureShortItems);
+
+  // 3. Determine available vertical space
   let startY: number;
-  if (textBounds.hasTopImage && textBounds.imageBottomY !== null) {
-    if (textBounds.imageBottomY > bottomMargin + 110) {
-      startY = Math.min(textBounds.imageBottomY - 12, height * 0.58);
-    } else {
-      startY = hasTitle ? height - 60 : height - 42;
-    }
-  } else if (textBounds.maxY !== null && textBounds.maxY < height - 70) {
-    startY = Math.min(textBounds.maxY, height - 42);
+  if (isDiagramPage && textBounds.imageBottomY !== null) {
+    // Leave safe breathing margin below diagram image
+    startY = Math.min(textBounds.imageBottomY - 14, height * 0.60);
   } else {
-    startY = hasTitle ? height - 60 : height - 42;
+    // Standard text page flow
+    startY = hasTitle ? height - 54 : height - 38;
   }
 
-  startY = Math.max(bottomMargin + 75, Math.min(startY, height - 35));
+  startY = Math.max(bottomMargin + 60, Math.min(startY, height - 36));
   let curY = startY;
-  const availableHeight = Math.max(70, curY - bottomMargin);
+  const availableHeight = Math.max(50, curY - bottomMargin);
 
-  // 3. Layout: Single-column or Multi-column
-  const isItemList =
-    listParas.length >= 4 &&
-    listParas.filter((p) => /^\d+[\.\-]/.test(p) || p.startsWith('•') || p.startsWith('-') || p.length < 80).length /
-      listParas.length >
-      0.5;
+  // 4. Diagram Page Component Legend Layout
+  if (isDiagramPage && isPureShortItems && listParas.length >= 6 && width >= 440) {
+    // 2-Column Balanced Legend below Diagram
+    const colGap = 20;
+    const colW = (contentWidth - colGap) / 2;
+    const rightColX = rightX;
+    const leftColX = rightX - colW - colGap;
 
-  const useThreeColumns = width >= 520 && listParas.length >= 15;
-  const useTwoColumns =
-    !useThreeColumns &&
-    ((isItemList && width >= 420 && listParas.length >= 4) ||
-      (textBounds.hasTopImage && width >= 420 && listParas.length >= 4) ||
-      (listParas.length >= 10 && width >= 420));
+    const mid = Math.ceil(listParas.length / 2);
+    const rightItems = listParas.slice(0, mid);
+    const leftItems = listParas.slice(mid);
 
-  if (useThreeColumns) {
-    // 3-Column Layout: Right, Middle, Left
-    const colGap = 16;
-    const colW = (width - marginX * 2 - colGap * 2) / 3;
-    const perCol = Math.ceil(listParas.length / 3);
-    const col1 = listParas.slice(0, perCol);
-    const col2 = listParas.slice(perCol, perCol * 2);
-    const col3 = listParas.slice(perCol * 2);
+    let fontSize = 9.2;
+    let lineHeight = 13.0;
 
-    let fontSize = 8.5;
-    let lineHeight = 11.8;
-
-    const calcColH = (paras: string[], fSize: number, lHeight: number) => {
+    const calcLegendH = (items: string[], fSize: number, lHeight: number) => {
       let h = 0;
-      for (const p of paras) {
-        const lines = wrapPersianText(p, persianFont, fSize, colW);
-        h += lines.length * lHeight + 2;
+      for (const item of items) {
+        const lines = wrapPersianText(item, persianFont, fSize, colW);
+        h += lines.length * lHeight + 3.5;
       }
       return h;
     };
 
     while (
-      Math.max(
-        calcColH(col1, fontSize, lineHeight),
-        calcColH(col2, fontSize, lineHeight),
-        calcColH(col3, fontSize, lineHeight)
-      ) > availableHeight &&
+      Math.max(calcLegendH(rightItems, fontSize, lineHeight), calcLegendH(leftItems, fontSize, lineHeight)) >
+        availableHeight &&
       fontSize > 6.5
     ) {
       fontSize -= 0.3;
-      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
-    }
-
-    const cols = [
-      { paras: col1, rightX: width - marginX },
-      { paras: col2, rightX: width - marginX - colW - colGap },
-      { paras: col3, rightX: width - marginX - (colW + colGap) * 2 },
-    ];
-
-    for (const col of cols) {
-      let colY = curY;
-      for (const p of col.paras) {
-        const lines = wrapPersianText(p, persianFont, fontSize, colW);
-        for (const line of lines) {
-          if (colY < bottomMargin) break;
-          drawSegmentedRtlLine(page, line, persianFont, fontSize, col.rightX, colY, rgb(0.12, 0.16, 0.24));
-          colY -= lineHeight;
-        }
-        colY -= 2;
-      }
-    }
-  } else if (useTwoColumns) {
-    // 2-Column Layout: Right column first (RTL), then Left column
-    const colGap = 20;
-    const colW = (width - marginX * 2 - colGap) / 2;
-    const rightColX = width - marginX;
-    const leftColX = width - marginX - colW - colGap;
-
-    const mid = Math.ceil(listParas.length / 2);
-    const rightParas = listParas.slice(0, mid);
-    const leftParas = listParas.slice(mid);
-
-    let fontSize = 9.5;
-    let lineHeight = 13.5;
-
-    const calcColH = (paras: string[], fSize: number, lHeight: number) => {
-      let h = 0;
-      for (const p of paras) {
-        const lines = wrapPersianText(p, persianFont, fSize, colW);
-        h += lines.length * lHeight + 3;
-      }
-      return h;
-    };
-
-    while (
-      Math.max(
-        calcColH(rightParas, fontSize, lineHeight),
-        calcColH(leftParas, fontSize, lineHeight)
-      ) > availableHeight &&
-      fontSize > 6.8
-    ) {
-      fontSize -= 0.3;
-      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
+      lineHeight = Math.round(fontSize * 1.32 * 10) / 10;
     }
 
     // Render Right Column
-    let rightY = curY;
-    for (const p of rightParas) {
-      const isSubHeading = p.length < 35 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
-      const f = isSubHeading ? fontSize + 1 : fontSize;
-      const lh = isSubHeading ? lineHeight + 2 : lineHeight;
-      const lines = wrapPersianText(p, persianFont, f, colW);
-      const color = isSubHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.12, 0.16, 0.24);
-
+    let rY = curY;
+    for (const item of rightItems) {
+      const lines = wrapPersianText(item, persianFont, fontSize, colW);
       for (const line of lines) {
-        if (rightY < bottomMargin) break;
-        drawSegmentedRtlLine(page, line, persianFont, f, rightColX, rightY, color);
-        rightY -= lh;
+        if (rY < 16) break;
+        drawSegmentedRtlLine(page, line, persianFont, fontSize, rightColX, rY, rgb(0.12, 0.16, 0.24), rightColX - colW);
+        rY -= lineHeight;
       }
-      rightY -= 2;
+      rY -= 3;
     }
 
     // Render Left Column
-    let leftY = curY;
-    for (const p of leftParas) {
-      const isSubHeading = p.length < 35 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
-      const f = isSubHeading ? fontSize + 1 : fontSize;
-      const lh = isSubHeading ? lineHeight + 2 : lineHeight;
-      const lines = wrapPersianText(p, persianFont, f, colW);
-      const color = isSubHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.12, 0.16, 0.24);
-
+    let lY = curY;
+    for (const item of leftItems) {
+      const lines = wrapPersianText(item, persianFont, fontSize, colW);
       for (const line of lines) {
-        if (leftY < bottomMargin) break;
-        drawSegmentedRtlLine(page, line, persianFont, f, leftColX, leftY, color);
-        leftY -= lh;
+        if (lY < 16) break;
+        drawSegmentedRtlLine(page, line, persianFont, fontSize, leftColX, lY, rgb(0.12, 0.16, 0.24), leftColX - colW);
+        lY -= lineHeight;
       }
-      leftY -= 2;
+      lY -= 3;
     }
   } else {
-    // Single-column layout
-    const contentW = width - marginX * 2;
-    const rightX = width - marginX;
+    // Standard Document Flow: Natural Full-Width Single-Column (Optimal for Persian typography)
+    let fontSize = 10.0;
+    let lineHeight = 14.5;
+    let paragraphGap = 5.0;
 
-    let fontSize = 10.5;
-    let lineHeight = 15.5;
-
-    const calcTotalH = (fSize: number, lHeight: number) => {
-      let h = 0;
+    const calcFullH = (fSize: number, lHeight: number, pGap: number) => {
+      let total = 0;
       for (const p of listParas) {
-        const isHeading = p.length < 45 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
-        const f = isHeading ? fSize + 1.5 : fSize;
-        const lh = isHeading ? lHeight + 2.5 : lHeight;
-        const lines = wrapPersianText(p, persianFont, f, contentW);
-        h += lines.length * lh + (isHeading ? 5 : 3);
+        const isHeading = p.length < 55 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
+        const f = isHeading ? fSize + 1.2 : fSize;
+        const lh = isHeading ? lHeight + 2.0 : lHeight;
+        const lines = wrapPersianText(p, persianFont, f, contentWidth);
+        total += lines.length * lh + (isHeading ? pGap + 3 : pGap);
       }
-      return h;
+      return total;
     };
 
-    while (calcTotalH(fontSize, lineHeight) > availableHeight && fontSize > 6.8) {
-      fontSize -= 0.3;
-      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
+    // Smooth dynamic font scaling to guarantee 100% of text fits without truncation
+    while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 6.8) {
+      fontSize -= 0.25;
+      lineHeight = Math.round(fontSize * 1.34 * 10) / 10;
+      paragraphGap = Math.max(2.0, paragraphGap - 0.25);
     }
 
     for (let uIdx = 0; uIdx < listParas.length; uIdx++) {
       const p = listParas[uIdx];
+      const isNoticeWarning = /^(?:هشدار|خطر|نکته|توجه|احتیاط|WARNING|CAUTION|NOTE)\s*[\:：]/i.test(p);
+      const isDanger = /^(?:خطر|DANGER)\s*[\:：]/i.test(p);
+      const isWarning = /^(?:هشدار|احتیاط|WARNING|CAUTION)\s*[\:：]/i.test(p);
+
       const isHeading =
-        (uIdx === 0 && p.length < 75) ||
-        (p.length < 45 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p));
-      const f = isHeading ? fontSize + 1.5 : fontSize;
-      const lh = isHeading ? lineHeight + 2.5 : lineHeight;
-      const lines = wrapPersianText(p, persianFont, f, contentW);
-      const color = isHeading ? rgb(0.08, 0.15, 0.3) : rgb(0.12, 0.16, 0.24);
+        !isNoticeWarning &&
+        ((uIdx === 0 && p.length < 75 && listParas.length > 2) ||
+          (p.length < 50 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p) && !p.endsWith('.')));
+
+      const f = isHeading ? fontSize + 1.2 : isNoticeWarning ? fontSize : fontSize;
+      const lh = isHeading ? lineHeight + 2.0 : lineHeight;
+      const effectiveContentW = isNoticeWarning ? contentWidth - 12 : contentWidth;
+      const effectiveRightX = isNoticeWarning ? rightX - 8 : rightX;
+
+      const lines = wrapPersianText(p, persianFont, f, effectiveContentW);
+
+      let color = rgb(0.12, 0.16, 0.24);
+      if (isHeading) {
+        color = rgb(0.08, 0.16, 0.32);
+      } else if (isDanger) {
+        color = rgb(0.75, 0.10, 0.10);
+      } else if (isWarning) {
+        color = rgb(0.70, 0.35, 0.05);
+      } else if (isNoticeWarning) {
+        color = rgb(0.10, 0.35, 0.65);
+      }
+
+      // Draw subtle accent bar for warning/danger/notice blocks
+      if (isNoticeWarning && lines.length > 0) {
+        const blockHeight = lines.length * lh + 2;
+        const barColor = isDanger
+          ? rgb(0.85, 0.15, 0.15)
+          : isWarning
+          ? rgb(0.90, 0.50, 0.10)
+          : rgb(0.20, 0.45, 0.80);
+        try {
+          page.drawLine({
+            start: { x: rightX, y: curY + 2 },
+            end: { x: rightX, y: curY - blockHeight + lh - 2 },
+            thickness: 2.5,
+            color: barColor,
+          });
+        } catch {}
+      }
 
       for (const line of lines) {
-        if (curY < bottomMargin) break;
-        drawSegmentedRtlLine(page, line, persianFont, f, rightX, curY, color);
+        if (curY < 14) break;
+        drawSegmentedRtlLine(page, line, persianFont, f, effectiveRightX, curY, color, marginX);
         curY -= lh;
       }
-      curY -= isHeading ? 5 : 3;
-      if (curY < bottomMargin) break;
+
+      curY -= isHeading ? paragraphGap + 3 : paragraphGap;
+      if (curY < 16) break;
     }
   }
 }
@@ -935,9 +904,10 @@ export class PDFProcessor implements DocumentProcessor {
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
-          context: `صفحه ${pageIndex} از سند ${job.originalFileName}`,
+          context: `صفحه ${pageIndex} از سند ${job.originalFileName} (لطفا ساختار خطوط، برچسب‌های دیاگرام و عناوین را با \\n حفظ کنید)`,
         });
-      } else {
+      }
+      if (rawPageText.length <= 15) {
         diagramPagesToScan.push(pageIndex);
       }
     }

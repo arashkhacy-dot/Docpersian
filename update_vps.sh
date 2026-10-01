@@ -35,8 +35,10 @@ sudo apt-get install -y -qq fonts-noto-core fonts-noto-extra fonts-sil-scheheraz
 mkdir -p server/assets/fonts
 if [ ! -s "server/assets/fonts/persian-font.ttf" ] || [ $(wc -c < "server/assets/fonts/persian-font.ttf" 2>/dev/null || echo 0) -lt 20000 ]; then
   echo "--> دانلود فونت وزیرمتن از شبکه CDN..."
-  curl -sL "https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || \
-  curl -sL "https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || true
+  curl -sL --connect-timeout 8 "https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || \
+  curl -sL --connect-timeout 8 "https://cdnjs.cloudflare.com/ajax/libs/vazirmatn/33.0.3/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || \
+  curl -sL --connect-timeout 8 "https://unpkg.com/vazirmatn@33.0.3/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || \
+  curl -sL --connect-timeout 8 "https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || true
 fi
 
 # ۳. نصب و به‌روزرسانی وابستگی‌ها
