@@ -69,6 +69,122 @@ function drawSegmentedRtlLine(
   } catch {}
 }
 
+export interface ExtractedLine {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
+}
+
+async function extractPageLinesWithCoordinates(
+  parser: any,
+  pageIndex: number
+): Promise<ExtractedLine[]> {
+  try {
+    const page = await parser.doc.getPage(pageIndex);
+    const content = await page.getTextContent();
+    const rawItems = (content.items || []).filter((it: any) => it.str && it.str.trim());
+    if (rawItems.length === 0) return [];
+
+    // Sort items top-to-bottom (descending Y), then left-to-right (ascending X)
+    rawItems.sort((a: any, b: any) => {
+      const yDiff = b.transform[5] - a.transform[5];
+      if (Math.abs(yDiff) > 4) return yDiff;
+      return a.transform[4] - b.transform[4];
+    });
+
+    const lines: ExtractedLine[] = [];
+    for (const it of rawItems) {
+      const x = it.transform[4];
+      const y = it.transform[5];
+      const fSize = Math.hypot(it.transform[0], it.transform[1]) || 9.5;
+      const w = it.width;
+      const h = it.height || fSize;
+
+      // Group words on the same horizontal line (within 4pt vertically and 35pt horizontally)
+      const sameLine = lines.find(
+        (l) => Math.abs(l.y - y) <= 4 && x >= l.x && x <= l.x + l.width + 35
+      );
+      if (sameLine) {
+        sameLine.text += ' ' + it.str.trim();
+        sameLine.width = x + w - sameLine.x;
+        sameLine.height = Math.max(sameLine.height, h);
+      } else {
+        lines.push({
+          text: it.str.trim(),
+          x,
+          y,
+          width: w,
+          height: h,
+          fontSize: fSize,
+        });
+      }
+    }
+    return lines;
+  } catch {
+    return [];
+  }
+}
+
+function renderInPlaceLines(
+  page: any,
+  lines: ExtractedLine[],
+  transMap: Map<number, string>,
+  rawTranslatedText: string,
+  persianFont: any
+): boolean {
+  if (!lines || lines.length === 0) return false;
+  const { width: pageWidth } = page.getSize();
+
+  const linesByNewline = rawTranslatedText
+    .split(/\r?\n/)
+    .map((s) => s.trim().replace(/^\[\d+\]\s*/, ''))
+    .filter(Boolean);
+
+  let renderedCount = 0;
+
+  for (let idx = 0; idx < lines.length; idx++) {
+    const orig = lines[idx];
+    let fa = transMap.get(idx + 1);
+    if (!fa && linesByNewline[idx]) {
+      fa = linesByNewline[idx];
+    }
+    if (!fa || !fa.trim()) continue;
+
+    const clean = prepareRtlText(fa);
+    if (!clean) continue;
+
+    let fSize = Math.min(10.5, Math.max(6.5, orig.fontSize || 9.0));
+    const targetW = Math.max(orig.width, 35);
+    let tw = persianFont.widthOfTextAtSize(clean, fSize);
+
+    // If Persian text is wider than the original box, scale font size smoothly to fit inside
+    while (tw > targetW * 1.25 && fSize > 6.0) {
+      fSize -= 0.35;
+      tw = persianFont.widthOfTextAtSize(clean, fSize);
+    }
+
+    // Right-align within the box boundary for proper RTL display
+    const rightX = Math.min(pageWidth - 12, orig.x + targetW + Math.max(0, (tw - targetW) / 2));
+    const drawX = Math.max(10, rightX - tw);
+
+    try {
+      page.drawText(clean, {
+        x: drawX,
+        y: orig.y,
+        size: fSize,
+        font: persianFont,
+        color: rgb(0.10, 0.14, 0.22),
+      });
+      renderedCount++;
+    } catch {}
+  }
+
+  return renderedCount > 0;
+}
+
 let cachedFontBytes: Buffer | null = null;
 
 export async function ensurePersianFont(): Promise<Buffer> {
@@ -893,18 +1009,39 @@ export class PDFProcessor implements DocumentProcessor {
     const pageRawTexts: string[] = new Array(totalPages).fill('');
     const pageUnitsToTranslate: TranslationUnit[] = [];
     const diagramPagesToScan: number[] = [];
+    const pageLinesMap = new Map<number, ExtractedLine[]>();
+
+    let parserDoc: any = null;
+    try {
+      const parser = createPdfParser(sourceBytes);
+      await (parser as any).load();
+      parserDoc = parser;
+    } catch (parserErr) {
+      log('warn', 'PARSER_LOAD_WARN', `Could not load structured parser: ${parserErr}`);
+    }
 
     for (let i = 0; i < totalPages; i++) {
       if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
       const pageIndex = i + 1;
-      const rawPageText = (fastPageTexts[i] || '').trim();
+      let lines: ExtractedLine[] = [];
+      if (parserDoc) {
+        lines = await extractPageLinesWithCoordinates(parserDoc, pageIndex);
+      }
+
+      let rawPageText = '';
+      if (lines.length > 0) {
+        pageLinesMap.set(pageIndex, lines);
+        rawPageText = lines.map((l, idx) => `[${idx + 1}] ${l.text}`).join('\n');
+      } else {
+        rawPageText = (fastPageTexts[i] || '').trim();
+      }
       pageRawTexts[i] = rawPageText;
 
       if (rawPageText.length > 0) {
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
-          context: `صفحه ${pageIndex} از سند ${job.originalFileName} (لطفا ساختار خطوط، برچسب‌های دیاگرام و عناوین را با \\n حفظ کنید)`,
+          context: `صفحه ${pageIndex} از سند ${job.originalFileName} (برچسب‌های دیاگرام و متن با مختصات مکانی)`,
         });
       }
       if (rawPageText.length <= 15) {
@@ -1024,16 +1161,18 @@ export class PDFProcessor implements DocumentProcessor {
       const words = fullFaText.split(/\s+/).filter(Boolean).length;
       processedWordCount += words;
 
+      const cleanFaTextForCompanion = fullFaText.replace(/^\[\d+\]\s*/gm, '').trim();
+
       pageTranslations.push({
         pageNumber: pageIndex,
-        text: rawPageText,
-        translatedText: fullFaText,
+        text: rawPageText.replace(/^\[\d+\]\s*/gm, ''),
+        translatedText: cleanFaTextForCompanion,
       });
 
       // RTL reconstruction and rendering with visual preservation
       log('info', 'PAGE_RENDER_START', `jobId=${job.jobId} page=${pageIndex}`);
 
-      const paragraphs = fullFaText
+      const paragraphs = cleanFaTextForCompanion
         .split(/\r?\n/)
         .map((p) => p.trim())
         .filter((p) => p.length > 0);
@@ -1042,7 +1181,27 @@ export class PDFProcessor implements DocumentProcessor {
       // while keeping all original raster photos, schematics, lines, and drawings 100% intact!
       const textBounds = stripTextFromPageStreams(page, outputDoc);
 
-      if (paragraphs.length > 0) {
+      const lines = pageLinesMap.get(pageIndex);
+      let renderedInPlace = false;
+
+      if (lines && lines.length > 0) {
+        const transMap = new Map<number, string>();
+        const pattern = /\[(\d+)\]\s*([^\n\r]+)/g;
+        let m: RegExpExecArray | null;
+        while ((m = pattern.exec(fullFaText)) !== null) {
+          transMap.set(parseInt(m[1], 10), m[2].trim());
+        }
+
+        renderedInPlace = renderInPlaceLines(
+          page,
+          lines,
+          transMap,
+          fullFaText,
+          persianFont
+        );
+      }
+
+      if (!renderedInPlace && paragraphs.length > 0) {
         renderPersianTextToPage(
           page,
           paragraphs,

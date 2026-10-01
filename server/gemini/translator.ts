@@ -180,7 +180,10 @@ CRITICAL INSTRUCTIONS:
    - You MUST preserve all paragraph breaks, line breaks (\\n), headings, table rows, and list structures.
    - NEVER merge distinct items, list elements, table rows, or diagram callout labels into a single continuous run-on sentence.
    - If the input contains component labels, parts lists, or diagram annotations (e.g., car parts, equipment controls, dashboard symbols), output EACH item or label on its OWN separate line (separated by \\n).
-   - If items are numbered or bulleted, maintain clear numbering (1., 2., ... or •) at the start of each line so each component description is completely distinct and legible.`;
+   - If items are numbered or bulleted, maintain clear numbering (1., 2., ... or •) at the start of each line so each component description is completely distinct and legible.
+7. POSITION-INDEXED LINES (CRITICAL):
+   - If input lines begin with bracketed index markers like [1], [2], [3]... (which map directly to diagram callout boxes, table cells, and spatial coordinates), you MUST preserve the exact bracketed marker [1], [2], [3]... at the start of each translated line.
+   - Do not drop or reorder the bracketed index markers.`;
 
     const inputPayload = chunk.map((c) => ({
       id: c.id,
