@@ -11,6 +11,7 @@ import { DocumentProcessor } from './documentProcessor';
 import { JobState, PageManifestItem } from '../jobs/jobState';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator';
 import { prepareRtlText, sanitizePersianSymbols } from './persianShaper';
+import { healPersianSpaces, parseTocLine, normalizeTableCellContent } from './persianTypographyEngine';
 import { config } from '../config/env';
 import { createDocxFile } from './docxHelper.js';
 
@@ -54,7 +55,49 @@ function drawSegmentedRtlLine(
   leftMargin = 28
 ) {
   if (!lineText || !lineText.trim()) return;
-  const clean = prepareRtlText(lineText);
+
+  // 1. Table of Contents lines (Title ................. 12)
+  const toc = parseTocLine(lineText);
+  if (toc) {
+    try {
+      const cleanTitle = prepareRtlText(toc.title);
+      const titleW = font.widthOfTextAtSize(cleanTitle, fontSize);
+      page.drawText(cleanTitle, {
+        x: rightX - titleW,
+        y,
+        size: fontSize,
+        font,
+        color,
+      });
+
+      const cleanNum = prepareRtlText(toc.pageNumber);
+      const numW = font.widthOfTextAtSize(cleanNum, fontSize);
+      page.drawText(cleanNum, {
+        x: leftMargin,
+        y,
+        size: fontSize,
+        font,
+        color,
+      });
+
+      const dotStartX = leftMargin + numW + 6;
+      const dotEndX = rightX - titleW - 6;
+      if (dotEndX > dotStartX) {
+        page.drawLine({
+          start: { x: dotStartX, y: y + 2 },
+          end: { x: dotEndX, y: y + 2 },
+          thickness: 0.7,
+          dashArray: [1.5, 3.5],
+          color: rgb(0.65, 0.70, 0.78),
+        });
+      }
+      return;
+    } catch {}
+  }
+
+  // 2. Standard line drawing with de-spacing and shaping
+  const healed = healPersianSpaces(lineText);
+  const clean = prepareRtlText(healed);
   if (!clean) return;
   try {
     const w = font.widthOfTextAtSize(clean, fontSize);
