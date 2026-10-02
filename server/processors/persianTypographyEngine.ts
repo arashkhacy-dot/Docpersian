@@ -47,14 +47,41 @@ export const TECHNICAL_UNITS = [
  * 1. Comprehensive Word Healing & De-spacing
  * Fixes split letters inside words, removes unnecessary spaces, and formats Persian semi-spaces.
  */
+/**
+ * Ensures optimal Persian cursive joining (چسبندگی صحیح حروف):
+ * 1. Converts any presentation forms to canonical Unicode via NFKC
+ * 2. Removes zero-width joiner artifacts and hidden control characters
+ * 3. Preserves legitimate grammatical ZWNJ (نیم‌فاصله) for affixes and compound words
+ * 4. Eliminates accidental stray ZWNJ that breaks letter joining inside words
+ */
+export function cleanCursiveJoining(raw: string): string {
+  if (!raw) return '';
+  let s = raw.normalize('NFKC');
+  s = s.replace(/[\uFEFF\u200B\u200E\u200F\u00AD\u202A-\u202E\u2066-\u2069]/g, '');
+
+  const TOKEN = '###ZWNJ###';
+  // Keep grammatical prefixes: می / نمی
+  s = s.replace(/(^|\s)(ن?می)\u200C/g, (_m, p1, p2) => p1 + p2 + TOKEN);
+  // Keep grammatical suffixes: ها, های, تر, ترین, ام, ات, اش, مان, تان, شان, یی, ای
+  s = s.replace(/\u200C(ها|های|تر|ترین|ام|ات|اش|مان|تان|شان|یی|ای)(?=$|\s|[،.؛:!؟\-])/g, (_m, p1) => TOKEN + p1);
+  // Keep compound words
+  s = s.replace(/(مرغ|مه|دست|پشت|کمک|جعبه|کیسه)\u200C(دانی|شکن|کاری|سری|فنر|دنده|هوا)/g, (_m, p1, p2) => p1 + TOKEN + p2);
+
+  // Remove any stray accidental ZWNJ breaking letter connections inside stems
+  s = s.replace(/\u200C/g, '');
+  // Restore legitimate grammatical ZWNJs
+  s = s.split(TOKEN).join('\u200C');
+
+  return s;
+}
+
 export function healPersianSpaces(text: string): string {
   if (!text) return '';
-  let s = text;
+  let s = cleanCursiveJoining(text);
 
   // Step 1: Normalize Unicode non-breaking spaces and zero-width artifacts
   s = s
-    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ')
-    .replace(/[\uFEFF\u200B\u200E\u200F]/g, '');
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ');
 
   // Step 2: Convert Arabic presentation forms (FB50-FDFF, FE70-FEFF) back to canonical Persian
   // so the font shaper can handle them consistently
@@ -540,7 +567,14 @@ export class PersianTypographyEngine {
   }
 
   /**
-   * 7. Classifies and structures page lines for optimum layout clarity
+   * 7. Ensures optimal cursive letter joining and eliminates broken connections
+   */
+  public static cleanCursive(text: string): string {
+    return cleanCursiveJoining(text);
+  }
+
+  /**
+   * 8. Classifies and structures page lines for optimum layout clarity
    */
   public static classifyPageContent(paragraphs: string[]): {
     isTocPage: boolean;

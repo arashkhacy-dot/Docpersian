@@ -306,16 +306,18 @@ function renderInPlaceLines(
 
     // Right-align within the box boundary for proper RTL display
     const rightX = Math.min(pageWidth - 12, orig.x + targetW + Math.max(0, (tw - targetW) / 2));
-    const drawX = Math.max(10, rightX - tw);
 
     try {
-      page.drawText(clean, {
-        x: drawX,
-        y: orig.y,
-        size: fSize,
-        font,
-        color: rgb(0.10, 0.14, 0.22),
-      });
+      drawSegmentedRtlLine(
+        page,
+        fa,
+        fontFamilyOrFont,
+        fSize,
+        rightX,
+        orig.y,
+        rgb(0.10, 0.14, 0.22),
+        Math.max(10, orig.x)
+      );
       renderedCount++;
     } catch {}
   }
@@ -677,7 +679,8 @@ function renderPersianTextToPage(
     imageTopY?: number | null;
   },
   pageIndex: number,
-  totalPages: number
+  totalPages: number,
+  sourceLines?: ExtractedLine[]
 ) {
   const fontReg = fontFamilyOrFont.regular || fontFamilyOrFont;
   const fontBold = fontFamilyOrFont.bold || fontReg;
@@ -687,7 +690,34 @@ function renderPersianTextToPage(
   const contentWidth = width - marginX * 2;
   const rightX = width - marginX;
 
-  // Heal all paragraphs first
+  // 1-to-1 Alignment with Source Document Layout
+  let sourceTopY: number | null = null;
+  let sourceWarningBounds: { x: number; y: number; width: number; height: number } | null = null;
+
+  if (sourceLines && sourceLines.length > 0) {
+    const validLines = sourceLines.filter((l) => l.y > 35 && l.y < height - 15);
+    if (validLines.length > 0) {
+      sourceTopY = Math.max(...validLines.map((l) => l.y));
+    }
+
+    const warnLines = sourceLines.filter((l) =>
+      /(?:peligro|warning|advertencia|caution|danger|atenci[oó]n|خطر|هشدار|توجه|احتیاط)/i.test(l.text)
+    );
+    if (warnLines.length > 0) {
+      const minX = Math.min(...warnLines.map((l) => l.x));
+      const maxX = Math.max(...warnLines.map((l) => l.x + l.width));
+      const minY = Math.min(...warnLines.map((l) => l.y));
+      const maxY = Math.max(...warnLines.map((l) => l.y + (l.height || 14)));
+      sourceWarningBounds = {
+        x: Math.max(marginX, minX),
+        y: minY,
+        width: Math.min(contentWidth, Math.max(contentWidth * 0.7, maxX - minX)),
+        height: Math.max(50, maxY - minY + 24),
+      };
+    }
+  }
+
+  // Heal all paragraphs first with cursive joining verification
   const healedParas = paragraphs.map((p) => healPersianSpaces(p)).filter(Boolean);
   const normalized = normalizeDiagramParagraphs(healedParas);
   if (normalized.length === 0) return;
@@ -844,10 +874,12 @@ function renderPersianTextToPage(
     (textBounds.hasTopImage && textBounds.imageBottomY !== null && textBounds.imageBottomY > height * 0.35) ||
     (textBounds.hasTopImage && isPureShortItems);
 
-  // 4. Determine available vertical space
+  // 4. Determine available vertical space aligned 1-to-1 with source document
   let startY: number;
   if (isDiagramPage && textBounds.imageBottomY !== null) {
     startY = Math.min(textBounds.imageBottomY - 14, height * 0.60);
+  } else if (sourceTopY !== null && sourceTopY > bottomMargin + 60) {
+    startY = Math.min(height - 36, sourceTopY);
   } else {
     startY = hasTitle ? height - 56 : height - 38;
   }
@@ -1518,7 +1550,8 @@ export class PDFProcessor implements DocumentProcessor {
           fontFamily,
           textBounds,
           pageIndex,
-          totalPages
+          totalPages,
+          lines
         );
       }
 
