@@ -112,8 +112,71 @@ function drawSegmentedRtlLine(
     } catch {}
   }
 
-  // 2. Standard line drawing with de-spacing and shaping
+  // 2. Standard line drawing with de-spacing and prefix segmentation
   const healed = healPersianSpaces(lineText);
+  if (!healed || !healed.trim()) return;
+
+  // Segment leading prefixes (Roman numerals, list numbers, brackets, bullets, warning labels)
+  // to prevent Latin/neutral prefixes from forcing HarfBuzz into LTR mode and reversing Persian text
+  const prefixMatch = healed.match(
+    /^((?:[I|V|X]+|\d+|[\u06F0-\u06F9]+)[\.\-\)]|\[\d+\]|[•●■▪\-\*]|(?:خطر|هشدار|توجه|احتیاط|نکته|WARNING|DANGER|CAUTION|NOTE)\s*[\:：])\s*(.*)$/i
+  );
+
+  if (prefixMatch) {
+    const rawPrefix = prefixMatch[1].trim();
+    const rawBody = prefixMatch[2].trim();
+
+    const isDangerPrefix = /^(?:خطر|DANGER)/i.test(rawPrefix);
+    const isWarningPrefix = /^(?:هشدار|احتیاط|WARNING|CAUTION)/i.test(rawPrefix);
+    const isNoticePrefix = /^(?:توجه|نکته|NOTE)/i.test(rawPrefix);
+
+    const prefixFont =
+      isDangerPrefix || isWarningPrefix || isNoticePrefix || isBold
+        ? fontFamilyOrFont.bold || font
+        : font;
+
+    const prefixColor = isDangerPrefix
+      ? rgb(0.85, 0.10, 0.10)
+      : isWarningPrefix
+      ? rgb(0.85, 0.45, 0.05)
+      : isNoticePrefix
+      ? rgb(0.10, 0.35, 0.65)
+      : color;
+
+    const cleanBody = prepareRtlText(rawBody);
+    const bodyFont =
+      isBold && fontFamilyOrFont.bold
+        ? fontFamilyOrFont.bold
+        : fontFamilyOrFont.regular || font;
+
+    const pW = prefixFont.widthOfTextAtSize(rawPrefix, fontSize);
+    const bW = cleanBody ? bodyFont.widthOfTextAtSize(cleanBody, fontSize) : 0;
+
+    let curRight = rightX;
+    // Draw prefix on the right
+    page.drawText(rawPrefix, {
+      x: curRight - pW,
+      y,
+      size: fontSize,
+      font: prefixFont,
+      color: prefixColor,
+    });
+    curRight -= pW + 6;
+
+    if (cleanBody) {
+      const drawX = Math.max(leftMargin, curRight - bW);
+      page.drawText(cleanBody, {
+        x: drawX,
+        y,
+        size: fontSize,
+        font: bodyFont,
+        color,
+      });
+    }
+    return;
+  }
+
+  // Pure body line (starts with Persian)
   const clean = prepareRtlText(healed);
   if (!clean) return;
   try {
@@ -901,8 +964,8 @@ function renderPersianTextToPage(
       const fontToUse = isHeading ? fontBold : fontReg;
       const f = isHeading ? fontSize + 1.2 : fontSize;
       const lh = isHeading ? lineHeight + 2.0 : lineHeight;
-      const effectiveContentW = isNoticeWarning ? contentWidth - 14 : isPoemLine ? contentWidth - 40 : contentWidth;
-      const effectiveRightX = isNoticeWarning ? rightX - 8 : isPoemLine ? rightX - 20 : rightX;
+      const effectiveContentW = isNoticeWarning ? contentWidth - 26 : isPoemLine ? contentWidth - 40 : contentWidth;
+      const effectiveRightX = isNoticeWarning ? rightX - 13 : isPoemLine ? rightX - 20 : rightX;
 
       const lines = wrapPersianText(p, fontToUse, f, effectiveContentW);
 
@@ -917,20 +980,43 @@ function renderPersianTextToPage(
         color = rgb(0.10, 0.35, 0.65);
       }
 
-      // Draw subtle accent bar for warning/danger/notice blocks
+      // Draw professional warning/danger/notice box with subtle background and crisp border
       if (isNoticeWarning && lines.length > 0) {
-        const blockHeight = lines.length * lh + 2;
-        const barColor = isDanger
+        const boxPadding = 6;
+        const blockHeight = lines.length * lh + boxPadding * 2;
+        const boxY = curY - blockHeight + lh;
+        const boxX = marginX;
+        const boxW = contentWidth;
+
+        const bgColor = isDanger
+          ? rgb(1.0, 0.96, 0.96)
+          : isWarning
+          ? rgb(1.0, 0.98, 0.91)
+          : rgb(0.94, 0.97, 1.0);
+
+        const borderColor = isDanger
           ? rgb(0.85, 0.15, 0.15)
           : isWarning
-          ? rgb(0.90, 0.50, 0.10)
+          ? rgb(0.90, 0.55, 0.10)
           : rgb(0.20, 0.45, 0.80);
+
         try {
+          page.drawRectangle({
+            x: boxX,
+            y: boxY,
+            width: boxW,
+            height: blockHeight,
+            color: bgColor,
+            borderColor: borderColor,
+            borderWidth: 0.8,
+          });
+
+          // Right accent bar
           page.drawLine({
-            start: { x: rightX, y: curY + 2 },
-            end: { x: rightX, y: curY - blockHeight + lh - 2 },
-            thickness: 2.5,
-            color: barColor,
+            start: { x: boxX + boxW - 1.5, y: boxY },
+            end: { x: boxX + boxW - 1.5, y: boxY + blockHeight },
+            thickness: 3.0,
+            color: borderColor,
           });
         } catch {}
       }
@@ -1392,7 +1478,23 @@ export class PDFProcessor implements DocumentProcessor {
       const lines = pageLinesMap.get(pageIndex);
       let renderedInPlace = false;
 
-      if (lines && lines.length > 0) {
+      // Only allow in-place coordinate rendering on genuine diagram/schematic pages
+      // where every item is an isolated short callout label (e.g. part numbers [1], [2], [3]...)
+      // Dense text pages, warnings, and multi-line paragraphs MUST use renderPersianTextToPage
+      // to guarantee proper paragraph wrapping, warning boxes, and prevent text collision.
+      const isCalloutDiagram =
+        lines &&
+        lines.length >= 2 &&
+        lines.length <= 20 &&
+        lines.every((l) => l.text.length < 50) &&
+        paragraphs.length <= 22 &&
+        paragraphs.every((p) => p.length < 80) &&
+        !cleanFaTextForCompanion.includes('خطر:') &&
+        !cleanFaTextForCompanion.includes('هشدار:') &&
+        !cleanFaTextForCompanion.includes('توجه:') &&
+        !cleanFaTextForCompanion.includes('احتیاط:');
+
+      if (isCalloutDiagram) {
         const transMap = new Map<number, string>();
         const pattern = /\[(\d+)\]\s*([^\n\r]+)/g;
         let m: RegExpExecArray | null;

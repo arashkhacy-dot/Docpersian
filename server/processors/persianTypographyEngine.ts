@@ -143,6 +143,20 @@ export function healPersianSpaces(text: string): string {
     [/(^|\s)ت\s+یرهای(?=$|\s|[،.؛:!؟\-])/g, '$1تیرهای'],
     [/(^|\s)ت\s+نومند(?=$|\s|[،.؛:!؟\-])/g, '$1تنومند'],
     [/(^|\s)ز\s+یر(?=$|\s|[،.؛:!؟\-])/g, '$1زیر'],
+    [/(^|\s)پا\s*ی\s*ین(?=$|\s|[،.؛:!؟\-])/g, '$1پایین'],
+    [/(^|\s)پای\s+ین(?=$|\s|[،.؛:!؟\-])/g, '$1پایین'],
+    [/(^|\s)سرنش\s+ین(?=$|\s|[،.؛:!؟\-])/g, '$1سرنشین'],
+    [/(^|\s)سر\s+نشین(?=$|\s|[،.؛:!؟\-])/g, '$1سرنشین'],
+    [/(^|\s)تغ\s*ی\s*یر(?=$|\s|[،.؛:!؟\-])/g, '$1تغییر'],
+    [/(^|\s)تغی\s+یر(?=$|\s|[،.؛:!؟\-])/g, '$1تغییر'],
+    [/(^|\s)ط\s+بق(?=$|\s|[،.؛:!؟\-])/g, '$1طبق'],
+    [/(^|\s)منط\s+بق(?=$|\s|[،.؛:!؟\-])/g, '$1منطبق'],
+    [/(^|\s)آرا\s+می(?=$|\s|[،.؛:!؟\-])/g, '$1آرامی'],
+    [/(^|\s)ب\s+یرون(?=$|\s|[،.؛:!؟\-])/g, '$1بیرون'],
+    [/(^|\s)ناگهان\s+ی(?=$|\s|[،.؛:!؟\-])/g, '$1ناگهانی'],
+    [/(^|\s)کودک\s+ان(?=$|\s|[،.؛:!؟\-])/g, '$1کودکان'],
+    [/(^|\s)بزرگ\s+سال(?=$|\s|[،.؛:!؟\-])/g, '$1بزرگسال'],
+    [/(^|\s)جلو\s+گیری(?=$|\s|[،.؛:!؟\-])/g, '$1جلوگیری'],
     [/(^|\s)ز\s+مین(?=$|\s|[،.؛:!؟\-])/g, '$1زمین'],
     [/(^|\s)زم\s+ین(?=$|\s|[،.؛:!؟\-])/g, '$1زمین'],
     [/(^|\s)سرزم\s+ین(?=$|\s|[،.؛:!؟\-])/g, '$1سرزمین'],
@@ -398,24 +412,12 @@ export function parseRunOnTocEntries(text: string): TocEntry[] {
 /**
  * 4. High-Fidelity Text Preparation for PDF Drawing
  * Prepares healed text for drawing with Vazirmatn OpenType font in pdf-lib.
- * Does NOT corrupt Latin words or units.
+ * Preserves canonical Unicode so fontkit's HarfBuzz engine performs native OpenType
+ * shaping while strictly maintaining right-to-left (RTL) text direction.
  */
 export function shapePersianForPdf(text: string): string {
   if (!text || !text.trim()) return '';
-
-  // Heal broken spaces and normalize units
-  const clean = normalizeTableCellContent(text).trim();
-  const hasRtl = /[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(clean);
-  if (!hasRtl) {
-    return clean;
-  }
-
-  try {
-    // Contextual shaping for Persian/Arabic letters
-    return PersianShaper.convertArabic(clean);
-  } catch {
-    return clean;
-  }
+  return normalizeTableCellContent(text).trim();
 }
 
 /**
