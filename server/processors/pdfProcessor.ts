@@ -11,7 +11,14 @@ import { DocumentProcessor } from './documentProcessor';
 import { JobState, PageManifestItem } from '../jobs/jobState';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator';
 import { prepareRtlText, sanitizePersianSymbols } from './persianShaper';
-import { healPersianSpaces, parseTocLine, normalizeTableCellContent } from './persianTypographyEngine';
+import {
+  healPersianSpaces,
+  parseTocLine,
+  parseRunOnTocEntries,
+  normalizeTableCellContent,
+  loadPersianFontFamily,
+  PersianFontFamily,
+} from './persianTypographyEngine';
 import { config } from '../config/env';
 import { createDocxFile } from './docxHelper.js';
 
@@ -47,48 +54,58 @@ function pageHasImages(page: any, doc: any): boolean {
 function drawSegmentedRtlLine(
   page: any,
   lineText: string,
-  font: any,
+  fontFamilyOrFont: any,
   fontSize: number,
   rightX: number,
   y: number,
   color: any,
-  leftMargin = 28
+  leftMargin = 28,
+  isBold = false
 ) {
   if (!lineText || !lineText.trim()) return;
+
+  const font = fontFamilyOrFont.regular
+    ? isBold && fontFamilyOrFont.bold
+      ? fontFamilyOrFont.bold
+      : fontFamilyOrFont.regular
+    : fontFamilyOrFont;
 
   // 1. Table of Contents lines (Title ................. 12)
   const toc = parseTocLine(lineText);
   if (toc) {
     try {
       const cleanTitle = prepareRtlText(toc.title);
-      const titleW = font.widthOfTextAtSize(cleanTitle, fontSize);
+      const titleFont = toc.isMajorHeader && fontFamilyOrFont.bold ? fontFamilyOrFont.bold : font;
+      const titleW = titleFont.widthOfTextAtSize(cleanTitle, fontSize);
       page.drawText(cleanTitle, {
         x: rightX - titleW,
         y,
         size: fontSize,
-        font,
-        color,
+        font: titleFont,
+        color: toc.isMajorHeader ? rgb(0.06, 0.12, 0.28) : color,
       });
 
-      const cleanNum = prepareRtlText(toc.pageNumber);
-      const numW = font.widthOfTextAtSize(cleanNum, fontSize);
+      // Digits must be drawn in natural LTR order without Bidi corruption
+      const cleanNum = toc.pageNumber;
+      const numFont = fontFamilyOrFont.regular ? fontFamilyOrFont.regular : font;
+      const numW = numFont.widthOfTextAtSize(cleanNum, fontSize);
       page.drawText(cleanNum, {
         x: leftMargin,
         y,
         size: fontSize,
-        font,
-        color,
+        font: numFont,
+        color: rgb(0.18, 0.24, 0.35),
       });
 
-      const dotStartX = leftMargin + numW + 6;
-      const dotEndX = rightX - titleW - 6;
+      const dotStartX = leftMargin + numW + 8;
+      const dotEndX = rightX - titleW - 8;
       if (dotEndX > dotStartX) {
         page.drawLine({
           start: { x: dotStartX, y: y + 2 },
           end: { x: dotEndX, y: y + 2 },
-          thickness: 0.7,
+          thickness: 0.6,
           dashArray: [1.5, 3.5],
-          color: rgb(0.65, 0.70, 0.78),
+          color: rgb(0.70, 0.75, 0.82),
         });
       }
       return;
@@ -176,10 +193,11 @@ function renderInPlaceLines(
   lines: ExtractedLine[],
   transMap: Map<number, string>,
   rawTranslatedText: string,
-  persianFont: any
+  fontFamilyOrFont: any
 ): boolean {
   if (!lines || lines.length === 0) return false;
   const { width: pageWidth } = page.getSize();
+  const font = fontFamilyOrFont.regular || fontFamilyOrFont;
 
   const linesByNewline = rawTranslatedText
     .split(/\r?\n/)
@@ -194,8 +212,8 @@ function renderInPlaceLines(
     }
   }
 
-  // Prevent dumping a single run-on block into line 0 when multiple lines exist
-  if (transMap.size === 0 && candidateLines.length === 1 && lines.length >= 3) {
+  // Prevent dumping mismatched lines into coordinates when transMap is empty
+  if (transMap.size === 0 && Math.abs(candidateLines.length - lines.length) > 2) {
     return false;
   }
 
@@ -209,17 +227,18 @@ function renderInPlaceLines(
     }
     if (!fa || !fa.trim()) continue;
 
-    const clean = prepareRtlText(fa);
+    const healed = healPersianSpaces(fa);
+    const clean = prepareRtlText(healed);
     if (!clean) continue;
 
     let fSize = Math.min(10.5, Math.max(6.5, orig.fontSize || 9.0));
     const targetW = Math.max(orig.width, 35);
-    let tw = persianFont.widthOfTextAtSize(clean, fSize);
+    let tw = font.widthOfTextAtSize(clean, fSize);
 
     // If Persian text is wider than the original box, scale font size smoothly to fit inside
     while (tw > targetW * 1.25 && fSize > 6.0) {
       fSize -= 0.35;
-      tw = persianFont.widthOfTextAtSize(clean, fSize);
+      tw = font.widthOfTextAtSize(clean, fSize);
     }
 
     // Right-align within the box boundary for proper RTL display
@@ -231,7 +250,7 @@ function renderInPlaceLines(
         x: drawX,
         y: orig.y,
         size: fSize,
-        font: persianFont,
+        font,
         color: rgb(0.10, 0.14, 0.22),
       });
       renderedCount++;
@@ -367,7 +386,8 @@ function getWordWidth(word: string, font: any, fontSize: number): number {
 
 function wrapPersianText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
   if (!text || !text.trim()) return [];
-  const rawParagraphs = text.split(/\r?\n/);
+  const healed = healPersianSpaces(text);
+  const rawParagraphs = healed.split(/\r?\n/);
   const resultLines: string[] = [];
   const spaceWidth = getWordWidth(' ', font, fontSize);
 
@@ -585,7 +605,7 @@ function normalizeDiagramParagraphs(paragraphs: string[]): string[] {
 function renderPersianTextToPage(
   page: any,
   paragraphs: string[],
-  persianFont: any,
+  fontFamilyOrFont: any,
   textBounds: {
     maxY: number | null;
     minY: number | null;
@@ -596,16 +616,109 @@ function renderPersianTextToPage(
   pageIndex: number,
   totalPages: number
 ) {
+  const fontReg = fontFamilyOrFont.regular || fontFamilyOrFont;
+  const fontBold = fontFamilyOrFont.bold || fontReg;
   const { width, height } = page.getSize();
   const marginX = 36;
-  const bottomMargin = 24;
+  const bottomMargin = 26;
   const contentWidth = width - marginX * 2;
   const rightX = width - marginX;
 
-  const normalized = normalizeDiagramParagraphs(paragraphs);
+  // Heal all paragraphs first
+  const healedParas = paragraphs.map((p) => healPersianSpaces(p)).filter(Boolean);
+  const normalized = normalizeDiagramParagraphs(healedParas);
   if (normalized.length === 0) return;
 
-  // 1. Detect title / page header
+  // 1. Check if the page is a Table of Contents (TOC) page
+  const fullPageRaw = normalized.join('\n');
+  const runOnTocEntries = parseRunOnTocEntries(fullPageRaw);
+  const isTocPage =
+    runOnTocEntries.length >= 4 ||
+    normalized.some((p) => /^فهرست(?:\s*مطالب)?/i.test(p)) ||
+    normalized.filter((p) => parseTocLine(p) !== null).length >= 3;
+
+  if (isTocPage) {
+    // Render as a beautifully structured Table of Contents
+    const tocEntries = runOnTocEntries.length >= 4 ? runOnTocEntries : [];
+    if (tocEntries.length === 0) {
+      for (const p of normalized) {
+        const lineToc = parseTocLine(p);
+        if (lineToc) tocEntries.push(lineToc);
+      }
+    }
+
+    // Draw TOC Header
+    let curY = height - 42;
+    const tocTitle = prepareRtlText('فهرست مطالب');
+    const tocTitleW = fontBold.widthOfTextAtSize(tocTitle, 14);
+    page.drawText(tocTitle, {
+      x: rightX - tocTitleW,
+      y: curY,
+      size: 14,
+      font: fontBold,
+      color: rgb(0.06, 0.12, 0.26),
+    });
+
+    curY -= 12;
+    page.drawLine({
+      start: { x: marginX, y: curY },
+      end: { x: rightX, y: curY },
+      thickness: 0.8,
+      color: rgb(0.80, 0.84, 0.90),
+    });
+    curY -= 20;
+
+    const availableH = curY - bottomMargin;
+    const rowHeight = Math.max(14, Math.min(22, availableH / Math.max(1, tocEntries.length)));
+    const fontSize = Math.max(8.0, Math.min(10.5, rowHeight * 0.58));
+
+    for (const entry of tocEntries) {
+      if (curY < bottomMargin + 10) break;
+      const cleanTitle = prepareRtlText(entry.title);
+      const entryFont = entry.isMajorHeader ? fontBold : fontReg;
+      const entryColor = entry.isMajorHeader ? rgb(0.06, 0.12, 0.28) : rgb(0.12, 0.16, 0.24);
+
+      const titleW = entryFont.widthOfTextAtSize(cleanTitle, fontSize);
+      const numStr = entry.pageNumber;
+      const numW = fontReg.widthOfTextAtSize(numStr, fontSize);
+
+      // Title on right margin
+      page.drawText(cleanTitle, {
+        x: rightX - titleW,
+        y: curY,
+        size: fontSize,
+        font: entryFont,
+        color: entryColor,
+      });
+
+      // Number on left margin (clean LTR digits)
+      page.drawText(numStr, {
+        x: marginX,
+        y: curY,
+        size: fontSize,
+        font: fontReg,
+        color: rgb(0.18, 0.24, 0.35),
+      });
+
+      // Dotted leader line
+      const dotStartX = marginX + numW + 8;
+      const dotEndX = rightX - titleW - 8;
+      if (dotEndX > dotStartX) {
+        page.drawLine({
+          start: { x: dotStartX, y: curY + 2 },
+          end: { x: dotEndX, y: curY + 2 },
+          thickness: 0.6,
+          dashArray: [1.5, 3.5],
+          color: rgb(0.70, 0.75, 0.82),
+        });
+      }
+
+      curY -= rowHeight;
+    }
+    return;
+  }
+
+  // 2. Detect title / page header
   const isFirstItemTitle =
     normalized.length > 1 &&
     normalized[0].length < 90 &&
@@ -622,51 +735,66 @@ function renderPersianTextToPage(
     const title = normalized[0];
     listParas = normalized.slice(1);
 
-    // Draw page title / header banner cleanly at the top of the page
-    const titleFontSize = 11.5;
-    const titleLines = wrapPersianText(title, persianFont, titleFontSize, contentWidth);
-    let titleY = height - 34;
+    // Detect if this is a novel chapter heading (e.g. 'فصل اول', 'بخش اول', 'Chapter 1')
+    const isChapterHeading = /^(?:فصل\s*(?:اول|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|[\d\u06F0-\u06F9]+)|بخش\s*(?:اول|دوم|سوم|[\d\u06F0-\u06F9]+)|chapter\s*\d+)/i.test(title);
+
+    const titleFontSize = isChapterHeading ? 15.0 : 12.0;
+    const titleLines = wrapPersianText(title, fontBold, titleFontSize, contentWidth);
+    let titleY = isChapterHeading ? height - 50 : height - 34;
+
     for (const line of titleLines) {
-      drawSegmentedRtlLine(page, line, persianFont, titleFontSize, rightX, titleY, rgb(0.08, 0.16, 0.32), marginX);
-      titleY -= 14;
+      if (isChapterHeading) {
+        // Centered chapter title for novels
+        const cleanLine = prepareRtlText(line);
+        const w = fontBold.widthOfTextAtSize(cleanLine, titleFontSize);
+        const centerX = Math.max(marginX, (width - w) / 2);
+        page.drawText(cleanLine, {
+          x: centerX,
+          y: titleY,
+          size: titleFontSize,
+          font: fontBold,
+          color: rgb(0.06, 0.12, 0.28),
+        });
+      } else {
+        drawSegmentedRtlLine(page, line, fontFamilyOrFont, titleFontSize, rightX, titleY, rgb(0.08, 0.14, 0.28), marginX, true);
+      }
+      titleY -= isChapterHeading ? 18 : 14;
     }
 
-    // Subtle header separator line
-    try {
-      page.drawLine({
-        start: { x: marginX, y: height - 44 },
-        end: { x: rightX, y: height - 44 },
-        thickness: 0.6,
-        color: rgb(0.85, 0.88, 0.92),
-      });
-    } catch {}
+    if (!isChapterHeading) {
+      try {
+        page.drawLine({
+          start: { x: marginX, y: height - 44 },
+          end: { x: rightX, y: height - 44 },
+          thickness: 0.6,
+          color: rgb(0.85, 0.88, 0.92),
+        });
+      } catch {}
+    }
   }
 
   if (listParas.length === 0) return;
 
-  // 2. Classify page type: Diagram / Schematic page vs Standard content page
+  // 3. Classify page type: Diagram / Schematic page vs Standard content page
   const isPureShortItems = listParas.length >= 4 && listParas.every((p) => p.length < 85);
   const isDiagramPage =
     (textBounds.hasTopImage && textBounds.imageBottomY !== null && textBounds.imageBottomY > height * 0.35) ||
     (textBounds.hasTopImage && isPureShortItems);
 
-  // 3. Determine available vertical space
+  // 4. Determine available vertical space
   let startY: number;
   if (isDiagramPage && textBounds.imageBottomY !== null) {
-    // Leave safe breathing margin below diagram image
     startY = Math.min(textBounds.imageBottomY - 14, height * 0.60);
   } else {
-    // Standard text page flow
-    startY = hasTitle ? height - 54 : height - 38;
+    startY = hasTitle ? height - 56 : height - 38;
   }
 
   startY = Math.max(bottomMargin + 60, Math.min(startY, height - 36));
   let curY = startY;
   const availableHeight = Math.max(50, curY - bottomMargin);
 
-  // 4. Diagram Page Component Legend Layout
+  // 5. Diagram Page: 2-Column Balanced Legend below Diagram
   if (isDiagramPage && isPureShortItems && listParas.length >= 6 && width >= 440) {
-    // 2-Column Balanced Legend below Diagram
     const colGap = 20;
     const colW = (contentWidth - colGap) / 2;
     const rightColX = rightX;
@@ -682,7 +810,7 @@ function renderPersianTextToPage(
     const calcLegendH = (items: string[], fSize: number, lHeight: number) => {
       let h = 0;
       for (const item of items) {
-        const lines = wrapPersianText(item, persianFont, fSize, colW);
+        const lines = wrapPersianText(item, fontReg, fSize, colW);
         h += lines.length * lHeight + 3.5;
       }
       return h;
@@ -700,10 +828,10 @@ function renderPersianTextToPage(
     // Render Right Column
     let rY = curY;
     for (const item of rightItems) {
-      const lines = wrapPersianText(item, persianFont, fontSize, colW);
+      const lines = wrapPersianText(item, fontReg, fontSize, colW);
       for (const line of lines) {
         if (rY < 16) break;
-        drawSegmentedRtlLine(page, line, persianFont, fontSize, rightColX, rY, rgb(0.12, 0.16, 0.24), rightColX - colW);
+        drawSegmentedRtlLine(page, line, fontFamilyOrFont, fontSize, rightColX, rY, rgb(0.12, 0.16, 0.24), rightColX - colW);
         rY -= lineHeight;
       }
       rY -= 3;
@@ -712,36 +840,43 @@ function renderPersianTextToPage(
     // Render Left Column
     let lY = curY;
     for (const item of leftItems) {
-      const lines = wrapPersianText(item, persianFont, fontSize, colW);
+      const lines = wrapPersianText(item, fontReg, fontSize, colW);
       for (const line of lines) {
         if (lY < 16) break;
-        drawSegmentedRtlLine(page, line, persianFont, fontSize, leftColX, lY, rgb(0.12, 0.16, 0.24), leftColX - colW);
+        drawSegmentedRtlLine(page, line, fontFamilyOrFont, fontSize, leftColX, lY, rgb(0.12, 0.16, 0.24), leftColX - colW);
         lY -= lineHeight;
       }
       lY -= 3;
     }
   } else {
-    // Standard Document Flow: Natural Full-Width Single-Column (Optimal for Persian typography)
+    // 6. Standard Flow: Novels, Manuals, Articles
+    // Proportional leading for effortless readability
     let fontSize = 10.0;
-    let lineHeight = 14.5;
-    let paragraphGap = 5.0;
+    let lineHeight = 15.0;
+    let paragraphGap = 6.0;
 
     const calcFullH = (fSize: number, lHeight: number, pGap: number) => {
       let total = 0;
       for (const p of listParas) {
-        const isHeading = p.length < 55 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
+        const isNoticeWarning = /^(?:هشدار|خطر|نکته|توجه|احتیاط|WARNING|CAUTION|NOTE)\s*[\:：]/i.test(p);
+        const isHeading =
+          !isNoticeWarning &&
+          p.length < 55 &&
+          !p.startsWith('-') &&
+          !p.startsWith('•') &&
+          !/^\d+[\.\-]/.test(p) &&
+          !p.endsWith('.');
         const f = isHeading ? fSize + 1.2 : fSize;
         const lh = isHeading ? lHeight + 2.0 : lHeight;
-        const lines = wrapPersianText(p, persianFont, f, contentWidth);
-        total += lines.length * lh + (isHeading ? pGap + 3 : pGap);
+        const lines = wrapPersianText(p, isHeading ? fontBold : fontReg, f, contentWidth);
+        total += lines.length * lh + (isHeading ? pGap + 4 : pGap);
       }
       return total;
     };
 
-    // Smooth dynamic font scaling to guarantee 100% of text fits without truncation
     while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 6.8) {
       fontSize -= 0.25;
-      lineHeight = Math.round(fontSize * 1.34 * 10) / 10;
+      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
       paragraphGap = Math.max(2.0, paragraphGap - 0.25);
     }
 
@@ -756,20 +891,28 @@ function renderPersianTextToPage(
         ((uIdx === 0 && p.length < 75 && listParas.length > 2) ||
           (p.length < 50 && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p) && !p.endsWith('.')));
 
-      const f = isHeading ? fontSize + 1.2 : isNoticeWarning ? fontSize : fontSize;
-      const lh = isHeading ? lineHeight + 2.0 : lineHeight;
-      const effectiveContentW = isNoticeWarning ? contentWidth - 12 : contentWidth;
-      const effectiveRightX = isNoticeWarning ? rightX - 8 : rightX;
+      // Detect song/poem stanzas (short lines in succession)
+      const isPoemLine =
+        !isHeading &&
+        !isNoticeWarning &&
+        p.length < 42 &&
+        (p.includes('جانوران') || p.includes('آینده') || p.includes('روزی') || p.includes('سرزمین'));
 
-      const lines = wrapPersianText(p, persianFont, f, effectiveContentW);
+      const fontToUse = isHeading ? fontBold : fontReg;
+      const f = isHeading ? fontSize + 1.2 : fontSize;
+      const lh = isHeading ? lineHeight + 2.0 : lineHeight;
+      const effectiveContentW = isNoticeWarning ? contentWidth - 14 : isPoemLine ? contentWidth - 40 : contentWidth;
+      const effectiveRightX = isNoticeWarning ? rightX - 8 : isPoemLine ? rightX - 20 : rightX;
+
+      const lines = wrapPersianText(p, fontToUse, f, effectiveContentW);
 
       let color = rgb(0.12, 0.16, 0.24);
       if (isHeading) {
-        color = rgb(0.08, 0.16, 0.32);
+        color = rgb(0.06, 0.12, 0.28);
       } else if (isDanger) {
-        color = rgb(0.75, 0.10, 0.10);
+        color = rgb(0.80, 0.10, 0.10);
       } else if (isWarning) {
-        color = rgb(0.70, 0.35, 0.05);
+        color = rgb(0.80, 0.40, 0.05);
       } else if (isNoticeWarning) {
         color = rgb(0.10, 0.35, 0.65);
       }
@@ -794,11 +937,11 @@ function renderPersianTextToPage(
 
       for (const line of lines) {
         if (curY < 14) break;
-        drawSegmentedRtlLine(page, line, persianFont, f, effectiveRightX, curY, color, marginX);
+        drawSegmentedRtlLine(page, line, fontFamilyOrFont, f, effectiveRightX, curY, color, marginX, isHeading);
         curY -= lh;
       }
 
-      curY -= isHeading ? paragraphGap + 3 : paragraphGap;
+      curY -= isHeading ? paragraphGap + 3 : isPoemLine ? paragraphGap - 1 : paragraphGap;
       if (curY < 16) break;
     }
   }
@@ -1049,12 +1192,10 @@ export class PDFProcessor implements DocumentProcessor {
 
     log('info', 'EXTRACTION_START', `jobId=${job.jobId} total=${totalPages}`);
 
-    // Output document setup
+    // Output document setup with Multi-Font Family (Regular & Bold)
     const outputDoc = await PDFDocument.create();
-    outputDoc.registerFontkit(fontkit);
-
-    const fontBytes = await getCachedPersianFont();
-    const persianFont = await outputDoc.embedFont(fontBytes);
+    const fontFamily = await loadPersianFontFamily(outputDoc);
+    const persianFont = fontFamily.regular;
 
     // Copy all pages from sourceDoc to preserve all backgrounds, diagrams, tables, and images
     const pageIndices = Array.from({ length: totalPages }, (_, i) => i);
@@ -1203,7 +1344,7 @@ export class PDFProcessor implements DocumentProcessor {
       outputDoc.addPage(page);
 
       const rawPageText = pageRawTexts[i];
-      const manifestItem = job.manifest.items.find((it) => it.index === pageIndex);
+      const manifestItem = job.manifest?.items?.find((it) => it.index === pageIndex);
 
       const fullFaText =
         translatedResultsMap.get(`page_${pageIndex}`) ||
@@ -1264,7 +1405,7 @@ export class PDFProcessor implements DocumentProcessor {
           lines,
           transMap,
           fullFaText,
-          persianFont
+          fontFamily
         );
       }
 
@@ -1272,7 +1413,7 @@ export class PDFProcessor implements DocumentProcessor {
         renderPersianTextToPage(
           page,
           paragraphs,
-          persianFont,
+          fontFamily,
           textBounds,
           pageIndex,
           totalPages
@@ -1312,7 +1453,7 @@ export class PDFProcessor implements DocumentProcessor {
       fullDocText += '----------------------------------------------------------------------\r\n';
       fullDocText += `📄 صفحه ${pt.pageNumber} از ${totalPages}\r\n`;
       fullDocText += '----------------------------------------------------------------------\r\n\r\n';
-      fullDocText += `${pt.translatedText.trim()}\r\n\r\n\r\n`;
+      fullDocText += `${healPersianSpaces(pt.translatedText).trim()}\r\n\r\n\r\n`;
     }
     fullDocText += '======================================================================\r\n';
     fullDocText += 'پایان ترجمه کامل سند\r\n';

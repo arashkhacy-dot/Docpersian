@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { GoogleGenAI, Type } from '@google/genai';
 import { config } from '../config/env.js';
 import { defaultStorage } from '../storage/localStorageProvider.js';
+import { healPersianSpaces } from '../processors/persianTypographyEngine.js';
 
 export interface TranslationUnit {
   id: string;
@@ -220,9 +221,10 @@ CRITICAL INSTRUCTIONS:
 
       for (const item of chunk) {
         const tr = parsedMap.get(item.id);
+        const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
         mappedResults.push({
           id: item.id,
-          translatedText: tr !== undefined && tr !== null && tr.trim() !== '' ? tr : item.text,
+          translatedText: finalText,
         });
       }
       return mappedResults;
@@ -278,7 +280,7 @@ RULES:
           ],
         });
         const text = response.text?.trim() || '';
-        if (text) return text;
+        if (text) return healPersianSpaces(text);
       } catch {
         // Try next candidate
       }

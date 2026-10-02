@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { DocumentProcessor } from './documentProcessor.js';
 import { JobState, PageManifestItem } from '../jobs/jobState.js';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
+import { healPersianSpaces } from './persianTypographyEngine.js';
 
 export class DOCXProcessor implements DocumentProcessor {
   async analyzeDocument(inputFilePath: string): Promise<{
@@ -155,7 +156,8 @@ export class DOCXProcessor implements DocumentProcessor {
       for (let i = 0; i < matches.length; i++) {
         const m = matches[i];
         const unitId = `docx_${idx}_${i}`;
-        const translated = translationMap.get(unitId) || m.text;
+        const rawTranslated = translationMap.get(unitId) || m.text;
+        const translated = healPersianSpaces(rawTranslated);
 
         totalWords += translated.split(/\s+/).filter(Boolean).length;
         if (translated.trim()) {

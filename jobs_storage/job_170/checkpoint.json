@@ -4,30 +4,25 @@
   "outputFileName": "big_170_page_FA.pdf",
   "mimeType": "application/pdf",
   "documentType": "pdf",
-  "fileSizeBytes": 46570,
+  "fileSizeBytes": 46565,
   "inputPath": "/app/applet/jobs_storage/job_170/input/big_170_page.pdf",
   "outputPath": "/app/applet/jobs_storage/job_170/output/big_170_page_FA.pdf",
-  "inputHash": "f546d29b9339538d7454da3d6757303a6fc8545b998302d559c17f02878e1395",
+  "inputHash": "6f449eb271883a291ba47076860339ca5f0b4bfc1d19f128e1fb07ae320d69ac",
   "status": "completed",
   "progress": 100,
   "currentStage": "idle",
   "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
   "totalItems": 170,
   "processedItems": 170,
-  "totalWords": 1328,
+  "totalWords": 2036,
   "processedWords": 0,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790598055479,
-  "updatedAt": 1790598101810,
-  "elapsedMs": 46331,
+  "createdAt": 1790932254378,
+  "updatedAt": 1790932296903,
+  "elapsedMs": 42525,
   "retryCount": 0,
-  "warnings": [
-    "صفحه 10: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
-    "صفحه 50: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
-    "صفحه 100: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد.",
-    "صفحه 150: بدون متن یا حاوی تصویر — قالب بصری اصلی حفظ شد."
-  ],
+  "warnings": [],
   "errors": [],
   "manifest": {
     "inputCount": 170,
@@ -36,1504 +31,1500 @@
         "index": 1,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 2,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 3,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 4,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 5,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 6,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 7,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 8,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 9,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 10,
         "status": "reconstructed",
-        "hasTranslatableText": false,
-        "wordCount": 0,
-        "retryAttempts": 0,
-        "warning": "صفحه فاقد متن بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "hasTranslatableText": true,
+        "wordCount": 164,
+        "retryAttempts": 0
       },
       {
         "index": 11,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 12,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 13,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 14,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 15,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 16,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 17,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 18,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 19,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 20,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 21,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 22,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 23,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 24,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 25,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 26,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 27,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 28,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 29,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 30,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 31,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 32,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 33,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 34,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 35,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 36,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 37,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 38,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 39,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 40,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 41,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 42,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 43,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 44,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 45,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 46,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 47,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 48,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 49,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 50,
         "status": "reconstructed",
-        "hasTranslatableText": false,
-        "wordCount": 0,
-        "retryAttempts": 0,
-        "warning": "صفحه فاقد متن بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "hasTranslatableText": true,
+        "wordCount": 154,
+        "retryAttempts": 0
       },
       {
         "index": 51,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 52,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 53,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 54,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 55,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 56,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 57,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 58,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 59,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 60,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 61,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 62,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 63,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 64,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 65,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 66,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 67,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 68,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 69,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 70,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 71,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 72,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 73,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 74,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 75,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 76,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 77,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 78,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 79,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 80,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 81,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 82,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 83,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 84,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 85,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 86,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 87,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 88,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 89,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 90,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 91,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 92,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 93,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 94,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 95,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 96,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 97,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 98,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 99,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 100,
         "status": "reconstructed",
-        "hasTranslatableText": false,
-        "wordCount": 0,
-        "retryAttempts": 0,
-        "warning": "صفحه فاقد متن بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "hasTranslatableText": true,
+        "wordCount": 130,
+        "retryAttempts": 0
       },
       {
         "index": 101,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 102,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 103,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 104,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 105,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 106,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 107,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 108,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 109,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 110,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 111,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 112,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 113,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 114,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 115,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 116,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 117,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 118,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 119,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 120,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 121,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 122,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 123,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 124,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 125,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 126,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 127,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 128,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 129,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 130,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 131,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 132,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 133,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 134,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 135,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 136,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 137,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 138,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 139,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 140,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 141,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 142,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 143,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 144,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 145,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 146,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 147,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 148,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 149,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 150,
         "status": "reconstructed",
-        "hasTranslatableText": false,
-        "wordCount": 0,
-        "retryAttempts": 0,
-        "warning": "صفحه فاقد متن بود؛ محتوای بصری اصلی عیناً حفظ گردید."
+        "hasTranslatableText": true,
+        "wordCount": 94,
+        "retryAttempts": 0
       },
       {
         "index": 151,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 152,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 153,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 154,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 155,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 156,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 157,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 158,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 159,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 160,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 161,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 162,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 163,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 164,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 165,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 166,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 167,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 168,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 169,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       },
       {
         "index": 170,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       }
     ]
   },
   "debugLogs": [
     {
-      "timestamp": "2026-09-28T12:21:41.483Z",
-      "level": "info",
-      "tag": "PAGE_RENDER_START",
-      "message": "jobId=job_170 page=148"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:41.485Z",
-      "level": "info",
-      "tag": "PAGE_RENDER_END",
-      "message": "jobId=job_170 page=148"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:41.485Z",
+      "timestamp": "2026-10-02T09:11:36.478Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=149"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.487Z",
+      "timestamp": "2026-10-02T09:11:36.479Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=149"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.487Z",
+      "timestamp": "2026-10-02T09:11:36.480Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_START",
+      "message": "jobId=job_170 page=150"
+    },
+    {
+      "timestamp": "2026-10-02T09:11:36.498Z",
+      "level": "info",
+      "tag": "PAGE_RENDER_END",
+      "message": "jobId=job_170 page=150"
+    },
+    {
+      "timestamp": "2026-10-02T09:11:36.498Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=151"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.489Z",
+      "timestamp": "2026-10-02T09:11:36.499Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=151"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.490Z",
+      "timestamp": "2026-10-02T09:11:36.502Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=152"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.492Z",
+      "timestamp": "2026-10-02T09:11:36.503Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=152"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.492Z",
+      "timestamp": "2026-10-02T09:11:36.503Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=153"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.494Z",
+      "timestamp": "2026-10-02T09:11:36.505Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=153"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.495Z",
+      "timestamp": "2026-10-02T09:11:36.506Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=154"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.497Z",
+      "timestamp": "2026-10-02T09:11:36.507Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=154"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.497Z",
+      "timestamp": "2026-10-02T09:11:36.507Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=155"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.499Z",
+      "timestamp": "2026-10-02T09:11:36.508Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=155"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.499Z",
+      "timestamp": "2026-10-02T09:11:36.510Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=156"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.501Z",
+      "timestamp": "2026-10-02T09:11:36.511Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=156"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.503Z",
+      "timestamp": "2026-10-02T09:11:36.511Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=157"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.505Z",
+      "timestamp": "2026-10-02T09:11:36.513Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=157"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.506Z",
+      "timestamp": "2026-10-02T09:11:36.514Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=158"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.508Z",
+      "timestamp": "2026-10-02T09:11:36.515Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=158"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.508Z",
+      "timestamp": "2026-10-02T09:11:36.515Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=159"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.510Z",
+      "timestamp": "2026-10-02T09:11:36.516Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=159"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.510Z",
+      "timestamp": "2026-10-02T09:11:36.518Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=160"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.512Z",
+      "timestamp": "2026-10-02T09:11:36.519Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=160"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.512Z",
+      "timestamp": "2026-10-02T09:11:36.520Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=161"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.514Z",
+      "timestamp": "2026-10-02T09:11:36.521Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=161"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.515Z",
+      "timestamp": "2026-10-02T09:11:36.522Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=162"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.517Z",
+      "timestamp": "2026-10-02T09:11:36.525Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=162"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.517Z",
+      "timestamp": "2026-10-02T09:11:36.525Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=163"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.518Z",
+      "timestamp": "2026-10-02T09:11:36.527Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=163"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.519Z",
+      "timestamp": "2026-10-02T09:11:36.530Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=164"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.521Z",
+      "timestamp": "2026-10-02T09:11:36.531Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=164"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.522Z",
+      "timestamp": "2026-10-02T09:11:36.531Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=165"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.524Z",
+      "timestamp": "2026-10-02T09:11:36.533Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=165"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.525Z",
+      "timestamp": "2026-10-02T09:11:36.534Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=166"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.527Z",
+      "timestamp": "2026-10-02T09:11:36.535Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=166"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.527Z",
+      "timestamp": "2026-10-02T09:11:36.535Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=167"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.528Z",
+      "timestamp": "2026-10-02T09:11:36.537Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=167"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.529Z",
+      "timestamp": "2026-10-02T09:11:36.539Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=168"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.531Z",
+      "timestamp": "2026-10-02T09:11:36.540Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=168"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.531Z",
+      "timestamp": "2026-10-02T09:11:36.540Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=169"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.532Z",
+      "timestamp": "2026-10-02T09:11:36.541Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=169"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.533Z",
+      "timestamp": "2026-10-02T09:11:36.543Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_170 page=170"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.535Z",
+      "timestamp": "2026-10-02T09:11:36.545Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_170 page=170"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.536Z",
+      "timestamp": "2026-10-02T09:11:36.546Z",
       "level": "info",
       "tag": "PAGE_SAVE_START",
       "message": "jobId=job_170 page=170"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.728Z",
+      "timestamp": "2026-10-02T09:11:36.782Z",
       "level": "info",
       "tag": "PAGE_SAVE_END",
       "message": "jobId=job_170 page=170"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.728Z",
+      "timestamp": "2026-10-02T09:11:36.782Z",
       "level": "info",
       "tag": "RECONSTRUCTION_END",
       "message": "jobId=job_170"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.738Z",
+      "timestamp": "2026-10-02T09:11:36.797Z",
       "level": "info",
       "tag": "VALIDATION_START",
       "message": "Starting independent output validation"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.810Z",
+      "timestamp": "2026-10-02T09:11:36.903Z",
       "level": "info",
       "tag": "VALIDATION_END",
       "message": "Validation completed. Passed=true, Warnings=0"
     },
     {
-      "timestamp": "2026-09-28T12:21:41.810Z",
+      "timestamp": "2026-10-02T09:11:36.903Z",
       "level": "info",
       "tag": "JOB_COMPLETE",
       "message": "Job finished successfully as completed"
     }
   ],
-  "startedAt": 1790598055479,
-  "lastHeartbeatAt": 1790598101535,
+  "startedAt": 1790932254378,
+  "lastHeartbeatAt": 1790932296545,
   "estimatedRemainingMs": 0,
-  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: big_170_page.pdf\r\nتعداد صفحات: 170 | تاریخ: ۱۴۰۵/۷/۶\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 1: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 2 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 2: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 3 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 3: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 4 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 4: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 5 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 5: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 6 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 6: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 7 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 7: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 8 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 8: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 9 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 9: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 10 از 170\r\n----------------------------------------------------------------------\r\n\r\n(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 11 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 11: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 12 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 12: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 13 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 13: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 14 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 14: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 15 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 15: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 16 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 16: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 17 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 17: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 18 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 18: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 19 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 19: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 20 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 20: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 21 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 21: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 22 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 22: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 23 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 23: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 24 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 24: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 25 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 25: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 26 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 26: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 27 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 27: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 28 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 28: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 29 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 29: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 30 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 30: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 31 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 31: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 32 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 32: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 33 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 33: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 34 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 34: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 35 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 35: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 36 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 36: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 37 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 37: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 38 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 38: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 39 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 39: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 40 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 40: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 41 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 41: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 42 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 42: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 43 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 43: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 44 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 44: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 45 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 45: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 46 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 46: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 47 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 47: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 48 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 48: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 49 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 49: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 50 از 170\r\n----------------------------------------------------------------------\r\n\r\n(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 51 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 51: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 52 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 52: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 53 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 53: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 54 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 54: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 55 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 55: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 56 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 56: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 57 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 57: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 58 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 58: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 59 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 59: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 60 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 60: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 61 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 61: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 62 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 62: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 63 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 63: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 64 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 64: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 65 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 65: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 66 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 66: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 67 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 67: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 68 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 68: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 69 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 69: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 70 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 70: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 71 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 71: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 72 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 72: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 73 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 73: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 74 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 74: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 75 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 75: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 76 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 76: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 77 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 77: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 78 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 78: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 79 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 79: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 80 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 80: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 81 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 81: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 82 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 82: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 83 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 83: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 84 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 84: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 85 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 85: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 86 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 86: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 87 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 87: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 88 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 88: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 89 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 89: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 90 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 90: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 91 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 91: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 92 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 92: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 93 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 93: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 94 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 94: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 95 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 95: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 96 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 96: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 97 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 97: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 98 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 98: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 99 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 99: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 100 از 170\r\n----------------------------------------------------------------------\r\n\r\n(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 101 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 101: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 102 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 102: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 103 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 103: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 104 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 104: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 105 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 105: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 106 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 106: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 107 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 107: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 108 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 108: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 109 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 109: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 110 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 110: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 111 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 111: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 112 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 112: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 113 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 113: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 114 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 114: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 115 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 115: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 116 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 116: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 117 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 117: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 118 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 118: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 119 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 119: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 120 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 120: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 121 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 121: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 122 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 122: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 123 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 123: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 124 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 124: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 125 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 125: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 126 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 126: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 127 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 127: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 128 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 128: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 129 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 129: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 130 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 130: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 131 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 131: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 132 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 132: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 133 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 133: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 134 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 134: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 135 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 135: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 136 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 136: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 137 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 137: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 138 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 138: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 139 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 139: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 140 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 140: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 141 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 141: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 142 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 142: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 143 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 143: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 144 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 144: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 145 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 145: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 146 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 146: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 147 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 147: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 148 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 148: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 149 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 149: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 150 از 170\r\n----------------------------------------------------------------------\r\n\r\n(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 151 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 151: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 152 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 152: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 153 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 153: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 154 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 154: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 155 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 155: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 156 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 156: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 157 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 157: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 158 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 158: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 159 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 159: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 160 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 160: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 161 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 161: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 162 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 162: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 163 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 163: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 164 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 164: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 165 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 165: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 166 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 166: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 167 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 167: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 168 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 168: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 169 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 169: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 170 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 170: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
+  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: big_170_page.pdf\r\nتعداد صفحات: 170 | تاریخ: ۱۴۰۵/۷/۱۰\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 1: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 2 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 2: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 3 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 3: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 4 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 4: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 5 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 5: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 6 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 6: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 7 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 7: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 8 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 8: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 9 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 9: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 10 از 170\r\n----------------------------------------------------------------------\r\n\r\nاین صفحه از دفترچه راهنما حاوی یک دیاگرام سیم‌کشی الکتریکی است. فهرست قطعات و توضیحات مربوطه به شرح زیر است:\n\n• [1]: باتری (Battery)\n• [2]: کلید اصلی (Main Switch)\n• [3]: فیوز (Fuse)\n• [4]: رگولاتور ولتاژ (Voltage Regulator)\n• [5]: دینام (Alternator)\n• [6]: واحد کنترل الکترونیکی (ECU)\n• [7]: شمع (Spark Plug)\n• [8]: کویل احتراق (Ignition Coil)\n• [9]: سنسور دور موتور (RPM Sensor)\n• [10]: سنسور دمای آب (Coolant Temperature Sensor)\n• [11]: سنسور موقعیت دریچه گاز (Throttle Position Sensor)\n• [12]: انژکتور سوخت (Fuel Injector)\n• [13]: پمپ بنزین (Fuel Pump)\n• [14]: چراغ هشدار (Warning Light)\n• [15]: اتصال زمین (Ground)\n• [16]: مسیر جریان اصلی (Main Circuit)\n• [17]: خروجی ولتاژ (Voltage Output)\n• [18]: مدار کنترلی (Control Circuit)\n• [19]: مسیر سیگنال سنسور (Sensor Signal Path)\n• [20]: مدار جرقه زنی (Ignition Circuit)\n• [21]: مدار تغذیه سنسورها (Sensor Power Supply)\n• [22]: مدار سوخت‌رسانی (Fuel System Circuit)\n• [23]: نمودار اتصالات سیم‌کشی (Wiring Diagram)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 11 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 11: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 12 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 12: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 13 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 13: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 14 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 14: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 15 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 15: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 16 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 16: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 17 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 17: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 18 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 18: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 19 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 19: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 20 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 20: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 21 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 21: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 22 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 22: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 23 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 23: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 24 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 24: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 25 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 25: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 26 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 26: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 27 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 27: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 28 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 28: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 29 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 29: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 30 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 30: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 31 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 31: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 32 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 32: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 33 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 33: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 34 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 34: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 35 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 35: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 36 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 36: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 37 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 37: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 38 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 38: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 39 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 39: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 40 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 40: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 41 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 41: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 42 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 42: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 43 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 43: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 44 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 44: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 45 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 45: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 46 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 46: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 47 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 47: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 48 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 48: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 49 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 49: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 50 از 170\r\n----------------------------------------------------------------------\r\n\r\nشماره ۵۰: سیستم‌های برقی و متعلقات\n۱: جعبه فیوز اصلی (Main Fuse Box)\n۲: رله استارت (Starter Relay)\n۳: دسته سیم اصلی (Main Wiring Harness)\n۴: سوکت اتصال بدنه (Ground Connection)\n۵: سوئیچ استارت (Ignition Switch)\n۶: سنسور اکسیژن (Oxygen Sensor)\n۷: کویل جرقه زنی (Ignition Coil)\n۸: شمع موتور (Spark Plug)\n۹: واحد کنترل الکترونیکی (ECU)\n۱۰: سنسور موقعیت میل‌لنگ (Crankshaft Position Sensor)\n۱۱: سنسور دمای آب (Coolant Temperature Sensor)\n۱۲: سوکت انژکتور سوخت (Fuel Injector Connector)\n۱۳: سنسور فشار مطلق منیفولد (MAP Sensor)\n۱۴: سنسور دمای هوای ورودی (IAT Sensor)\n۱۵: موتور استپر (Stepper Motor / Idle Control)\n۱۶: کانکتور دیاگ (Diagnostic Connector)\n۱۷: رله فن خنک‌کننده (Cooling Fan Relay)\n۱۸: موتور فن (Fan Motor)\n۱۹: مقاومت فن (Fan Resistor)\n۲۰: کلید چراغ ترمز (Brake Light Switch)\n۲۱: فلاشره راهنما (Turn Signal Flasher)\n۲۲: باتری (Battery)\n۲۳: ترمینال مثبت (Positive Terminal)\n۲۴: ترمینال منفی (Negative Terminal)\n۲۵: کابل اتصال بدنه (Ground Cable)\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 51 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 51: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 52 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 52: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 53 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 53: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 54 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 54: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 55 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 55: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 56 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 56: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 57 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 57: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 58 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 58: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 59 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 59: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 60 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 60: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 61 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 61: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 62 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 62: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 63 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 63: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 64 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 64: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 65 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 65: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 66 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 66: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 67 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 67: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 68 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 68: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 69 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 69: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 70 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 70: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 71 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 71: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 72 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 72: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 73 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 73: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 74 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 74: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 75 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 75: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 76 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 76: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 77 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 77: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 78 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 78: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 79 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 79: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 80 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 80: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 81 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 81: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 82 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 82: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 83 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 83: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 84 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 84: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 85 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 85: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 86 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 86: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 87 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 87: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 88 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 88: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 89 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 89: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 90 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 90: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 91 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 91: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 92 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 92: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 93 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 93: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 94 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 94: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 95 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 95: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 96 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 96: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 97 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 97: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 98 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 98: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 99 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 99: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 100 از 170\r\n----------------------------------------------------------------------\r\n\r\nصفحه ۱۰۰\n\nدیاگرام سیستم‌های الکتریکی و قطعات مربوطه\n\nراهنمای قطعات و اجزاء:\n\n۱. ترمینال باتری مثبت (+BAT)\n۲. جعبه فیوز اصلی (MAIN FUSE BOX)\n۳. رله استارت (STARTER RELAY)\n۴. موتور استارت (STARTER MOTOR)\n۵. دینام (ALTERNATOR)\n۶. واحد کنترل الکترونیکی (ECU)\n۷. سنسور دور موتور (RPM SENSOR)\n۸. سوئیچ احتراق (IGNITION SWITCH)\n۹. کویل احتراق (IGNITION COIL)\n۱۰. شمع (SPARK PLUG)\n۱۱. سنسور اکسیژن (O2 SENSOR)\n۱۲. سنسور دمای آب (WATER TEMP SENSOR)\n۱۳. سنسور فشار هوا (MAP SENSOR)\n۱۴. انژکتور سوخت (FUEL INJECTOR)\n۱۵. پمپ سوخت (FUEL PUMP)\n۱۶. کانکتور عیب‌یابی (DIAGNOSTIC PORT)\n\nنکات فنی:\n- تمام اتصالات باید طبق استاندارد عایق‌بندی شوند.\n- از اتصال کوتاه در مسیر مدار دینام خودداری شود.\n- مقدار مقاومت سنسورها باید با مقادیر مرجع در جدول داده‌های فنی مطابقت داشته باشد.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 101 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 101: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 102 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 102: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 103 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 103: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 104 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 104: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 105 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 105: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 106 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 106: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 107 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 107: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 108 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 108: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 109 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 109: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 110 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 110: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 111 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 111: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 112 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 112: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 113 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 113: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 114 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 114: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 115 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 115: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 116 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 116: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 117 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 117: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 118 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 118: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 119 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 119: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 120 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 120: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 121 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 121: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 122 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 122: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 123 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 123: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 124 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 124: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 125 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 125: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 126 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 126: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 127 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 127: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 128 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 128: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 129 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 129: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 130 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 130: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 131 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 131: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 132 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 132: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 133 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 133: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 134 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 134: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 135 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 135: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 136 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 136: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 137 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 137: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 138 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 138: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 139 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 139: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 140 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 140: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 141 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 141: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 142 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 142: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 143 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 143: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 144 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 144: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 145 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 145: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 146 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 146: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 147 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 147: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 148 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 148: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 149 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 149: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 150 از 170\r\n----------------------------------------------------------------------\r\n\r\nدفترچه راهنمای سیستم‌های برقی و الکترونیکی خودرو\nبخش سیستم تهویه مطبوع (AC)\nشکل ۱: نمودار سیم‌کشی کنترل‌کننده مرکزی\n۱. واحد کنترل الکترونیکی (ECU)\n۲. سنسور دمای محیط\n۳. موتور دریچه گردش هوا (Recirculation Motor)\n۴. رله فن خنک‌کننده\n۵. کلید فشار گاز کولر (Pressure Switch)\n۶. کمپرسور کولر\n۷. مقاومت فن بخاری (Blower Resistor)\n۸. پنل تنظیمات دستی تهویه\n۹. فیوز اصلی سیستم تهویه\n۱۰. اتصال بدنه (Ground)\nتوضیحات:\nتمامی اتصالات باید طبق استانداردهای عایق‌بندی بررسی شوند.\nدر صورت بروز نوسان، فیوز شماره ۹ بررسی گردد.\nمقادیر ولتاژ در حالت سوئیچ باز اندازه‌گیری شود.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 151 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 151: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 152 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 152: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 153 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 153: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 154 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 154: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 155 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 155: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 156 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 156: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 157 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 157: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 158 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 158: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 159 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 159: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 160 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 160: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 161 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 161: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 162 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 162: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 163 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 163: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 164 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 164: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 165 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 165: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 166 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 166: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 167 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 167: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 168 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 168: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 169 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 169: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 170 از 170\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه 170: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
   "pageTranslations": [
     {
       "pageNumber": 1,
@@ -1583,7 +1574,7 @@
     {
       "pageNumber": 10,
       "text": "",
-      "translatedText": "(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)"
+      "translatedText": "این صفحه از دفترچه راهنما حاوی یک دیاگرام سیم‌کشی الکتریکی است. فهرست قطعات و توضیحات مربوطه به شرح زیر است:\n\n• [1]: باتری (Battery)\n• [2]: کلید اصلی (Main Switch)\n• [3]: فیوز (Fuse)\n• [4]: رگولاتور ولتاژ (Voltage Regulator)\n• [5]: دینام (Alternator)\n• [6]: واحد کنترل الکترونیکی (ECU)\n• [7]: شمع (Spark Plug)\n• [8]: کویل احتراق (Ignition Coil)\n• [9]: سنسور دور موتور (RPM Sensor)\n• [10]: سنسور دمای آب (Coolant Temperature Sensor)\n• [11]: سنسور موقعیت دریچه گاز (Throttle Position Sensor)\n• [12]: انژکتور سوخت (Fuel Injector)\n• [13]: پمپ بنزین (Fuel Pump)\n• [14]: چراغ هشدار (Warning Light)\n• [15]: اتصال زمین (Ground)\n• [16]: مسیر جریان اصلی (Main Circuit)\n• [17]: خروجی ولتاژ (Voltage Output)\n• [18]: مدار کنترلی (Control Circuit)\n• [19]: مسیر سیگنال سنسور (Sensor Signal Path)\n• [20]: مدار جرقه زنی (Ignition Circuit)\n• [21]: مدار تغذیه سنسورها (Sensor Power Supply)\n• [22]: مدار سوخت‌رسانی (Fuel System Circuit)\n• [23]: نمودار اتصالات سیم‌کشی (Wiring Diagram)"
     },
     {
       "pageNumber": 11,
@@ -1783,7 +1774,7 @@
     {
       "pageNumber": 50,
       "text": "",
-      "translatedText": "(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)"
+      "translatedText": "شماره ۵۰: سیستم‌های برقی و متعلقات\n۱: جعبه فیوز اصلی (Main Fuse Box)\n۲: رله استارت (Starter Relay)\n۳: دسته سیم اصلی (Main Wiring Harness)\n۴: سوکت اتصال بدنه (Ground Connection)\n۵: سوئیچ استارت (Ignition Switch)\n۶: سنسور اکسیژن (Oxygen Sensor)\n۷: کویل جرقه زنی (Ignition Coil)\n۸: شمع موتور (Spark Plug)\n۹: واحد کنترل الکترونیکی (ECU)\n۱۰: سنسور موقعیت میل‌لنگ (Crankshaft Position Sensor)\n۱۱: سنسور دمای آب (Coolant Temperature Sensor)\n۱۲: سوکت انژکتور سوخت (Fuel Injector Connector)\n۱۳: سنسور فشار مطلق منیفولد (MAP Sensor)\n۱۴: سنسور دمای هوای ورودی (IAT Sensor)\n۱۵: موتور استپر (Stepper Motor / Idle Control)\n۱۶: کانکتور دیاگ (Diagnostic Connector)\n۱۷: رله فن خنک‌کننده (Cooling Fan Relay)\n۱۸: موتور فن (Fan Motor)\n۱۹: مقاومت فن (Fan Resistor)\n۲۰: کلید چراغ ترمز (Brake Light Switch)\n۲۱: فلاشره راهنما (Turn Signal Flasher)\n۲۲: باتری (Battery)\n۲۳: ترمینال مثبت (Positive Terminal)\n۲۴: ترمینال منفی (Negative Terminal)\n۲۵: کابل اتصال بدنه (Ground Cable)"
     },
     {
       "pageNumber": 51,
@@ -2033,7 +2024,7 @@
     {
       "pageNumber": 100,
       "text": "",
-      "translatedText": "(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)"
+      "translatedText": "صفحه ۱۰۰\n\nدیاگرام سیستم‌های الکتریکی و قطعات مربوطه\n\nراهنمای قطعات و اجزاء:\n\n۱. ترمینال باتری مثبت (+BAT)\n۲. جعبه فیوز اصلی (MAIN FUSE BOX)\n۳. رله استارت (STARTER RELAY)\n۴. موتور استارت (STARTER MOTOR)\n۵. دینام (ALTERNATOR)\n۶. واحد کنترل الکترونیکی (ECU)\n۷. سنسور دور موتور (RPM SENSOR)\n۸. سوئیچ احتراق (IGNITION SWITCH)\n۹. کویل احتراق (IGNITION COIL)\n۱۰. شمع (SPARK PLUG)\n۱۱. سنسور اکسیژن (O2 SENSOR)\n۱۲. سنسور دمای آب (WATER TEMP SENSOR)\n۱۳. سنسور فشار هوا (MAP SENSOR)\n۱۴. انژکتور سوخت (FUEL INJECTOR)\n۱۵. پمپ سوخت (FUEL PUMP)\n۱۶. کانکتور عیب‌یابی (DIAGNOSTIC PORT)\n\nنکات فنی:\n- تمام اتصالات باید طبق استاندارد عایق‌بندی شوند.\n- از اتصال کوتاه در مسیر مدار دینام خودداری شود.\n- مقدار مقاومت سنسورها باید با مقادیر مرجع در جدول داده‌های فنی مطابقت داشته باشد."
     },
     {
       "pageNumber": 101,
@@ -2283,7 +2274,7 @@
     {
       "pageNumber": 150,
       "text": "",
-      "translatedText": "(این صفحه فاقد متن قابل استخراج بود یا شامل نمودار تصویری بدون متن است)"
+      "translatedText": "دفترچه راهنمای سیستم‌های برقی و الکترونیکی خودرو\nبخش سیستم تهویه مطبوع (AC)\nشکل ۱: نمودار سیم‌کشی کنترل‌کننده مرکزی\n۱. واحد کنترل الکترونیکی (ECU)\n۲. سنسور دمای محیط\n۳. موتور دریچه گردش هوا (Recirculation Motor)\n۴. رله فن خنک‌کننده\n۵. کلید فشار گاز کولر (Pressure Switch)\n۶. کمپرسور کولر\n۷. مقاومت فن بخاری (Blower Resistor)\n۸. پنل تنظیمات دستی تهویه\n۹. فیوز اصلی سیستم تهویه\n۱۰. اتصال بدنه (Ground)\nتوضیحات:\nتمامی اتصالات باید طبق استانداردهای عایق‌بندی بررسی شوند.\nدر صورت بروز نوسان، فیوز شماره ۹ بررسی گردد.\nمقادیر ولتاژ در حالت سوئیچ باز اندازه‌گیری شود."
     },
     {
       "pageNumber": 151,
@@ -2386,7 +2377,7 @@
       "translatedText": "محتوای صفحه 170: مقدمه و تحلیل فنی معماری."
     }
   ],
-  "outputHash": "72445a8c7926fe8ecbc89997906a9781013dc95240952a05fd43f152e946be9b",
+  "outputHash": "c9012e2f2bb865b26166d8f93cd15a3e6c1d8b5484628054397e50b85fbd0c9a",
   "qualityReport": {
     "originalCount": 170,
     "outputCount": 170,
@@ -2399,5 +2390,5 @@
       "تطابق کامل: 170 صفحه/اسلاید ورودی به دقت حفظ شد."
     ]
   },
-  "completedAt": 1790598101810
+  "completedAt": 1790932296903
 }

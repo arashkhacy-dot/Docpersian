@@ -5,6 +5,7 @@ import { DocumentProcessor } from './documentProcessor.js';
 import { JobState, PageManifestItem } from '../jobs/jobState.js';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
 import { createDocxFile } from './docxHelper.js';
+import { healPersianSpaces } from './persianTypographyEngine.js';
 
 function escapeXml(unsafe: string): string {
   return unsafe
@@ -425,7 +426,8 @@ export class PPTXProcessor implements DocumentProcessor {
       for (let j = 0; j < paragraphs.length; j++) {
         const p = paragraphs[j];
         const unitId = `slide_${slideIndex}_p_${j}`;
-        const translated = translationMap.get(unitId) || p.text;
+        const rawTranslated = translationMap.get(unitId) || p.text;
+        const translated = healPersianSpaces(rawTranslated);
 
         slideOriginalParagraphs.push(p.text);
         slideTranslatedParagraphs.push(translated);
@@ -495,7 +497,8 @@ export class PPTXProcessor implements DocumentProcessor {
           for (let j = 0; j < noteParagraphs.length; j++) {
             const p = noteParagraphs[j];
             const unitId = `note_${nIdx}_p_${j}`;
-            const translated = noteTranslationMap.get(unitId) || p.text;
+            const rawTranslated = noteTranslationMap.get(unitId) || p.text;
+            const translated = healPersianSpaces(rawTranslated);
             noteTranslatedLines.push(translated);
             processedWords += translated.split(/\s+/).filter(Boolean).length;
 
@@ -538,7 +541,8 @@ export class PPTXProcessor implements DocumentProcessor {
           for (let j = 0; j < dgmParagraphs.length; j++) {
             const p = dgmParagraphs[j];
             const unitId = `dgm_${j}`;
-            const translated = dgmMap.get(unitId) || p.text;
+            const rawTranslated = dgmMap.get(unitId) || p.text;
+            const translated = healPersianSpaces(rawTranslated);
             processedWords += translated.split(/\s+/).filter(Boolean).length;
 
             rebuiltDgmXml += dgmXml.substring(lastDgmIndex, p.start);

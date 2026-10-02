@@ -8,19 +8,19 @@
   "inputPath": "/app/applet/test_artifacts/resume_sample.pdf",
   "outputPath": "/app/applet/test_artifacts/resume_FA.pdf",
   "inputHash": "dummy",
-  "status": "completed",
-  "progress": 100,
-  "currentStage": "idle",
-  "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
+  "status": "processing",
+  "progress": 55,
+  "currentStage": "translating",
+  "currentOperation": "آغاز ترجمه هوشمند متون (1 صفحه دارای متن)...",
   "totalItems": 1,
-  "processedItems": 1,
-  "totalWords": 8,
+  "processedItems": 0,
+  "totalWords": 9,
   "processedWords": 150,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790598110672,
-  "updatedAt": 1790598112284,
-  "elapsedMs": 1611,
+  "createdAt": 1790932306723,
+  "updatedAt": 1790932306757,
+  "elapsedMs": 31,
   "retryCount": 0,
   "warnings": [],
   "errors": [
@@ -31,123 +31,47 @@
     "items": [
       {
         "index": 1,
-        "status": "reconstructed",
+        "status": "pending",
         "hasTranslatableText": true,
-        "wordCount": 8,
+        "wordCount": 9,
         "retryAttempts": 0
       }
     ]
   },
   "debugLogs": [
     {
-      "timestamp": "2026-09-28T12:21:50.673Z",
+      "timestamp": "2026-10-02T09:11:46.726Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing resume.pdf (pdf)"
     },
     {
-      "timestamp": "2026-09-28T12:21:50.679Z",
+      "timestamp": "2026-10-02T09:11:46.734Z",
       "level": "info",
       "tag": "ANALYSIS_DONE",
       "message": "Document analyzed: items=1, words=9"
     },
     {
-      "timestamp": "2026-09-28T12:21:50.680Z",
+      "timestamp": "2026-10-02T09:11:46.736Z",
       "level": "info",
       "tag": "EXTRACTION_START",
       "message": "jobId=resume_job_456 total=1"
     },
     {
-      "timestamp": "2026-09-28T12:21:50.691Z",
+      "timestamp": "2026-10-02T09:11:46.748Z",
       "level": "info",
       "tag": "EXTRACTION_END",
       "message": "jobId=resume_job_456 totalPages=1"
     },
     {
-      "timestamp": "2026-09-28T12:21:50.692Z",
+      "timestamp": "2026-10-02T09:11:46.757Z",
       "level": "info",
       "tag": "BATCH_TRANSLATION_START",
       "message": "jobId=resume_job_456 textPages=1 visualPages=0"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.238Z",
-      "level": "info",
-      "tag": "RECONSTRUCTION_START",
-      "message": "jobId=resume_job_456 item=1 total=1"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.238Z",
-      "level": "info",
-      "tag": "PAGE_RENDER_START",
-      "message": "jobId=resume_job_456 page=1"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.248Z",
-      "level": "info",
-      "tag": "PAGE_RENDER_END",
-      "message": "jobId=resume_job_456 page=1"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.249Z",
-      "level": "info",
-      "tag": "PAGE_SAVE_START",
-      "message": "jobId=resume_job_456 page=1"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.281Z",
-      "level": "info",
-      "tag": "PAGE_SAVE_END",
-      "message": "jobId=resume_job_456 page=1"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.281Z",
-      "level": "info",
-      "tag": "RECONSTRUCTION_END",
-      "message": "jobId=resume_job_456"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.282Z",
-      "level": "info",
-      "tag": "VALIDATION_START",
-      "message": "Starting independent output validation"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.284Z",
-      "level": "info",
-      "tag": "VALIDATION_END",
-      "message": "Validation completed. Passed=true, Warnings=0"
-    },
-    {
-      "timestamp": "2026-09-28T12:21:52.284Z",
-      "level": "info",
-      "tag": "JOB_COMPLETE",
-      "message": "Job finished successfully as completed"
     }
   ],
   "cancellationRequested": false,
-  "startedAt": 1790598110673,
-  "lastHeartbeatAt": 1790598112248,
-  "estimatedRemainingMs": 0,
-  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: resume.pdf\r\nتعداد صفحات: 1 | تاریخ: ۱۴۰۵/۷/۶\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 1\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۱: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
-  "pageTranslations": [
-    {
-      "pageNumber": 1,
-      "text": "Page 1 content: Introduction and technical analysis of architecture.",
-      "translatedText": "محتوای صفحه ۱: مقدمه و تحلیل فنی معماری."
-    }
-  ],
-  "outputHash": "cc518d1288c9240ed123120b8494fe1095785483c15b57629d90a266f1c56ccb",
-  "qualityReport": {
-    "originalCount": 1,
-    "outputCount": 1,
-    "countMatch": true,
-    "translationStatus": "Completed",
-    "imagesPreserved": "preserved",
-    "tablesPreserved": "preserved",
-    "validationStatus": "passed",
-    "notes": [
-      "تطابق کامل: 1 صفحه/اسلاید ورودی به دقت حفظ شد."
-    ]
-  },
-  "completedAt": 1790598112284
+  "startedAt": 1790932306726,
+  "lastHeartbeatAt": 1790932306757,
+  "estimatedRemainingMs": 23
 }
