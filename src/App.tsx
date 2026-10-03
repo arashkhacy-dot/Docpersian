@@ -6,6 +6,7 @@ import { CompletionCard } from './components/CompletionCard';
 import { FailureCard } from './components/FailureCard';
 import { JobHistory } from './components/JobHistory';
 import { QualityReportModal } from './components/QualityReportModal';
+import { EngineSettingsModal } from './components/EngineSettingsModal';
 import { JobState } from './types/job';
 import { uploadFileInChunks, UploadProgressInfo } from './utils/chunkedUploader';
 
@@ -18,6 +19,7 @@ export default function App() {
   const [uploadProgress, setUploadProgress] = useState<UploadProgressInfo | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showEngineModal, setShowEngineModal] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -372,6 +374,7 @@ export default function App() {
         onToggleHistory={() => setShowHistory(!showHistory)}
         showHistory={showHistory}
         activeCount={activeJobsCount}
+        onOpenSettings={() => setShowEngineModal(true)}
       />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 sm:py-12 flex flex-col justify-center">
@@ -424,6 +427,12 @@ export default function App() {
       {showReportModal && currentJob && (
         <QualityReportModal job={currentJob} onClose={() => setShowReportModal(false)} />
       )}
+
+      {/* Engine Settings Modal (Gemini Cloud vs Local Private Server) */}
+      <EngineSettingsModal
+        isOpen={showEngineModal}
+        onClose={() => setShowEngineModal(false)}
+      />
     </div>
   );
 }

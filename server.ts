@@ -12,6 +12,7 @@ import { JobState, isTerminalStatus } from './server/jobs/jobState.js';
 import { PDFProcessor, ensurePersianFont } from './server/processors/pdfProcessor.js';
 import { DOCXProcessor } from './server/processors/docxProcessor.js';
 import { PPTXProcessor } from './server/processors/pptxProcessor.js';
+import { defaultTranslator } from './server/gemini/translator.js';
 import { downloadFileFromUrl } from './server/utils/urlDownloader.js';
 import { createDocxFile } from './server/processors/docxHelper.js';
 import JSZip from 'jszip';
@@ -815,11 +816,35 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     model: config.geminiModel,
+    engine: defaultTranslator.getEngineSettings().engine,
+    localUrl: defaultTranslator.getEngineSettings().localUrl,
+    localModel: defaultTranslator.getEngineSettings().localModel,
     maxFileSize: config.maxFileSize,
     maxConcurrentJobs: config.maxConcurrentJobs,
     hasApiKey: !!config.geminiApiKey,
     cacheEnabled: config.cacheEnabled,
   });
+});
+
+// Engine Settings endpoints (Gemini vs Local Private Server)
+app.get('/api/settings/engine', (_req: Request, res: Response) => {
+  res.json(defaultTranslator.getEngineSettings());
+});
+
+app.post('/api/settings/engine', (req: Request, res: Response) => {
+  const { engine, localUrl, localModel } = req.body;
+  if (engine !== 'gemini' && engine !== 'local') {
+    res.status(400).json({ error: 'موتور باید gemini یا local باشد.' });
+    return;
+  }
+  defaultTranslator.setEngineSettings(engine, localUrl, localModel);
+  res.json({ success: true, settings: defaultTranslator.getEngineSettings() });
+});
+
+app.post('/api/settings/test-local', async (req: Request, res: Response) => {
+  const { localUrl, localModel } = req.body;
+  const result = await defaultTranslator.testLocalConnection(localUrl, localModel);
+  res.json(result);
 });
 
 // VPS Update Script Endpoint

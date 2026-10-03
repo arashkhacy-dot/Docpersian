@@ -5,9 +5,10 @@ interface HeaderProps {
   onToggleHistory: () => void;
   showHistory: boolean;
   activeCount: number;
+  onOpenSettings?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleHistory, showHistory, activeCount }) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleHistory, showHistory, activeCount, onOpenSettings }) => {
   return (
     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -31,6 +32,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleHistory, showHistory, ac
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>تضمین یکپارچگی ۱۰۰٪ صفحات</span>
           </div>
+
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all border bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
+              title="تنظیمات و انتخاب موتور ترجمه هوش مصنوعی"
+            >
+              <Cpu className="w-4 h-4 text-indigo-400" />
+              <span className="hidden md:inline">انتخاب موتور</span>
+            </button>
+          )}
 
           <button
             onClick={onToggleHistory}

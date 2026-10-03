@@ -18,9 +18,16 @@ export interface TranslationResult {
 export class GeminiTranslator {
   private ai: GoogleGenAI | null = null;
   private model: string;
+  private engine: 'gemini' | 'local';
+  private localUrl: string;
+  private localModel: string;
 
   constructor() {
     this.model = config.geminiModel || 'gemini-3.8-flash';
+    this.engine = config.translationEngine || 'gemini';
+    this.localUrl = config.localModelUrl || 'http://localhost:11434/v1';
+    this.localModel = config.localModelName || 'qwen2.5-vl:3b';
+
     if (config.geminiApiKey) {
       this.ai = new GoogleGenAI({
         apiKey: config.geminiApiKey,
@@ -30,6 +37,63 @@ export class GeminiTranslator {
           },
         },
       });
+    }
+  }
+
+  public getEngineSettings() {
+    return {
+      engine: this.engine,
+      localUrl: this.localUrl,
+      localModel: this.localModel,
+      geminiModel: this.model,
+      geminiAvailable: this.isApiKeyValid(),
+    };
+  }
+
+  public setEngineSettings(engine: 'gemini' | 'local', localUrl?: string, localModel?: string) {
+    this.engine = engine;
+    if (localUrl) this.localUrl = localUrl;
+    if (localModel) this.localModel = localModel;
+  }
+
+  public async testLocalConnection(url?: string, model?: string): Promise<{
+    success: boolean;
+    latencyMs: number;
+    models?: string[];
+    error?: string;
+  }> {
+    const targetUrl = (url || this.localUrl).replace(/\/+$/, '');
+    const startTime = Date.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    try {
+      const res = await fetch(`${targetUrl}/models`, {
+        signal: controller.signal,
+      });
+      const latencyMs = Date.now() - startTime;
+      if (!res.ok) {
+        return {
+          success: false,
+          latencyMs,
+          error: `HTTP ${res.status}: ${res.statusText}`,
+        };
+      }
+      const data = await res.json();
+      const models = Array.isArray(data.data) ? data.data.map((m: any) => m.id) : [];
+      return {
+        success: true,
+        latencyMs,
+        models,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        latencyMs: Date.now() - startTime,
+        error: err?.message || 'اتصال برقرار نشد (مطمئن شوید Ollama یا سرور مدل در حال اجرا است)',
+      };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -121,6 +185,18 @@ export class GeminiTranslator {
     chunk: TranslationUnit[],
     attempt = 1
   ): Promise<TranslationResult[]> {
+    if (this.engine === 'local') {
+      try {
+        return await this.callLocalTranslate(chunk);
+      } catch (localErr) {
+        console.warn('[LOCAL_MODEL_WARNING] Local model translation failed, falling back:', localErr);
+        if (this.ai && this.isApiKeyValid()) {
+          return await this.callGeminiTranslate(chunk);
+        }
+        return this.fallbackTranslate(chunk);
+      }
+    }
+
     const modelsToTry = [
       this.model,
       this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
@@ -233,6 +309,167 @@ CRITICAL INSTRUCTIONS:
     }
   }
 
+  private async callLocalTranslate(chunk: TranslationUnit[]): Promise<TranslationResult[]> {
+    const inputPayload = chunk.map((c) => ({
+      id: c.id,
+      text: c.text,
+      context: c.context || '',
+    }));
+
+    const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
+Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON array of objects adhering strictly to [{ "id": "...", "translatedText": "..." }]. Do not include markdown code block syntax (like \`\`\`json) or conversational filler. Preserve all numbers, bracketed markers [1], [2], codes, and line breaks.`;
+
+    const prompt = `Input items to translate into Persian:\n${JSON.stringify(inputPayload)}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const endpoint = `${this.localUrl.replace(/\/+$/, '')}/chat/completions`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.localModel,
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.1,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Local model HTTP error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim() || '[]';
+      const cleanJson = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const parsed = JSON.parse(cleanJson) as Array<{ id: string; translatedText: string }>;
+
+      const mappedResults: TranslationResult[] = [];
+      const parsedMap = new Map(parsed.map((p) => [p.id, p.translatedText]));
+
+      for (const item of chunk) {
+        const tr = parsedMap.get(item.id);
+        const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
+        mappedResults.push({
+          id: item.id,
+          translatedText: finalText,
+        });
+      }
+      return mappedResults;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async extractAndTranslateFromImageViaLocal(
+    base64Image: string,
+    pageContext?: string,
+    mimeType = 'image/jpeg'
+  ): Promise<string> {
+    const prompt = `You are an expert technical vehicle and document translator specializing in Persian (فارسی).
+Transcribe all text, labels, callouts, arrows, part names, diagrams, tables, and notes visible on this vehicle manual or diagram image.
+For technical schematics/diagrams, provide a crisp, clear component list in Persian:
+• [شماره یا عنوان]: [نام و معادل دقیق فارسی قطعه]
+${pageContext ? `Context: ${pageContext}` : ''}
+RULES:
+1. Output ONLY the translated Persian content and part names. Do not include introductory or conversational filler.
+2. Keep numbers, technical codes, and part numbers intact.
+3. Keep each part or label on its OWN separate line using \\n.`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const endpoint = `${this.localUrl.replace(/\/+$/, '')}/chat/completions`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.localModel,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64Image}`,
+                  },
+                },
+              ],
+            },
+          ],
+          temperature: 0.1,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Local vision HTTP error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim() || '';
+      return content ? healPersianSpaces(content) : '';
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async extractTextFromImageViaLocal(base64Png: string): Promise<string> {
+    const prompt = 'Extract and transcribe all text, titles, bullet points, headers, tables, and presentation notes visible on this slide or page image accurately. Return only the extracted text content.';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const endpoint = `${this.localUrl.replace(/\/+$/, '')}/chat/completions`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.localModel,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/png;base64,${base64Png}`,
+                  },
+                },
+              ],
+            },
+          ],
+          temperature: 0.1,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Local OCR HTTP error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content?.trim() || '';
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   /**
    * One-Shot Multimodal Vision Translate:
    * Directly transcribes and translates all text, titles, tables, and notes from a page/slide screenshot
@@ -243,6 +480,15 @@ CRITICAL INSTRUCTIONS:
     pageContext?: string,
     mimeType = 'image/jpeg'
   ): Promise<string> {
+    if (this.engine === 'local') {
+      try {
+        const localResult = await this.extractAndTranslateFromImageViaLocal(base64Image, pageContext, mimeType);
+        if (localResult) return localResult;
+      } catch (localErr) {
+        console.warn('[LOCAL_VISION_WARNING] Local vision failed, trying Gemini:', localErr);
+      }
+    }
+
     if (!this.ai || !this.isApiKeyValid()) {
       return '';
     }
