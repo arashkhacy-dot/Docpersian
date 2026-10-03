@@ -26,6 +26,19 @@ import { rgb, PDFDocument, PDFFont } from 'pdf-lib';
 import pkg from 'arabic-persian-reshaper';
 const { PersianShaper } = pkg;
 
+// Complete Persian alphabet and connecting/non-connecting character sets
+export const PERSIAN_CHARS = 'ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیآئؤةۀ';
+export const CONNECTING_CHARS = 'بپتثجچحخسشصضطظعغفقکگلمنهیئ';
+export const NON_CONNECTING_CHARS = 'ادذرزژوآؤ';
+
+// Standalone Persian words that must never be merged with adjacent words
+const STANDALONE_WORDS = new Set([
+  'از', 'در', 'به', 'با', 'بر', 'تا', 'یا', 'که', 'چه', 'چون', 'اگر', 'مگر',
+  'هم', 'نه', 'ده', 'دو', 'سه', 'بی', 'رو', 'تو', 'ما', 'من', 'او',
+  'این', 'آن', 'یک', 'است', 'هست', 'نیست',
+  'شد', 'شده', 'شدن', 'شدند', 'بود', 'بوده', 'بودن', 'بودند',
+]);
+
 // List of known international and engineering units that must never be corrupted
 export const TECHNICAL_UNITS = [
   'N·m', 'N.m', 'Nm',
@@ -95,13 +108,27 @@ export function healPersianSpaces(text: string): string {
   // Step 3: Collapse excessive spaces and tabs (2 or more)
   s = s.replace(/[ \t]{2,}/g, ' ');
 
+  // Step 3.2: Reconnect spaced-out single letters resulting from OCR / font spacing
+  // e.g. 'ک ت ا ب' -> 'کتاب', 'ح ر و ف' -> 'حروف', 'ص ف ح ه' -> 'صفحه'
+  s = s.replace(
+    new RegExp(`(^|[\\s،.؛:!؟\\-\\(\\[«])([${CONNECTING_CHARS}])\\s+([${PERSIAN_CHARS}])\\s+([${PERSIAN_CHARS}])\\s+([${PERSIAN_CHARS}])(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'),
+    (_m, p1, a, b, c, d) => (a === 'و' ? _m : p1 + a + b + c + d)
+  );
+  s = s.replace(
+    new RegExp(`(^|[\\s،.؛:!؟\\-\\(\\[«])([${CONNECTING_CHARS}])\\s+([${PERSIAN_CHARS}])\\s+([${PERSIAN_CHARS}])(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'),
+    (_m, p1, a, b, c) => (a === 'و' ? _m : p1 + a + b + c)
+  );
+
   // Step 3.5: Systematic repair of broken letter connections seen in OCR / vision models
-  // 1. Repair isolated trailing 'ی' after consonants: 'مشترک ی' -> 'مشترکی', 'قدیم ی' -> 'قدیمی'
-  s = s.replace(/([بپتثجچحخسشصضطظعغفقکگلمنه])\s+ی(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1ی');
-  // 2. Repair isolated trailing 'یی' after Alef: 'اسپانیا یی' -> 'اسپانیایی'
-  s = s.replace(/([اآ])\s+یی(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1یی');
+  // 1. Repair isolated trailing 'یی' after Alef: 'جدا یی' -> 'جدایی', 'اسپانیا یی' -> 'اسپانیایی', 'زیبا یی' -> 'زیبایی'
+  s = s.replace(new RegExp(`([${PERSIAN_CHARS}]+[اآ])\\s+یی(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1یی');
+  // 2. Repair isolated trailing 'ی' after consonants: 'مشترک ی' -> 'مشترکی', 'قدیم ی' -> 'قدیمی', 'محلی'
+  s = s.replace(new RegExp(`([${PERSIAN_CHARS}]{2,}[${CONNECTING_CHARS}])\\s+ی(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), (_m, p1) => {
+    if (STANDALONE_WORDS.has(p1)) return _m;
+    return p1 + 'ی';
+  });
   // 3. Repair past-tense and verb endings: 'داش تند' -> 'داشتند', 'رف تند' -> 'رفتند', 'گف ته' -> 'گفته', 'گفت ند' -> 'گفتند'
-  s = s.replace(/([گکدربخشپمتنفثحجچرزژسصضطظعغفقلموهی])\s+(تند|ته|ند)(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1$2');
+  s = s.replace(new RegExp(`([${PERSIAN_CHARS}])\\s+(تند|ته|ند)(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1$2');
   // 4. Repair 'شما را' (from 'شمار ا')
   s = s.replace(/(^|\s)شمار\s+ا(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1شما را');
   // 5. Repair specific broken stems
@@ -301,35 +328,104 @@ export function healPersianSpaces(text: string): string {
     [/(^|\s)صف\s+حه(?=$|\s|[،.؛:!؟\-])/g, '$1صفحه'],
     [/(^|\s)فهر\s+ست(?=$|\s|[،.؛:!؟\-])/g, '$1فهرست'],
     [/(^|\s)مطا\s+لب(?=$|\s|[،.؛:!؟\-])/g, '$1مطالب'],
+    // Document, reading, layout and chapter split terms
+    [/(^|\s)کا\s+در(?=$|\s|[،.؛:!؟\-])/g, '$1کادر'],
+    [/(^|\s)جد\s+ایی(?=$|\s|[،.؛:!؟\-])/g, '$1جدایی'],
+    [/(^|\s)ج\s+دایی(?=$|\s|[،.؛:!؟\-])/g, '$1جدایی'],
+    [/(^|\s)حر\s+وف(?=$|\s|[،.؛:!؟\-])/g, '$1حروف'],
+    [/(^|\s)ح\s+روف(?=$|\s|[،.؛:!؟\-])/g, '$1حروف'],
+    [/(^|\s)خر\s+وج(?=$|\s|[،.؛:!؟\-])/g, '$1خروج'],
+    [/(^|\s)خ\s+روج(?=$|\s|[،.؛:!؟\-])/g, '$1خروج'],
+    [/(^|\s)مطا\s+لعه(?=$|\s|[،.؛:!؟\-])/g, '$1مطالعه'],
+    [/(^|\s)م\s+طالعه(?=$|\s|[،.؛:!؟\-])/g, '$1مطالعه'],
+    [/(^|\s)جم\s+نای(?=$|\s|[،.؛:!؟\-])/g, '$1جمنای'],
+    [/(^|\s)مح\s+لی(?=$|\s|[،.؛:!؟\-])/g, '$1محلی'],
+    [/(^|\s)اس\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1است'],
+    [/(^|\s)هس\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1هست'],
+    [/(^|\s)نیس\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1نیست'],
+    [/(^|\s)دس\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1دست'],
+    [/(^|\s)پش\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1پشت'],
+    [/(^|\s)مد\s+ل(?=$|\s|[،.؛:!؟\-])/g, '$1مدل'],
+    [/(^|\s)فص\s+ل(?=$|\s|[،.؛:!؟\-])/g, '$1فصل'],
+    [/(^|\s)بخ\s+ش(?=$|\s|[،.؛:!؟\-])/g, '$1بخش'],
+    [/(^|\s)رو\s+ش(?=$|\s|[،.؛:!؟\-])/g, '$1روش'],
+    [/(^|\s)ش\s+ک(?=$|\s|[،.؛:!؟\-])/g, '$1شک'],
+    [/(^|\s)ح\s+ق(?=$|\s|[،.؛:!؟\-])/g, '$1حق'],
+    [/(^|\s)خ\s+ط(?=$|\s|[،.؛:!؟\-])/g, '$1خط'],
+    [/(^|\s)ش\s+رط(?=$|\s|[،.؛:!؟\-])/g, '$1شرط'],
+    [/(^|\s)ن\s+ظر(?=$|\s|[،.؛:!؟\-])/g, '$1نظر'],
+    [/(^|\s)ن\s+قطه(?=$|\s|[،.؛:!؟\-])/g, '$1نقطه'],
+    [/(^|\s)م\s+تن(?=$|\s|[،.؛:!؟\-])/g, '$1متن'],
+    [/(^|\s)ص\s+فحه(?=$|\s|[،.؛:!؟\-])/g, '$1صفحه'],
+    [/(^|\s)کت\s+اب(?=$|\s|[،.؛:!؟\-])/g, '$1کتاب'],
+    [/(^|\s)ک\s+تاب(?=$|\s|[،.؛:!؟\-])/g, '$1کتاب'],
+    [/(^|\s)خ\s+واندن(?=$|\s|[،.؛:!؟\-])/g, '$1خواندن'],
+    [/(^|\s)گف\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1گفت'],
+    [/(^|\s)رف\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1رفت'],
+    [/(^|\s)داش\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1داشت'],
+    [/(^|\s)خواس\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1خواست'],
+    [/(^|\s)توس\s+ط(?=$|\s|[،.؛:!؟\-])/g, '$1توسط'],
+    [/(^|\s)فق\s+ط(?=$|\s|[،.؛:!؟\-])/g, '$1فقط'],
+    [/(^|\s)رب\s+ط(?=$|\s|[،.؛:!؟\-])/g, '$1ربط'],
+    [/(^|\s)ثب\s+ت(?=$|\s|[،.؛:!؟\-])/g, '$1ثبت'],
+    // Isolated 2-letter words (placed at end of dictionary to avoid colliding with word suffixes)
+    [/(^|\s)ای\s+ن(?=$|\s|[،.؛:!؟\-])/g, '$1این'],
+    [/(^|\s)آ\s+ن(?=$|\s|[،.؛:!؟\-])/g, '$1آن'],
+    [/(^|\s)ی\s+ک(?=$|\s|[،.؛:!؟\-])/g, '$1یک'],
+    [/(^|\s)د\s+ر(?=$|\s|[،.؛:!؟\-])/g, '$1در'],
+    [/(^|\s)ب\s+ر(?=$|\s|[،.؛:!؟\-])/g, '$1بر'],
+    [/(^|\s)ا\s+ز(?=$|\s|[،.؛:!؟\-])/g, '$1از'],
+    [/(^|\s)ت\s+ا(?=$|\s|[،.؛:!؟\-])/g, '$1تا'],
+    [/(^|\s)ب\s+ه(?=$|\s|[،.؛:!؟\-])/g, '$1به'],
+    [/(^|\s)ک\s+ه(?=$|\s|[،.؛:!؟\-])/g, '$1که'],
+    [/(^|\s)چ\s+ه(?=$|\s|[،.؛:!؟\-])/g, '$1چه'],
+    [/(^|\s)م\s+ا(?=$|\s|[،.؛:!؟\-])/g, '$1ما'],
+    [/(^|\s)م\s+ن(?=$|\s|[،.؛:!؟\-])/g, '$1من'],
+    [/(^|\s)ت\s+و(?=$|\s|[،.؛:!؟\-])/g, '$1تو'],
+    [/(^|\s)ا\s+و(?=$|\s|[،.؛:!؟\-])/g, '$1او'],
+    [/(^|\s)ه\s+م(?=$|\s|[،.؛:!؟\-])/g, '$1هم'],
   ];
 
   for (const [regex, replacement] of wordFixes) {
     s = s.replace(regex, replacement);
   }
 
-  // Step 5: Generic Single-Letter Stitcher
-  // When a lone Persian connecting letter is orphaned by spaces, stitch it to the rest of the word.
-  // Excludes independent valid Persian 1-2 letter words: و, به, با, در, از, تا, یا, که, چه, نه, ده, سه, بی, رو, مو, دو, تو, من, ما, او, هم
-  const nonWords = 'بپتثجچحخسشصضطظعغفقکگلمنهی';
-  const stitchRegex = new RegExp(`(^|\\s)([${nonWords}])\\s+([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی]{2,})(?=$|\\s|[،.؛:!؟\\-])`, 'g');
-  s = s.replace(stitchRegex, '$1$2$3');
+  // Step 5: Generic Single-Letter Stitchers (Prefix & Suffix)
+  // 5a. When an isolated connecting letter precedes a stem of 2+ Persian letters, stitch it
+  // e.g. 'ک تاب' -> 'کتاب', 'ج دا' -> 'جدا', 'ح روف' -> 'حروف', 'خ روج' -> 'خروج', 'م طالعه' -> 'مطالعه'
+  const stitchPrefixRegex = new RegExp(
+    `(^|[\\s،.؛:!؟\\-\\(\\[«])([${CONNECTING_CHARS}])\\s+([${PERSIAN_CHARS}]{2,})(?=$|[\\s،.؛:!؟\\-\\)\\]»])`,
+    'g'
+  );
+  s = s.replace(stitchPrefixRegex, (_m, p1, l, rest) => (l === 'و' ? _m : p1 + l + rest));
+
+  // 5b. When a stem of 2+ Persian letters is followed by an isolated single Persian letter (e.g. 'اس ت' -> 'است', 'مد ل' -> 'مدل', 'فص ل' -> 'فصل', 'بخ ش' -> 'بخش')
+  const stitchSuffixRegex = new RegExp(
+    `(^|[\\s،.؛:!؟\\-\\(\\[«])([${PERSIAN_CHARS}]{2,})\\s+([${PERSIAN_CHARS}])(?=$|[\\s،.؛:!؟\\-\\)\\]»])`,
+    'g'
+  );
+  s = s.replace(stitchSuffixRegex, (_m, p1, stem, end) => {
+    if (end === 'و') return _m;
+    if (STANDALONE_WORDS.has(stem)) return _m;
+    return p1 + stem + end;
+  });
 
   // Step 6: Proper Persian Affixes and Prefixes with ZWNJ (نیم‌فاصله \u200C)
   s = s
     // Suffix: -ترین, -تر
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی]+)تر\s+ین(?=$|\s|[،.؛:!؟\-])/g, '$1‌ترین')
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+تر\s+ین(?=$|\s|[،.؛:!؟\-])/g, '$1‌ترین')
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+ترین(?=$|\s|[،.؛:!؟\-])/g, '$1‌ترین')
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+تر(?=$|\s|[،.؛:!؟\-])/g, '$1‌تر')
+    .replace(new RegExp(`([${PERSIAN_CHARS}]+)تر\\s+ین(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌ترین')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+تر\\s+ین(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌ترین')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+ترین(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌ترین')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+تر(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌تر')
     // Suffix: -های / -ها / -هایی / -هایش / -هایمان / -هایتان
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+ها\s+یی(?=$|\s|[،.؛:!؟\-])/g, '$1‌هایی')
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+هایی(?=$|\s|[،.؛:!؟\-])/g, '$1‌هایی')
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+های(?=$|\s|[،.؛:!؟\-])/g, '$1‌های')
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+ها(?=$|\s|[،.؛:!؟\-])/g, '$1‌ها')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+ها\\s+یی(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌هایی')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+هایی(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌هایی')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+های(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌های')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+ها(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌ها')
     // Suffix: -یی (e.g. مرغ‌دانی، طلایی، جلویی)
-    .replace(/([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی])\s+یی(?=$|\s|[،.؛:!؟\-])/g, '$1‌یی')
+    .replace(new RegExp(`([${PERSIAN_CHARS}])\\s+یی(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1‌یی')
     // Prefix: می / نمی (e.g. می‌رقصید، می‌آمدند، می‌گذشت)
-    .replace(/(^|\s)(ن?می)\s+([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنهی]{2,})/g, '$1$2‌$3');
+    .replace(new RegExp(`(^|\\s)(ن?می)\\s+([${PERSIAN_CHARS}]{2,})`, 'g'), '$1$2‌$3');
 
   // Step 7: Clean up spacing around Persian punctuation
   s = s

@@ -15,6 +15,23 @@ export interface TranslationResult {
   translatedText: string;
 }
 
+export function normalizeLocalEndpoints(rawUrl: string): {
+  v1ChatUrl: string;
+  ollamaChatUrl: string;
+  v1ModelsUrl: string;
+  ollamaTagsUrl: string;
+} {
+  const clean = (rawUrl || 'http://localhost:11434').trim().replace(/\/+$/, '');
+  const hasV1 = clean.endsWith('/v1');
+  const base = hasV1 ? clean.slice(0, -3) : clean;
+  return {
+    v1ChatUrl: `${base}/v1/chat/completions`,
+    ollamaChatUrl: `${base}/api/chat`,
+    v1ModelsUrl: `${base}/v1/models`,
+    ollamaTagsUrl: `${base}/api/tags`,
+  };
+}
+
 export class GeminiTranslator {
   private ai: GoogleGenAI | null = null;
   private model: string;
@@ -62,29 +79,40 @@ export class GeminiTranslator {
     models?: string[];
     error?: string;
   }> {
-    const targetUrl = (url || this.localUrl).replace(/\/+$/, '');
+    const endpoints = normalizeLocalEndpoints(url || this.localUrl);
     const startTime = Date.now();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
 
     try {
-      const res = await fetch(`${targetUrl}/models`, {
-        signal: controller.signal,
-      });
-      const latencyMs = Date.now() - startTime;
-      if (!res.ok) {
+      // 1. Try OpenAI-compatible /v1/models first
+      let res = await fetch(endpoints.v1ModelsUrl, { signal: controller.signal }).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json();
+        const models = Array.isArray(data.data) ? data.data.map((m: any) => m.id) : [];
         return {
-          success: false,
-          latencyMs,
-          error: `HTTP ${res.status}: ${res.statusText}`,
+          success: true,
+          latencyMs: Date.now() - startTime,
+          models,
         };
       }
-      const data = await res.json();
-      const models = Array.isArray(data.data) ? data.data.map((m: any) => m.id) : [];
+
+      // 2. Fallback to Ollama native /api/tags
+      res = await fetch(endpoints.ollamaTagsUrl, { signal: controller.signal }).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json();
+        const models = Array.isArray(data.models) ? data.models.map((m: any) => m.name || m.model) : [];
+        return {
+          success: true,
+          latencyMs: Date.now() - startTime,
+          models,
+        };
+      }
+
       return {
-        success: true,
-        latencyMs,
-        models,
+        success: false,
+        latencyMs: Date.now() - startTime,
+        error: 'پاسخی از سرور محلی دریافت نشد (مطمئن شوید Ollama یا vLLM روی پورت ۱۱۴۳۴ فعال است)',
       };
     } catch (err: any) {
       return {
@@ -271,7 +299,11 @@ CRITICAL INSTRUCTIONS:
    - If items are numbered or bulleted, maintain clear numbering (1., 2., ... or •) at the start of each line so each component description is completely distinct and legible.
 7. POSITION-INDEXED LINES (CRITICAL):
    - If input lines begin with bracketed index markers like [1], [2], [3]... (which map directly to diagram callout boxes, table cells, and spatial coordinates), you MUST preserve the exact bracketed marker [1], [2], [3]... at the start of each translated line.
-   - Do not drop or reorder the bracketed index markers.`;
+   - Do not drop or reorder the bracketed index markers.
+8. PERSIAN WORD INTEGRITY & CONTINUOUS CURSIVE SCRIPT (MANDATORY):
+   - All Persian words MUST be written with natural cursive connectivity and complete spelling.
+   - NEVER separate letters inside a word (e.g. NEVER output "ک تاب", "ج دا یی", "ح روف", "خ روج", "اس ت", "مد ل", "کا در", "م طالعه", "صف حه"). Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه".
+   - Use Persian half-space (ZWNJ) ONLY for legitimate grammatical affixes like "می‌شود" and "کتاب‌ها".`;
 
     const inputPayload = chunk.map((c) => ({
       id: c.id,
@@ -320,6 +352,64 @@ CRITICAL INSTRUCTIONS:
     }
   }
 
+  private parseLocalTranslationResponse(content: string, chunk: TranslationUnit[]): Map<string, string> {
+    const parsedMap = new Map<string, string>();
+    if (!content || !content.trim()) return parsedMap;
+
+    // 1. Direct or Markdown-stripped JSON parsing
+    try {
+      const cleanJson = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      if (Array.isArray(parsed)) {
+        for (const it of parsed) {
+          if (it?.id && typeof it?.translatedText === 'string') {
+            parsedMap.set(it.id, it.translatedText);
+          }
+        }
+        if (parsedMap.size > 0) return parsedMap;
+      }
+    } catch {}
+
+    // 2. Bracket array extraction [ ... ]
+    const firstB = content.indexOf('[');
+    const lastB = content.lastIndexOf(']');
+    if (firstB !== -1 && lastB > firstB) {
+      try {
+        const slice = content.slice(firstB, lastB + 1);
+        const parsed = JSON.parse(slice);
+        if (Array.isArray(parsed)) {
+          for (const it of parsed) {
+            if (it?.id && typeof it?.translatedText === 'string') {
+              parsedMap.set(it.id, it.translatedText);
+            }
+          }
+          if (parsedMap.size > 0) return parsedMap;
+        }
+      } catch {}
+    }
+
+    // 3. Regex match { "id": "...", "translatedText": "..." }
+    const regex = /"id"\s*:\s*"([^"]+)"[\s\S]*?"translatedText"\s*:\s*"([\s\S]*?)(?<!\\)"/g;
+    let m;
+    while ((m = regex.exec(content)) !== null) {
+      parsedMap.set(m[1], m[2].replace(/\\n/g, '\n').replace(/\\"/g, '"'));
+    }
+    if (parsedMap.size > 0) return parsedMap;
+
+    // 4. Fallback for single item: if local model outputted raw Persian text without JSON
+    if (chunk.length === 1) {
+      const cleanText = content
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/^[^{\[]*?Here is the translation:?\s*/i, '')
+        .trim();
+      if (cleanText.length > 5) {
+        parsedMap.set(chunk[0].id, cleanText);
+      }
+    }
+
+    return parsedMap;
+  }
+
   private async callLocalTranslate(chunk: TranslationUnit[]): Promise<TranslationResult[]> {
     const inputPayload = chunk.map((c) => ({
       id: c.id,
@@ -328,42 +418,77 @@ CRITICAL INSTRUCTIONS:
     }));
 
     const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
-Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON array of objects adhering strictly to [{ "id": "...", "translatedText": "..." }]. Do not include markdown code block syntax (like \`\`\`json) or conversational filler. Preserve all numbers, bracketed markers [1], [2], codes, and line breaks.`;
+Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON array of objects adhering strictly to [{ "id": "...", "translatedText": "..." }].
+CRITICAL RULES:
+1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words (e.g. NEVER output "ک تاب", "ج دا یی", "ح روف", "خ روج", "اس ت", "مد ل", "کا در", "م طالعه", "صف حه"). Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه".
+2. Preserve all numbers, bracketed markers [1], [2], codes, and line breaks.`;
 
     const prompt = `Input items to translate into Persian:\n${JSON.stringify(inputPayload)}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
+
+    const endpoints = normalizeLocalEndpoints(this.localUrl);
 
     try {
-      const endpoint = `${this.localUrl.replace(/\/+$/, '')}/chat/completions`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.localModel,
-          messages: [
-            { role: 'system', content: systemInstruction },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.1,
-        }),
-        signal: controller.signal,
-      });
+      let content = '';
 
-      if (!response.ok) {
-        throw new Error(`Local model HTTP error: ${response.status} ${response.statusText}`);
+      // 1. Try OpenAI-compatible /v1/chat/completions first
+      try {
+        const response = await fetch(endpoints.v1ChatUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.localModel,
+            messages: [
+              { role: 'system', content: systemInstruction },
+              { role: 'user', content: prompt },
+            ],
+            temperature: 0.1,
+            stream: false,
+            max_tokens: 2500,
+          }),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          content = data.choices?.[0]?.message?.content?.trim() || '';
+        }
+      } catch (v1Err) {
+        // Fall through to Ollama native /api/chat
       }
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content?.trim() || '[]';
-      const cleanJson = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      const parsed = JSON.parse(cleanJson) as Array<{ id: string; translatedText: string }>;
+      // 2. If no content yet, try Ollama native /api/chat
+      if (!content) {
+        const response = await fetch(endpoints.ollamaChatUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.localModel,
+            messages: [
+              { role: 'system', content: systemInstruction },
+              { role: 'user', content: prompt },
+            ],
+            stream: false,
+            options: {
+              temperature: 0.1,
+              num_predict: 2500,
+            },
+          }),
+          signal: controller.signal,
+        });
 
+        if (response.ok) {
+          const data = await response.json();
+          content = data.message?.content?.trim() || '';
+        } else {
+          throw new Error(`Local model HTTP error: ${response.status} ${response.statusText}`);
+        }
+      }
+
+      const parsedMap = this.parseLocalTranslationResponse(content, chunk);
       const mappedResults: TranslationResult[] = [];
-      const parsedMap = new Map(parsed.map((p) => [p.id, p.translatedText]));
 
       for (const item of chunk) {
         const tr = parsedMap.get(item.id);
@@ -394,7 +519,8 @@ ${pageContext ? `Context: ${pageContext}` : ''}
 RULES:
 1. Output ONLY the translated Persian content and part names. Do not include introductory or conversational filler.
 2. Keep numbers, technical codes, and part numbers intact.
-3. Keep each part or label on its OWN separate line using \\n.`
+3. Keep each part or label on its OWN separate line using \\n.
+4. All Persian words must be completely joined without artificial letter separation.`
       : `You are an expert professional translator and editor into Persian (فارسی).
 Transcribe and translate all text, chapter headings, story paragraphs, character dialogues, speech bubbles, captions, and narrative text visible on this scanned document or book page into fluent, natural Persian.
 ${pageContext ? `Context: ${pageContext}` : ''}
@@ -402,45 +528,98 @@ RULES:
 1. Translate all text accurately, naturally, and fluently into high-quality Persian (فارسی روان، شیوا و خواندنی).
 2. Maintain the natural reading sequence from top to bottom.
 3. Separate distinct paragraphs and dialogue blocks with a blank line (\\n\\n).
-4. Output ONLY the translated Persian text without any introductory conversational filler or English text.`;
+4. All Persian words must be written with natural cursive connectivity and complete spelling (e.g. کتاب, جدایی, حروف, خروج, است, مدل).
+5. Output ONLY the translated Persian text without any introductory conversational filler or English text.`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000);
+    const timeout = setTimeout(() => controller.abort(), 40000);
+    const endpoints = normalizeLocalEndpoints(this.localUrl);
 
     try {
-      const endpoint = `${this.localUrl.replace(/\/+$/, '')}/chat/completions`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.localModel,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: prompt },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${mimeType};base64,${base64Image}`,
-                  },
-                },
-              ],
-            },
-          ],
-          temperature: 0.1,
-        }),
-        signal: controller.signal,
-      });
+      let content = '';
 
-      if (!response.ok) {
-        throw new Error(`Local vision HTTP error: ${response.status} ${response.statusText}`);
+      // 1. Try OpenAI-compatible /v1/chat/completions first
+      try {
+        const response = await fetch(endpoints.v1ChatUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.localModel,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: prompt },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${mimeType};base64,${base64Image}`,
+                    },
+                  },
+                ],
+              },
+            ],
+            temperature: 0.1,
+            stream: false,
+            max_tokens: 2048,
+          }),
+          signal: controller.signal,
+        });
+
+        if (response.status === 400) {
+          const errBody = await response.text();
+          if (errBody.includes('does not support images') || errBody.includes('vision')) {
+            throw new Error(`MODEL_DOES_NOT_SUPPORT_VISION: ${this.localModel}`);
+          }
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          content = data.choices?.[0]?.message?.content?.trim() || '';
+        }
+      } catch (v1Err: any) {
+        if (v1Err?.message?.includes('MODEL_DOES_NOT_SUPPORT_VISION')) {
+          throw v1Err;
+        }
       }
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content?.trim() || '';
+      // 2. If no content yet, try Ollama native /api/chat with images array
+      if (!content) {
+        const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/i, '');
+        const response = await fetch(endpoints.ollamaChatUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.localModel,
+            messages: [
+              {
+                role: 'user',
+                content: prompt,
+                images: [cleanBase64],
+              },
+            ],
+            stream: false,
+            options: {
+              temperature: 0.1,
+              num_predict: 2048,
+            },
+          }),
+          signal: controller.signal,
+        });
+
+        if (response.status === 400) {
+          const errBody = await response.text();
+          if (errBody.includes('does not support images') || errBody.includes('vision')) {
+            throw new Error(`MODEL_DOES_NOT_SUPPORT_VISION: ${this.localModel}`);
+          }
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          content = data.message?.content?.trim() || '';
+        }
+      }
+
       return content ? healPersianSpaces(content) : '';
     } finally {
       clearTimeout(timeout);

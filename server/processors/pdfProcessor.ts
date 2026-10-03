@@ -1562,6 +1562,8 @@ export class PDFProcessor implements DocumentProcessor {
 
     if (pagesToScan.length > 0) {
       log('info', 'VISION_TRANSLATION_START', `jobId=${job.jobId} isScanned=${isScannedDocument} pages=${pagesToScan.length}`);
+      let consecutiveVisionFailures = 0;
+
       for (let dIdx = 0; dIdx < pagesToScan.length; dIdx++) {
         if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
         const diagPage = pagesToScan[dIdx];
@@ -1584,10 +1586,23 @@ export class PDFProcessor implements DocumentProcessor {
             );
             if (visionFa && visionFa.trim()) {
               translatedResultsMap.set(`page_${diagPage}`, visionFa.trim());
+              consecutiveVisionFailures = 0;
+            } else {
+              consecutiveVisionFailures++;
             }
+          } else {
+            consecutiveVisionFailures++;
           }
         } catch (diagErr) {
+          consecutiveVisionFailures++;
           log('warn', 'VISION_TRANSLATE_WARN', `page=${diagPage} err=${diagErr}`);
+        }
+
+        // Anti-stall safety: if local engine fails 2 consecutive pages (e.g. non-vision model, VRAM limit, or timeout),
+        // stop vision loop immediately so the job never hangs or freezes.
+        if (consecutiveVisionFailures >= 2 && defaultTranslator.getEngineSettings().engine === 'local') {
+          log('warn', 'VISION_STALL_PROTECTION', 'Local model vision unsupported or unresponsive. Gracefully transitioning to reconstruction.');
+          break;
         }
       }
     }
