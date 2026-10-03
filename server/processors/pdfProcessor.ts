@@ -4,7 +4,7 @@ import os from 'os';
 import util from 'util';
 import { exec } from 'child_process';
 import zlib from 'zlib';
-import { PDFDocument, rgb, PDFName, PDFNumber } from 'pdf-lib';
+import { PDFDocument, rgb, PDFName, PDFNumber, degrees } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFParse } from 'pdf-parse';
 import { DocumentProcessor } from './documentProcessor';
@@ -23,6 +23,11 @@ import { config } from '../config/env';
 import { createDocxFile } from './docxHelper.js';
 
 const execPromise = util.promisify(exec);
+
+export function toPersianDigits(n: number | string): string {
+  const pDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  return String(n).replace(/\d/g, (d) => pDigits[parseInt(d, 10)]);
+}
 
 const standardFontDataUrl = path.join(process.cwd(), 'node_modules/pdfjs-dist/standard_fonts/');
 
@@ -685,10 +690,11 @@ function renderPersianTextToPage(
   const fontReg = fontFamilyOrFont.regular || fontFamilyOrFont;
   const fontBold = fontFamilyOrFont.bold || fontReg;
   const { width, height } = page.getSize();
-  const marginX = 36;
-  const bottomMargin = 26;
+  const marginX = 38;
+  const bottomMargin = 34;
   const contentWidth = width - marginX * 2;
   const rightX = width - marginX;
+  let bookTitle = '';
 
   // 1-to-1 Alignment with Source Document Layout
   let sourceTopY: number | null = null;
@@ -826,10 +832,11 @@ function renderPersianTextToPage(
   if (isFirstItemTitle) {
     hasTitle = true;
     const title = normalized[0];
+    bookTitle = title;
     listParas = normalized.slice(1);
 
     // Detect if this is a novel chapter heading (e.g. 'فصل اول', 'بخش اول', 'Chapter 1')
-    const isChapterHeading = /^(?:فصل\s*(?:اول|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|[\d\u06F0-\u06F9]+)|بخش\s*(?:اول|دوم|سوم|[\d\u06F0-\u06F9]+)|chapter\s*\d+)/i.test(title);
+    const isChapterHeading = /^(?:فصل\s*(?:اول|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|[\d\u06F0-\u06F9]+)|بخش\s*(?:اول|دوم|سوم|[\d\u06F0-\u06F9]+)|chapter\s*\d+|مقدمه|پیشگفتار|نتیجه‌گیری)/i.test(title);
 
     const titleFontSize = isChapterHeading ? 15.0 : 12.0;
     const titleLines = wrapPersianText(title, fontBold, titleFontSize, contentWidth);
@@ -854,7 +861,34 @@ function renderPersianTextToPage(
       titleY -= isChapterHeading ? 18 : 14;
     }
 
-    if (!isChapterHeading) {
+    if (isChapterHeading) {
+      // Subtle elegant book ornament below chapter title
+      try {
+        const ornamentY = titleY + 4;
+        const midX = width / 2;
+        page.drawLine({
+          start: { x: midX - 60, y: ornamentY },
+          end: { x: midX - 12, y: ornamentY },
+          thickness: 0.6,
+          color: rgb(0.75, 0.79, 0.86),
+        });
+        page.drawLine({
+          start: { x: midX + 12, y: ornamentY },
+          end: { x: midX + 60, y: ornamentY },
+          thickness: 0.6,
+          color: rgb(0.75, 0.79, 0.86),
+        });
+        page.drawRectangle({
+          x: midX - 2.5,
+          y: ornamentY - 2.5,
+          width: 5,
+          height: 5,
+          color: rgb(0.35, 0.42, 0.55),
+          rotate: degrees(45),
+        });
+      } catch {}
+      titleY -= 10;
+    } else {
       try {
         page.drawLine({
           start: { x: marginX, y: height - 44 },
@@ -1053,15 +1087,69 @@ function renderPersianTextToPage(
         } catch {}
       }
 
-      for (const line of lines) {
-        if (curY < 14) break;
-        drawSegmentedRtlLine(page, line, fontFamilyOrFont, f, effectiveRightX, curY, color, marginX, isHeading);
+      for (let lIdx = 0; lIdx < lines.length; lIdx++) {
+        const line = lines[lIdx];
+        if (curY < 24) break;
+        // Refined book paragraph indentation (12 points) on first line of narrative paragraphs
+        const isNarrativeBody = !isHeading && !isNoticeWarning && !isPoemLine && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
+        const lineRightX = (isNarrativeBody && lIdx === 0 && lines.length > 1) ? effectiveRightX - 12 : effectiveRightX;
+
+        drawSegmentedRtlLine(page, line, fontFamilyOrFont, f, lineRightX, curY, color, marginX, isHeading);
         curY -= lh;
       }
 
       curY -= isHeading ? paragraphGap + 3 : isPoemLine ? paragraphGap - 1 : paragraphGap;
-      if (curY < 16) break;
+      if (curY < 24) break;
     }
+  }
+
+  // 7. Refined Book Page Framing: Header & Footer with Persian Page Numbers
+  if (totalPages > 1 && pageIndex > 0) {
+    try {
+      // Running Header (only on pages after cover page 1)
+      if (pageIndex > 1 && !isDiagramPage) {
+        page.drawLine({
+          start: { x: marginX, y: height - 26 },
+          end: { x: rightX, y: height - 26 },
+          thickness: 0.5,
+          color: rgb(0.82, 0.85, 0.90),
+        });
+
+        const headerTitle = bookTitle || 'نسخه برگردان فارسی | DocuShift';
+        const cleanHeader = prepareRtlText(headerTitle);
+        const headerFont = fontReg;
+        const headerW = headerFont.widthOfTextAtSize(cleanHeader, 7.5);
+        if (headerW < contentWidth - 40) {
+          page.drawText(cleanHeader, {
+            x: rightX - headerW,
+            y: height - 22,
+            size: 7.5,
+            font: headerFont,
+            color: rgb(0.55, 0.60, 0.68),
+          });
+        }
+      }
+
+      // Running Footer with Persian Page Number
+      if (!textBounds.hasTopImage || textBounds.imageBottomY === null || textBounds.imageBottomY > 40) {
+        page.drawLine({
+          start: { x: marginX + 35, y: 22 },
+          end: { x: rightX - 35, y: 22 },
+          thickness: 0.4,
+          color: rgb(0.85, 0.88, 0.92),
+        });
+
+        const pageNumText = prepareRtlText(`— ${toPersianDigits(pageIndex)} —`);
+        const pnW = fontReg.widthOfTextAtSize(pageNumText, 8.5);
+        page.drawText(pageNumText, {
+          x: (width - pnW) / 2,
+          y: 12,
+          size: 8.5,
+          font: fontReg,
+          color: rgb(0.42, 0.48, 0.58),
+        });
+      }
+    } catch {}
   }
 }
 
@@ -1563,14 +1651,12 @@ export class PDFProcessor implements DocumentProcessor {
         manifestItem.wordCount = words;
       }
 
-      if (i % 2 === 0 || i === totalPages - 1) {
-        await onProgress(
-          'reconstructing',
-          pageIndex,
-          totalPages,
-          `بازسازی و چیدمان گرافیکی RTL (صفحه ${pageIndex} از ${totalPages})`
-        );
-      }
+      await onProgress(
+        'reconstructing',
+        pageIndex,
+        totalPages,
+        `بازسازی و چیدمان گرافیکی RTL (صفحه ${pageIndex} از ${totalPages})`
+      );
 
       // Yield execution to the Node event loop so SSE never freezes
       await new Promise((resolve) => setImmediate(resolve));

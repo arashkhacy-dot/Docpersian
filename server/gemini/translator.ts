@@ -138,20 +138,31 @@ export class GeminiTranslator {
       uncachedItems.push(item);
     }
 
+    const cachedCount = results.length;
+    const totalUnits = items.length;
+
     if (uncachedItems.length === 0) {
+      if (onProgress) onProgress(totalUnits);
       return results;
     }
 
-    // 2. Chunk uncached items into manageable batches (30 items per call)
-    const chunkSize = 30;
+    if (cachedCount > 0 && onProgress) {
+      onProgress(cachedCount);
+    }
+
+    // 2. Adaptive chunk sizing based on engine and text length:
+    // For local engine (Ollama/VPS): 1 page per request, concurrency = 1 (smooth 1-by-1 progress, no GPU overload).
+    // For Gemini: 2-3 pages per request if long document pages, or 10-15 if short snippet items.
+    const isDocPage = uncachedItems.some((it) => it.text.length > 250);
+    const chunkSize = this.engine === 'local' ? 1 : isDocPage ? 2 : 12;
+    const maxConcurrency = this.engine === 'local' ? 1 : 3;
+
     const chunks: TranslationUnit[][] = [];
     for (let i = 0; i < uncachedItems.length; i += chunkSize) {
       chunks.push(uncachedItems.slice(i, i + chunkSize));
     }
 
-    // Process chunks with controlled concurrency (up to 4 parallel requests for maximum throughput)
-    const maxConcurrency = 4;
-    let completedItems = 0;
+    let completedUncached = 0;
 
     for (let i = 0; i < chunks.length; i += maxConcurrency) {
       const currentBatch = chunks.slice(i, i + maxConcurrency);
@@ -168,9 +179,9 @@ export class GeminiTranslator {
             }
           }
         }
-        completedItems += chunk.length;
+        completedUncached += chunk.length;
         if (onProgress) {
-          onProgress(Math.min(completedItems, uncachedItems.length));
+          onProgress(Math.min(cachedCount + completedUncached, totalUnits));
         }
         return translatedChunk;
       });
@@ -322,7 +333,7 @@ Translate each text item faithfully into fluent, formal Persian. Return ONLY a v
     const prompt = `Input items to translate into Persian:\n${JSON.stringify(inputPayload)}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
       const endpoint = `${this.localUrl.replace(/\/+$/, '')}/chat/completions`;

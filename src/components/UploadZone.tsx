@@ -90,8 +90,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
     if (e.target.files && e.target.files[0]) {
-      validateAndSetFile(e.target.files[0]);
+      const file = e.target.files[0];
+      validateAndSetFile(file);
     }
   };
 
@@ -182,13 +184,12 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
       {/* Tab 1: Upload from device */}
       {activeTab === 'device' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <div
+          <label
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-            className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 ${
+            className={`relative block border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 select-none ${
               dragActive
                 ? 'border-indigo-500 bg-indigo-500/10 scale-[1.01]'
                 : selectedFile
@@ -199,9 +200,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.ms-powerpoint"
+              accept=".pdf,.docx,.pptx,application/pdf"
               onChange={handleChange}
-              className="hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               disabled={isUploading}
             />
 
@@ -247,7 +249,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                 </div>
               </div>
             )}
-          </div>
+          </label>
 
           {/* Live Chunked Upload Progress Card */}
           {isUploading && uploadProgress && (

@@ -4,15 +4,18 @@ set -e
 # Auto-detect project directory if not currently inside it
 if [ ! -f "server.ts" ] && [ ! -f "package.json" ]; then
   echo "--> در حال پیدا کردن پوشه پروژه روی سرور..."
-  TARGET_DIR=$(pwdx $(pgrep -f "server.ts" | head -n1) 2>/dev/null | awk '{print $2}')
+  TARGET_DIR=$(pm2 jlist 2>/dev/null | grep -o '"pm_cwd":"[^"]*"' | head -n1 | cut -d'"' -f4)
   if [ -z "$TARGET_DIR" ] || [ ! -f "$TARGET_DIR/server.ts" ]; then
-    TARGET_DIR=$(find / -maxdepth 4 -name "server.ts" -not -path "*/node_modules/*" 2>/dev/null | head -n1 | xargs dirname)
+    TARGET_DIR=$(pwdx $(pgrep -f "server.ts" | head -n1) 2>/dev/null | awk '{print $2}')
+  fi
+  if [ -z "$TARGET_DIR" ] || [ ! -f "$TARGET_DIR/server.ts" ]; then
+    TARGET_DIR=$(find /root /home /var/www / -maxdepth 4 -name "server.ts" -not -path "*/node_modules/*" 2>/dev/null | head -n1 | xargs dirname 2>/dev/null)
   fi
   if [ -n "$TARGET_DIR" ] && [ -d "$TARGET_DIR" ]; then
     echo "--> ورود به پوشه پروژه: $TARGET_DIR"
     cd "$TARGET_DIR"
   else
-    echo "خطا: پوشه پروژه پیدا نشد! لطفا ابتدا با دستور cd وارد پوشه پروژه شوید."
+    echo "خطا: پوشه پروژه پیدا نشد! لطفا با دستور cd وارد پوشه پروژه شوید."
     exit 1
   fi
 fi
