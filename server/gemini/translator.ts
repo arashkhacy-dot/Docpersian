@@ -179,10 +179,10 @@ export class GeminiTranslator {
     }
 
     // 2. Adaptive chunk sizing based on engine and text length:
-    // For local engine (Ollama/VPS): 1 page per request, concurrency = 1 (smooth 1-by-1 progress, no GPU overload).
-    // For Gemini: 2-3 pages per request if long document pages, or 10-15 if short snippet items.
+    // For local engine: 1 page per request if long text (>250 chars), or 4 items per request if short PPTX/table snippets.
+    // For Gemini: 2-3 pages per request if long document pages, or 12-15 if short snippet items.
     const isDocPage = uncachedItems.some((it) => it.text.length > 250);
-    const chunkSize = this.engine === 'local' ? 1 : isDocPage ? 2 : 12;
+    const chunkSize = this.engine === 'local' ? (isDocPage ? 1 : 4) : isDocPage ? 2 : 12;
     const maxConcurrency = this.engine === 'local' ? 1 : 3;
 
     const chunks: TranslationUnit[][] = [];
@@ -228,9 +228,22 @@ export class GeminiTranslator {
       try {
         return await this.callLocalTranslate(chunk);
       } catch (localErr) {
-        console.warn('[LOCAL_MODEL_WARNING] Local model translation failed, falling back:', localErr);
+        console.warn('[LOCAL_MODEL_WARNING] Local model translation failed, retrying once:', localErr);
+        // Fast 1.5s retry before giving up on local model
+        try {
+          await new Promise((res) => setTimeout(res, 1500));
+          return await this.callLocalTranslate(chunk);
+        } catch (retryErr) {
+          console.warn('[LOCAL_MODEL_WARNING] Local model retry also failed, falling back to Gemini candidates:', retryErr);
+        }
+
+        // Try Gemini with multi-model fallback and 503 protection
         if (this.ai && this.isApiKeyValid()) {
-          return await this.callGeminiTranslate(chunk);
+          try {
+            return await this.callGeminiTranslate(chunk);
+          } catch (gemErr) {
+            console.warn('[GEMINI_FALLBACK_FAIL] Gemini fallback failed, safely preserving text:', gemErr);
+          }
         }
         return this.fallbackTranslate(chunk);
       }
@@ -238,6 +251,7 @@ export class GeminiTranslator {
 
     const modelsToTry = [
       this.model,
+      'gemini-2.5-flash',
       this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
       'gemini-flash-latest',
     ];
@@ -246,25 +260,34 @@ export class GeminiTranslator {
       try {
         return await this.callGeminiTranslate(chunk, modelCandidate);
       } catch (err: any) {
-        // If quota exceeded (429 with 'quota' or 'RESOURCE_EXHAUSTED'), skip to next model or fallback
-        if (err?.status === 429 && (err?.message?.includes('quota') || err?.message?.includes('RESOURCE_EXHAUSTED'))) {
-          continue;
-        }
-        // If 503 (high demand) or 500/502, try next candidate immediately
-        if (err?.status === 503 || err?.status === 500 || err?.status === 502) {
+        const errMsg = String(err?.message || err || '');
+        const isBusyOrQuota =
+          err?.status === 503 ||
+          err?.status === 429 ||
+          err?.status === 500 ||
+          err?.status === 502 ||
+          err?.code === 503 ||
+          errMsg.includes('503') ||
+          errMsg.includes('UNAVAILABLE') ||
+          errMsg.includes('high demand') ||
+          errMsg.includes('RESOURCE_EXHAUSTED') ||
+          errMsg.includes('quota');
+
+        if (isBusyOrQuota) {
+          console.warn(`[GEMINI_BUSY] Model ${modelCandidate} experiencing 503/high demand, trying next candidate...`);
           continue;
         }
       }
     }
 
-    // If all model candidates failed once, do 1 fast retry with short jitter (not long sleep)
+    // If all model candidates failed once, do 1 fast retry with short jitter
     if (attempt <= 2) {
       const backoffMs = 500 + Math.random() * 500;
       await new Promise((res) => setTimeout(res, backoffMs));
       return this.translateChunkWithRetry(chunk, attempt + 1);
     }
 
-    // If online Gemini translation fails or API key is absent, use faithful transliteration/fallback
+    // If online Gemini translation fails or API key is absent, use faithful transliteration/fallback without throwing
     return this.fallbackTranslate(chunk);
   }
 
@@ -311,45 +334,73 @@ CRITICAL INSTRUCTIONS:
       context: c.context || '',
     }));
 
-    const response = await this.ai.models.generateContent({
-      model: modelToUse,
-      contents: JSON.stringify(inputPayload),
-      config: {
-        systemInstruction,
-        temperature: 0.1,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              translatedText: { type: Type.STRING },
+    const candidateModels = Array.from(
+      new Set(
+        overrideModel
+          ? [overrideModel, 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
+          : [this.model, 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
+      )
+    );
+
+    for (const modelCandidate of candidateModels) {
+      try {
+        const response = await this.ai.models.generateContent({
+          model: modelCandidate,
+          contents: JSON.stringify(inputPayload),
+          config: {
+            systemInstruction,
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  translatedText: { type: Type.STRING },
+                },
+                required: ['id', 'translatedText'],
+              },
             },
-            required: ['id', 'translatedText'],
           },
-        },
-      },
-    });
-
-    const responseText = response.text?.trim() || '[]';
-    try {
-      const parsed = JSON.parse(responseText) as Array<{ id: string; translatedText: string }>;
-      const mappedResults: TranslationResult[] = [];
-      const parsedMap = new Map(parsed.map((p) => [p.id, p.translatedText]));
-
-      for (const item of chunk) {
-        const tr = parsedMap.get(item.id);
-        const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
-        mappedResults.push({
-          id: item.id,
-          translatedText: finalText,
         });
+
+        const responseText = response.text?.trim() || '[]';
+        const parsed = JSON.parse(responseText) as Array<{ id: string; translatedText: string }>;
+        const mappedResults: TranslationResult[] = [];
+        const parsedMap = new Map(parsed.map((p) => [p.id, p.translatedText]));
+
+        for (const item of chunk) {
+          const tr = parsedMap.get(item.id);
+          const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
+          mappedResults.push({
+            id: item.id,
+            translatedText: finalText,
+          });
+        }
+        return mappedResults;
+      } catch (err: any) {
+        const errMsg = String(err?.message || err || '');
+        const isBusyOrQuota =
+          err?.status === 503 ||
+          err?.status === 429 ||
+          err?.status === 500 ||
+          err?.status === 502 ||
+          err?.code === 503 ||
+          errMsg.includes('503') ||
+          errMsg.includes('UNAVAILABLE') ||
+          errMsg.includes('high demand') ||
+          errMsg.includes('RESOURCE_EXHAUSTED') ||
+          errMsg.includes('quota');
+
+        console.warn(`[GEMINI_CALL_FAIL] Model ${modelCandidate} failed (isBusy=${isBusyOrQuota}):`, errMsg.substring(0, 120));
+        if (isBusyOrQuota) {
+          continue;
+        }
       }
-      return mappedResults;
-    } catch {
-      return this.fallbackTranslate(chunk);
     }
+
+    return this.fallbackTranslate(chunk);
   }
 
   private parseLocalTranslationResponse(content: string, chunk: TranslationUnit[]): Map<string, string> {
@@ -695,6 +746,7 @@ RULES:
 
     const modelsToTry = [
       this.model,
+      'gemini-2.5-flash',
       this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
       'gemini-flash-latest',
     ];
@@ -755,6 +807,7 @@ RULES:
 
     const modelsToTry = [
       this.model,
+      'gemini-2.5-flash',
       this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
       'gemini-flash-latest',
     ];
