@@ -1010,20 +1010,21 @@ function renderPersianTextToPage(
     }
 
     const isScannedPage = !sourceLines || sourceLines.length === 0;
+    const cardPaddingX = isScannedPage ? 14 : 0;
     if (isScannedPage) {
       try {
         const fullBlockH = calcFullH(fontSize, lineHeight, paragraphGap);
-        const cardY = Math.max(bottomMargin + 4, curY - fullBlockH - 4);
-        const cardH = Math.min(height - cardY - 20, fullBlockH + 16);
+        const cardY = Math.max(bottomMargin + 4, curY - fullBlockH - 8);
+        const cardH = Math.min(height - cardY - 20, fullBlockH + 22);
         page.drawRectangle({
-          x: marginX - 6,
+          x: marginX - 10,
           y: cardY,
-          width: contentWidth + 12,
+          width: contentWidth + 20,
           height: cardH,
           color: rgb(1, 1, 1),
           opacity: 0.95,
-          borderColor: rgb(0.88, 0.91, 0.95),
-          borderWidth: 0.5,
+          borderColor: rgb(0.85, 0.88, 0.93),
+          borderWidth: 0.8,
         });
       } catch {}
     }
@@ -1049,8 +1050,16 @@ function renderPersianTextToPage(
       const fontToUse = isHeading ? fontBold : fontReg;
       const f = isHeading ? fontSize + 1.2 : fontSize;
       const lh = isHeading ? lineHeight + 2.0 : lineHeight;
-      const effectiveContentW = isNoticeWarning ? contentWidth - 26 : isPoemLine ? contentWidth - 40 : contentWidth;
-      const effectiveRightX = isNoticeWarning ? rightX - 13 : isPoemLine ? rightX - 20 : rightX;
+      const effectiveContentW = isNoticeWarning
+        ? contentWidth - 26
+        : isPoemLine
+        ? contentWidth - 40
+        : contentWidth - cardPaddingX * 2;
+      const effectiveRightX = isNoticeWarning
+        ? rightX - 13
+        : isPoemLine
+        ? rightX - 20
+        : rightX - cardPaddingX;
 
       const lines = wrapPersianText(p, fontToUse, f, effectiveContentW);
 
@@ -1596,6 +1605,11 @@ export class PDFProcessor implements DocumentProcessor {
 
       const pageIndex = i + 1;
       const page = copiedPages[i];
+
+      // Normalize page rotation so text and page render upright without 90-degree sideways tilt
+      if (page.getRotation().angle !== 0) {
+        page.setRotation(degrees(0));
+      }
 
       // CRITICAL INVARIANT: The physical page is added unconditionally to guarantee page count equality!
       outputDoc.addPage(page);

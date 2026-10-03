@@ -60,6 +60,8 @@ export function cleanCursiveJoining(raw: string): string {
   s = s.replace(/[\uFEFF\u200B\u200E\u200F\u00AD\u202A-\u202E\u2066-\u2069]/g, '');
 
   const TOKEN = '###ZWNJ###';
+  // Remove accidental ZWNJ before country/place names ending in ستان
+  s = s.replace(/(انگلس|کردس|افغانس|تاجیکس|ارمس|لرستان|گلس|بوس)\u200C+تان/g, '$1تان');
   // Keep grammatical prefixes: می / نمی
   s = s.replace(/(^|\s)(ن?می)\u200C/g, (_m, p1, p2) => p1 + p2 + TOKEN);
   // Keep grammatical suffixes: ها, های, تر, ترین, ام, ات, اش, مان, تان, شان, یی, ای
@@ -92,6 +94,23 @@ export function healPersianSpaces(text: string): string {
 
   // Step 3: Collapse excessive spaces and tabs (2 or more)
   s = s.replace(/[ \t]{2,}/g, ' ');
+
+  // Step 3.5: Systematic repair of broken letter connections seen in OCR / vision models
+  // 1. Repair isolated trailing 'ی' after consonants: 'مشترک ی' -> 'مشترکی', 'قدیم ی' -> 'قدیمی'
+  s = s.replace(/([بپتثجچحخسشصضطظعغفقکگلمنه])\s+ی(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1ی');
+  // 2. Repair isolated trailing 'یی' after Alef: 'اسپانیا یی' -> 'اسپانیایی'
+  s = s.replace(/([اآ])\s+یی(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1یی');
+  // 3. Repair past-tense and verb endings: 'داش تند' -> 'داشتند', 'رف تند' -> 'رفتند', 'گف ته' -> 'گفته', 'گفت ند' -> 'گفتند'
+  s = s.replace(/([گکدربخشپمتنفثحجچرزژسصضطظعغفقلموهی])\s+(تند|ته|ند)(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1$2');
+  // 4. Repair 'شما را' (from 'شمار ا')
+  s = s.replace(/(^|\s)شمار\s+ا(?=$|\s|[،.؛:!؟\-\)»\]])/g, '$1شما را');
+  // 5. Repair specific broken stems
+  s = s.replace(/انگلس\s*[\u200C\s]*تان/g, 'انگلستان');
+  s = s.replace(/تصاو\s+یر/g, 'تصاویر');
+  s = s.replace(/چ\s+یزی/g, 'چیزی');
+  s = s.replace(/هیجان\s*انگ\s*یز/g, 'هیجان‌انگیز');
+  s = s.replace(/لیور\s+پول/g, 'لیورپول');
+  s = s.replace(/بارس\s+لون/g, 'بارسلون');
 
   // Step 4: Dictionary of well-known split words seen in novels (Animal Farm) & automotive manuals (Changan)
   const wordFixes: Array<[RegExp, string]> = [
