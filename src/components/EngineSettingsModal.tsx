@@ -296,9 +296,12 @@ export const EngineSettingsModal: React.FC<EngineSettingsModalProps> = ({ isOpen
 
             {/* Quick Helper for user's VPS */}
             <div className="mt-2 p-2.5 bg-slate-950/80 rounded-lg border border-slate-800/80 text-[11px] text-slate-400 leading-relaxed font-mono">
-              <span className="text-indigo-400 font-bold">دستور نصب تک‌خطی مدل روی سرور شخصی:</span>
+              <span className="text-indigo-400 font-bold">دستور نصب مدل‌های ویژن یا سبک در سرور شخصی:</span>
               <div className="mt-1 bg-black/60 p-2 rounded text-emerald-300 select-all overflow-x-auto">
-                curl -fsSL https://ollama.com/install.sh | sh && ollama run qwen2.5-vl:3b
+                ollama run llama3.2-vision
+              </div>
+              <div className="mt-1 text-[10px] text-slate-400">
+                یا برای متن‌های فوق‌سریع: <code className="text-indigo-300">ollama run qwen2.5:3b</code>
               </div>
             </div>
           </div>

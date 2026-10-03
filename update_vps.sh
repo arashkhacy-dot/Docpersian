@@ -49,13 +49,18 @@ npm install --legacy-peer-deps
 echo "--> ۴. کامپایل و ساخت فرانت‌اند (npm run build)..."
 npm run build
 
-# ۵. ری‌استارت سرویس PM2
-echo "--> ۵. راه‌اندازی مجدد سرور (PM2 restart)..."
+# ۵. ری‌استارت سرویس PM2 و دائمی‌سازی سرویس Ollama
+echo "--> ۵. راه‌اندازی و دائمی‌سازی سرویس‌ها (PM2 & Ollama)..."
+systemctl enable ollama 2>/dev/null || true
+systemctl start ollama 2>/dev/null || true
+
 pm2 restart docushift || pm2 start "npx tsx server.ts" --name docushift
 pm2 save
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 
 echo ""
 echo "============================================================"
 echo "  ✅ به‌روزرسانی سرور با موفقیت کامل انجام شد!"
 echo "============================================================"
 pm2 status docushift 2>/dev/null || pm2 status || true
+systemctl is-active ollama 2>/dev/null && echo "  ✅ سرویس مدل محلی (Ollama) دائمی و فعال است." || true
