@@ -885,21 +885,28 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 // ================= FRONTEND / VITE SERVING =================
 async function startServer() {
-  if (config.isDev) {
+  const distPath = path.resolve(__dirname, 'dist');
+  const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
+
+  if (hasDist && (!config.isDev || process.env.NODE_ENV === 'production' || process.env.SERVE_DIST === 'true')) {
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+    console.log('[FRONTEND] Serving optimized production build from dist (Zero reload glitches)');
+  } else if (config.isDev) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.resolve(__dirname, 'dist');
-    if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
-      app.get('*', (_req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
-      });
-    }
+    console.log('[FRONTEND] Serving Vite middleware (HMR disabled to prevent mobile reload glitches)');
+  } else if (hasDist) {
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
   }
 
   const server = app.listen(config.port, '0.0.0.0', () => {

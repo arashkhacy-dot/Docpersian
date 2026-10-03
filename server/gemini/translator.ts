@@ -384,18 +384,28 @@ Translate each text item faithfully into fluent, formal Persian. Return ONLY a v
     pageContext?: string,
     mimeType = 'image/jpeg'
   ): Promise<string> {
-    const prompt = `You are an expert technical vehicle and document translator specializing in Persian (فارسی).
+    const isVehicleDiagram = pageContext?.includes('خودرو') || pageContext?.includes('دیاگرام خودرو');
+    const prompt = isVehicleDiagram
+      ? `You are an expert technical vehicle and document translator specializing in Persian (فارسی).
 Transcribe all text, labels, callouts, arrows, part names, diagrams, tables, and notes visible on this vehicle manual or diagram image.
-For technical schematics/diagrams, provide a crisp, clear component list in Persian:
+For technical schematics/diagrams, provide a component list in Persian:
 • [شماره یا عنوان]: [نام و معادل دقیق فارسی قطعه]
 ${pageContext ? `Context: ${pageContext}` : ''}
 RULES:
 1. Output ONLY the translated Persian content and part names. Do not include introductory or conversational filler.
 2. Keep numbers, technical codes, and part numbers intact.
-3. Keep each part or label on its OWN separate line using \\n.`;
+3. Keep each part or label on its OWN separate line using \\n.`
+      : `You are an expert professional translator and editor into Persian (فارسی).
+Transcribe and translate all text, chapter headings, story paragraphs, character dialogues, speech bubbles, captions, and narrative text visible on this scanned document or book page into fluent, natural Persian.
+${pageContext ? `Context: ${pageContext}` : ''}
+RULES:
+1. Translate all text accurately, naturally, and fluently into high-quality Persian (فارسی روان، شیوا و خواندنی).
+2. Maintain the natural reading sequence from top to bottom.
+3. Separate distinct paragraphs and dialogue blocks with a blank line (\\n\\n).
+4. Output ONLY the translated Persian text without any introductory conversational filler or English text.`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), 90000);
 
     try {
       const endpoint = `${this.localUrl.replace(/\/+$/, '')}/chat/completions`;
@@ -510,15 +520,25 @@ RULES:
       'gemini-flash-latest',
     ];
 
-    const prompt = `You are an expert technical vehicle and document translator specializing in Persian (فارسی).
+    const isVehicleDiagram = pageContext?.includes('خودرو') || pageContext?.includes('دیاگرام خودرو');
+    const prompt = isVehicleDiagram
+      ? `You are an expert technical vehicle and document translator specializing in Persian (فارسی).
 Transcribe all text, labels, callouts, arrows, part names, diagrams, tables, and notes visible on this vehicle manual or diagram image.
-For technical schematics/diagrams, provide a crisp, clear component list in Persian:
+For technical schematics/diagrams, provide a component list in Persian:
 • [شماره یا عنوان]: [نام و معادل دقیق فارسی قطعه]
 ${pageContext ? `Context: ${pageContext}` : ''}
 RULES:
 1. Output ONLY the translated Persian content and part names. Do not include introductory or conversational filler.
 2. Keep numbers, technical codes, and part numbers intact.
-3. Keep each part or label on its OWN separate line using \\n.`;
+3. Keep each part or label on its OWN separate line using \\n.`
+      : `You are an expert professional translator and editor into Persian (فارسی).
+Transcribe and translate all text, chapter headings, story paragraphs, character dialogues, speech bubbles, captions, and narrative text visible on this scanned document or book page into fluent, natural Persian.
+${pageContext ? `Context: ${pageContext}` : ''}
+RULES:
+1. Translate all text accurately, naturally, and fluently into high-quality Persian (فارسی روان، شیوا و خواندنی).
+2. Maintain the natural reading sequence from top to bottom.
+3. Separate distinct paragraphs and dialogue blocks with a blank line (\\n\\n).
+4. Output ONLY the translated Persian text without any introductory conversational filler or English text.`;
 
     for (const model of modelsToTry) {
       try {

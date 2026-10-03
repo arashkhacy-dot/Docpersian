@@ -29,10 +29,10 @@ echo "--> ۱. دریافت آخرین تغییرات از گیت‌هاب (git f
 git fetch --all 2>/dev/null || git fetch origin main 2>/dev/null || true
 git reset --hard origin/main 2>/dev/null || git pull origin main || git pull
 
-# ۲. اطمینان از نصب فونت‌های استاندارد فارسی در اوبونتو (بدون فیلتر)
-echo "--> ۲. نصب و بررسی فونت‌های رسمی فارسی (Noto Sans Arabic)..."
+# ۲. اطمینان از نصب ابزارهای پردازش اسناد اسکن‌شده و فونت‌های فارسی
+echo "--> ۲. نصب ابزارهای بینایی و پردازش اسکن (Ghostscript & Poppler) و فونت‌ها..."
 sudo apt-get update -qq 2>/dev/null || true
-sudo apt-get install -y -qq fonts-noto-core fonts-noto-extra fonts-sil-scheherazade 2>/dev/null || true
+sudo apt-get install -y -qq ghostscript poppler-utils fonts-noto-core fonts-noto-extra fonts-sil-scheherazade 2>/dev/null || true
 
 # بررسی و دانلود فونت وزیرمتن در صورت نیاز
 mkdir -p server/assets/fonts
@@ -49,15 +49,16 @@ echo "--> ۳. نصب پکیج‌ها (npm install)..."
 npm install --legacy-peer-deps
 
 # ۴. بیلد مجدد فرانت‌اند
-echo "--> ۴. کامپایل و ساخت فرانت‌اند (npm run build)..."
+echo "--> ۴. کامپایل و ساخت فرانت‌اند نهایی بدون رفرش (npm run build)..."
 npm run build
 
-# ۵. ری‌استارت سرویس PM2 و دائمی‌سازی سرویس Ollama
-echo "--> ۵. راه‌اندازی و دائمی‌سازی سرویس‌ها (PM2 & Ollama)..."
+# ۵. ری‌استارت سرویس PM2 در مد پروداکشن و دائمی‌سازی سرویس Ollama
+echo "--> ۵. راه‌اندازی و دائمی‌سازی سرویس‌ها در مد Production (PM2 & Ollama)..."
 systemctl enable ollama 2>/dev/null || true
 systemctl start ollama 2>/dev/null || true
 
-pm2 restart docushift || pm2 start "npx tsx server.ts" --name docushift
+export NODE_ENV=production
+pm2 restart docushift --update-env 2>/dev/null || NODE_ENV=production pm2 start "npx tsx server.ts" --name docushift
 pm2 save
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 

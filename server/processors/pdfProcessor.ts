@@ -1009,6 +1009,25 @@ function renderPersianTextToPage(
       paragraphGap = Math.max(2.0, paragraphGap - 0.25);
     }
 
+    const isScannedPage = !sourceLines || sourceLines.length === 0;
+    if (isScannedPage) {
+      try {
+        const fullBlockH = calcFullH(fontSize, lineHeight, paragraphGap);
+        const cardY = Math.max(bottomMargin + 4, curY - fullBlockH - 4);
+        const cardH = Math.min(height - cardY - 20, fullBlockH + 16);
+        page.drawRectangle({
+          x: marginX - 6,
+          y: cardY,
+          width: contentWidth + 12,
+          height: cardH,
+          color: rgb(1, 1, 1),
+          opacity: 0.95,
+          borderColor: rgb(0.88, 0.91, 0.95),
+          borderWidth: 0.5,
+        });
+      } catch {}
+    }
+
     for (let uIdx = 0; uIdx < listParas.length; uIdx++) {
       const p = listParas[uIdx];
       const isNoticeWarning = /^(?:هشدار|خطر|نکته|توجه|احتیاط|WARNING|CAUTION|NOTE)\s*[\:：]/i.test(p);
@@ -1291,17 +1310,40 @@ export class PDFProcessor implements DocumentProcessor {
 
   private async renderPageToBase64Jpeg(pdfPath: string, pageNumber: number): Promise<string> {
     const tmpOut = path.join(os.tmpdir(), `page_${Date.now()}_${pageNumber}_${Math.random().toString(36).substring(2)}.jpg`);
+    const tmpPrefix = path.join(os.tmpdir(), `pdftoppm_${Date.now()}_${pageNumber}_${Math.random().toString(36).substring(2)}`);
+
+    // 1. Try Ghostscript (fast and standard)
     try {
-      await execPromise(`gs -dBATCH -dNOPAUSE -sDEVICE=jpeg -dFirstPage=${pageNumber} -dLastPage=${pageNumber} -r120 -sOutputFile="${tmpOut}" "${pdfPath}"`);
-      if (fs.existsSync(tmpOut)) {
+      await execPromise(
+        `gs -dBATCH -dNOPAUSE -sDEVICE=jpeg -dFirstPage=${pageNumber} -dLastPage=${pageNumber} -r130 -sOutputFile="${tmpOut}" "${pdfPath}"`
+      );
+      if (fs.existsSync(tmpOut) && fs.statSync(tmpOut).size > 100) {
         const buf = await fs.promises.readFile(tmpOut);
         await fs.promises.unlink(tmpOut).catch(() => {});
         return buf.toString('base64');
       }
-      return '';
-    } catch {
-      return '';
+    } catch {}
+
+    // 2. Try pdftoppm (poppler-utils)
+    try {
+      await execPromise(`pdftoppm -jpeg -r 130 -f ${pageNumber} -l ${pageNumber} "${pdfPath}" "${tmpPrefix}"`);
+      const prefixBase = path.basename(tmpPrefix);
+      const allTmp = await fs.promises.readdir(os.tmpdir());
+      const match = allTmp.find((f) => f.startsWith(prefixBase) && (f.endsWith('.jpg') || f.endsWith('.jpeg')));
+      if (match) {
+        const fullMatchPath = path.join(os.tmpdir(), match);
+        const buf = await fs.promises.readFile(fullMatchPath);
+        await fs.promises.unlink(fullMatchPath).catch(() => {});
+        return buf.toString('base64');
+      }
+    } catch {}
+
+    // Cleanup lingering tmpOut if any
+    if (fs.existsSync(tmpOut)) {
+      await fs.promises.unlink(tmpOut).catch(() => {});
     }
+
+    return '';
   }
 
   private decodePdfString(str: string): string {
@@ -1503,31 +1545,40 @@ export class PDFProcessor implements DocumentProcessor {
       }
     }
 
-    // Vision OCR for key schematic diagrams if needed (supports up to 15 key diagram pages)
-    const diagramsToScan = diagramPagesToScan.slice(0, 15);
-    if (diagramsToScan.length > 0) {
-      log('info', 'DIAGRAM_VISION_START', `jobId=${job.jobId} diagrams=${diagramsToScan.length}`);
-      for (let dIdx = 0; dIdx < diagramsToScan.length; dIdx++) {
-        const diagPage = diagramsToScan[dIdx];
+    // Vision OCR for scanned books, documents, and key schematic diagrams
+    const isScannedDocument = pageUnitsToTranslate.length === 0;
+    const pagesToScan = isScannedDocument
+      ? Array.from({ length: totalPages }, (_, i) => i + 1)
+      : diagramPagesToScan.slice(0, 25);
+
+    if (pagesToScan.length > 0) {
+      log('info', 'VISION_TRANSLATION_START', `jobId=${job.jobId} isScanned=${isScannedDocument} pages=${pagesToScan.length}`);
+      for (let dIdx = 0; dIdx < pagesToScan.length; dIdx++) {
+        if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
+        const diagPage = pagesToScan[dIdx];
         await onProgress(
-          'extracting',
+          'translating',
           dIdx + 1,
-          diagramsToScan.length,
-          `تحلیل بصری علائم دیاگرام صفحه ${diagPage} از ${totalPages}...`
+          pagesToScan.length,
+          isScannedDocument
+            ? `ترجمه بینایی هوشمند صفحه اسکن‌شده ${diagPage} از ${totalPages}...`
+            : `تحلیل بصری علائم دیاگرام صفحه ${diagPage} از ${totalPages}...`
         );
         try {
           const b64 = await this.renderPageToBase64Jpeg(job.inputPath, diagPage);
           if (b64) {
             const visionFa = await defaultTranslator.extractAndTranslateFromImage(
               b64,
-              `صفحه دیاگرام ${diagPage} از دفترچه خودرو ${job.originalFileName}`
+              isScannedDocument
+                ? `صفحه ${diagPage} از کتاب یا سند اسکن‌شده ${job.originalFileName}`
+                : `صفحه دیاگرام ${diagPage} از سند ${job.originalFileName}`
             );
             if (visionFa && visionFa.trim()) {
               translatedResultsMap.set(`page_${diagPage}`, visionFa.trim());
             }
           }
         } catch (diagErr) {
-          log('warn', 'DIAGRAM_VISION_ERROR', `page=${diagPage} err=${diagErr}`);
+          log('warn', 'VISION_TRANSLATE_WARN', `page=${diagPage} err=${diagErr}`);
         }
       }
     }

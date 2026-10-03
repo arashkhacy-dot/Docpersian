@@ -184,7 +184,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
       {/* Tab 1: Upload from device */}
       {activeTab === 'device' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <label
+          <div
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
@@ -249,7 +249,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                 </div>
               </div>
             )}
-          </label>
+          </div>
 
           {/* Live Chunked Upload Progress Card */}
           {isUploading && uploadProgress && (
