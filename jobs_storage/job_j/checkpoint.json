@@ -4,23 +4,23 @@
   "outputFileName": "mixed_empty_FA.pdf",
   "mimeType": "application/pdf",
   "documentType": "pdf",
-  "fileSizeBytes": 1480,
+  "fileSizeBytes": 1481,
   "inputPath": "/app/applet/jobs_storage/job_j/input/mixed_empty.pdf",
   "outputPath": "/app/applet/jobs_storage/job_j/output/mixed_empty_FA.pdf",
-  "inputHash": "989df7108acf7dedb9118f348947a8461192a75a4fd7ef7ef20d9280daafb442",
+  "inputHash": "0fed20273480f192209989602bef1470d6222f5fdc6b0884f919c3d702e6a1ce",
   "status": "completed",
   "progress": 100,
   "currentStage": "idle",
   "currentOperation": "ترجمه و اعتبارسنجی با موفقیت به پایان رسید.",
   "totalItems": 5,
   "processedItems": 5,
-  "totalWords": 110,
+  "totalWords": 82,
   "processedWords": 0,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790932297055,
-  "updatedAt": 1790932306709,
-  "elapsedMs": 9653,
+  "createdAt": 1791187404998,
+  "updatedAt": 1791187416076,
+  "elapsedMs": 11078,
   "retryCount": 0,
   "warnings": [],
   "errors": [],
@@ -38,7 +38,7 @@
         "index": 2,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 54,
+        "wordCount": 5,
         "retryAttempts": 0
       },
       {
@@ -52,7 +52,7 @@
         "index": 4,
         "status": "reconstructed",
         "hasTranslatableText": true,
-        "wordCount": 29,
+        "wordCount": 50,
         "retryAttempts": 0
       },
       {
@@ -66,148 +66,154 @@
   },
   "debugLogs": [
     {
-      "timestamp": "2026-10-02T09:11:37.056Z",
+      "timestamp": "2026-10-05T08:03:24.998Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing mixed_empty.pdf (pdf)"
     },
     {
-      "timestamp": "2026-10-02T09:11:37.060Z",
+      "timestamp": "2026-10-05T08:03:25.002Z",
       "level": "info",
       "tag": "EXTRACTION_START",
       "message": "jobId=job_j total=5"
     },
     {
-      "timestamp": "2026-10-02T09:11:37.081Z",
+      "timestamp": "2026-10-05T08:03:25.034Z",
       "level": "info",
       "tag": "EXTRACTION_END",
       "message": "jobId=job_j totalPages=5"
     },
     {
-      "timestamp": "2026-10-02T09:11:37.104Z",
+      "timestamp": "2026-10-05T08:03:25.053Z",
       "level": "info",
       "tag": "BATCH_TRANSLATION_START",
       "message": "jobId=job_j textPages=3 visualPages=2"
     },
     {
-      "timestamp": "2026-10-02T09:11:37.107Z",
+      "timestamp": "2026-10-05T08:03:25.054Z",
       "level": "info",
-      "tag": "DIAGRAM_VISION_START",
-      "message": "jobId=job_j diagrams=2"
+      "tag": "VISION_TRANSLATION_START",
+      "message": "jobId=job_j isScanned=false pages=2"
     },
     {
-      "timestamp": "2026-10-02T09:11:42.058Z",
+      "timestamp": "2026-10-05T08:03:29.999Z",
       "level": "info",
       "tag": "JOB_HEARTBEAT",
-      "message": "jobId=job_j stage=extracting page=2/2 progress=25% timestamp=2026-10-02T09:11:42.058Z"
+      "message": "jobId=job_j stage=translating page=1/2 progress=65% timestamp=2026-10-05T08:03:29.999Z"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.575Z",
+      "timestamp": "2026-10-05T08:03:34.999Z",
+      "level": "info",
+      "tag": "JOB_HEARTBEAT",
+      "message": "jobId=job_j stage=translating page=2/2 progress=65% timestamp=2026-10-05T08:03:34.999Z"
+    },
+    {
+      "timestamp": "2026-10-05T08:03:35.905Z",
       "level": "info",
       "tag": "RECONSTRUCTION_START",
       "message": "jobId=job_j item=1 total=5"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.575Z",
+      "timestamp": "2026-10-05T08:03:35.906Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_j page=1"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.584Z",
+      "timestamp": "2026-10-05T08:03:35.922Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_j page=1"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.585Z",
+      "timestamp": "2026-10-05T08:03:35.926Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_j page=2"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.619Z",
+      "timestamp": "2026-10-05T08:03:35.932Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_j page=2"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.622Z",
+      "timestamp": "2026-10-05T08:03:35.933Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_j page=3"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.626Z",
+      "timestamp": "2026-10-05T08:03:35.938Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_j page=3"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.629Z",
+      "timestamp": "2026-10-05T08:03:35.939Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_j page=4"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.637Z",
+      "timestamp": "2026-10-05T08:03:35.976Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_j page=4"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.637Z",
+      "timestamp": "2026-10-05T08:03:35.977Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_j page=5"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.639Z",
+      "timestamp": "2026-10-05T08:03:35.982Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_j page=5"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.640Z",
+      "timestamp": "2026-10-05T08:03:35.983Z",
       "level": "info",
       "tag": "PAGE_SAVE_START",
       "message": "jobId=job_j page=5"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.705Z",
+      "timestamp": "2026-10-05T08:03:36.070Z",
       "level": "info",
       "tag": "PAGE_SAVE_END",
       "message": "jobId=job_j page=5"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.705Z",
+      "timestamp": "2026-10-05T08:03:36.070Z",
       "level": "info",
       "tag": "RECONSTRUCTION_END",
       "message": "jobId=job_j"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.706Z",
+      "timestamp": "2026-10-05T08:03:36.073Z",
       "level": "info",
       "tag": "VALIDATION_START",
       "message": "Starting independent output validation"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.709Z",
+      "timestamp": "2026-10-05T08:03:36.076Z",
       "level": "info",
       "tag": "VALIDATION_END",
       "message": "Validation completed. Passed=true, Warnings=0"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.709Z",
+      "timestamp": "2026-10-05T08:03:36.076Z",
       "level": "info",
       "tag": "JOB_COMPLETE",
       "message": "Job finished successfully as completed"
     }
   ],
-  "startedAt": 1790932297056,
-  "lastHeartbeatAt": 1790932306639,
+  "startedAt": 1791187404998,
+  "lastHeartbeatAt": 1791187415982,
   "estimatedRemainingMs": 0,
-  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: mixed_empty.pdf\r\nتعداد صفحات: 5 | تاریخ: ۱۴۰۵/۷/۱۰\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۱: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 2 از 5\r\n----------------------------------------------------------------------\r\n\r\nبا توجه به تصویر ارائه‌شده که یک صفحه کاملاً سفید (خالی) است، هیچ متن، برچسب، نمودار یا قطعه‌ای برای ترجمه یا استخراج وجود ندارد.\n\nاگر تصویر دیگری دارید یا بخشی از محتوا در بارگذاری حذف شده است، لطفاً آن را ارسال کنید تا فرآیند ترجمه و لیست‌سازی قطعات را طبق دستورالعمل شما انجام دهم.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 3 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۳: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 4 از 5\r\n----------------------------------------------------------------------\r\n\r\nبا توجه به تصویر ارسالی که کاملاً سفید (بدون محتوا) است، امکان استخراج متن یا لیست قطعات وجود ندارد. لطفاً تصویر صحیح یا فایل دارای محتوا را ارسال کنید.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 5 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۵: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
+  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: mixed_empty.pdf\r\nتعداد صفحات: 5 | تاریخ: ۱۴۰۵/۷/۱۳\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۱: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 2 از 5\r\n----------------------------------------------------------------------\r\n\r\nتصویر فاقد هرگونه متن است.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 3 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۳: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 4 از 5\r\n----------------------------------------------------------------------\r\n\r\nنمودار ۴\n\nداده‌ها بر اساس «بررسی ملی سلامت و تغذیه» (NHANES) در سال‌های ۲۰۱۷-۲۰۱۸.\n\nنرخ چاقی بزرگسالان (درصد) بر اساس سن و جنسیت (۲۰۱۷-۲۰۱۸)\n\nسن (سال)\nمردان\nزنان\nکل\n\n۲۰-۳۹\n۳۶.۵\n۳۷.۴\n۳۶.۹\n\n۴۰-۵۹\n۴۳.۵\n۴۳.۰\n۴۳.۳\n\n۶۰ و بالاتر\n۴۲.۳\n۴۵.۰\n۴۳.۷\n\nمجموع (۲۰ و بالاتر)\n۴۰.۳\n۴۱.۵\n۴۰.۹\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 5 از 5\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۵: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
   "pageTranslations": [
     {
       "pageNumber": 1,
@@ -217,7 +223,7 @@
     {
       "pageNumber": 2,
       "text": "",
-      "translatedText": "با توجه به تصویر ارائه‌شده که یک صفحه کاملاً سفید (خالی) است، هیچ متن، برچسب، نمودار یا قطعه‌ای برای ترجمه یا استخراج وجود ندارد.\n\nاگر تصویر دیگری دارید یا بخشی از محتوا در بارگذاری حذف شده است، لطفاً آن را ارسال کنید تا فرآیند ترجمه و لیست‌سازی قطعات را طبق دستورالعمل شما انجام دهم."
+      "translatedText": "تصویر فاقد هرگونه متن است."
     },
     {
       "pageNumber": 3,
@@ -227,7 +233,7 @@
     {
       "pageNumber": 4,
       "text": "",
-      "translatedText": "با توجه به تصویر ارسالی که کاملاً سفید (بدون محتوا) است، امکان استخراج متن یا لیست قطعات وجود ندارد. لطفاً تصویر صحیح یا فایل دارای محتوا را ارسال کنید."
+      "translatedText": "نمودار ۴\n\nداده‌ها بر اساس «بررسی ملی سلامت و تغذیه» (NHANES) در سال‌های ۲۰۱۷-۲۰۱۸.\n\nنرخ چاقی بزرگسالان (درصد) بر اساس سن و جنسیت (۲۰۱۷-۲۰۱۸)\n\nسن (سال)\nمردان\nزنان\nکل\n\n۲۰-۳۹\n۳۶.۵\n۳۷.۴\n۳۶.۹\n\n۴۰-۵۹\n۴۳.۵\n۴۳.۰\n۴۳.۳\n\n۶۰ و بالاتر\n۴۲.۳\n۴۵.۰\n۴۳.۷\n\nمجموع (۲۰ و بالاتر)\n۴۰.۳\n۴۱.۵\n۴۰.۹"
     },
     {
       "pageNumber": 5,
@@ -235,7 +241,7 @@
       "translatedText": "محتوای صفحه ۵: مقدمه و تحلیل فنی معماری."
     }
   ],
-  "outputHash": "f6bef66714895af062bdf67d29f8a8a381b262d3166532c16674f290f5c1ac0f",
+  "outputHash": "15360ac0edbcff8e1ff4cf2bf078baa78fae2f04a9ed24bba50e46c3cc75e600",
   "qualityReport": {
     "originalCount": 5,
     "outputCount": 5,
@@ -248,5 +254,5 @@
       "تطابق کامل: 5 صفحه/اسلاید ورودی به دقت حفظ شد."
     ]
   },
-  "completedAt": 1790932306709
+  "completedAt": 1791187416076
 }

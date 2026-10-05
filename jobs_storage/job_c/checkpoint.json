@@ -18,8 +18,8 @@
   "processedWords": 880,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790932253674,
-  "updatedAt": 1790932253674,
+  "createdAt": 1791187207717,
+  "updatedAt": 1791187207717,
   "elapsedMs": 0,
   "retryCount": 0,
   "warnings": [],
@@ -30,19 +30,19 @@
   },
   "debugLogs": [
     {
-      "timestamp": "2026-10-02T09:10:53.674Z",
+      "timestamp": "2026-10-05T08:00:07.717Z",
       "level": "warn",
       "tag": "JOB_CANCEL",
       "message": "Cancellation requested by user"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.674Z",
+      "timestamp": "2026-10-05T08:00:07.717Z",
       "level": "warn",
       "tag": "JOB_TERMINATE",
       "message": "Job reached terminal state: cancelled - عملیات لغو گردید."
     }
   ],
   "cancellationRequested": true,
-  "completedAt": 1790932253674,
+  "completedAt": 1791187207717,
   "estimatedRemainingMs": 0
 }

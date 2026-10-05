@@ -7,7 +7,7 @@
   "fileSizeBytes": 3474,
   "inputPath": "/app/applet/jobs_storage/job_pptx/input/presentation_6.pptx",
   "outputPath": "/app/applet/jobs_storage/job_pptx/output/presentation_6_FA.pptx",
-  "inputHash": "09791c4b955e4661c4a0f6baa942e1eb431007a8cac87be962a1124f50e574de",
+  "inputHash": "a4ffb72a6e0a171ffda47f63e3c70d0d3404ddd084ae081f00b82f7248e160e6",
   "status": "completed",
   "progress": 100,
   "currentStage": "idle",
@@ -18,9 +18,9 @@
   "processedWords": 0,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790932306745,
-  "updatedAt": 1790932306793,
-  "elapsedMs": 48,
+  "createdAt": 1791187416136,
+  "updatedAt": 1791187416180,
+  "elapsedMs": 44,
   "retryCount": 0,
   "warnings": [],
   "errors": [],
@@ -73,32 +73,32 @@
   },
   "debugLogs": [
     {
-      "timestamp": "2026-10-02T09:11:46.745Z",
+      "timestamp": "2026-10-05T08:03:36.136Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing presentation_6.pptx (pptx)"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.790Z",
+      "timestamp": "2026-10-05T08:03:36.177Z",
       "level": "info",
       "tag": "VALIDATION_START",
       "message": "Starting independent output validation"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.793Z",
+      "timestamp": "2026-10-05T08:03:36.180Z",
       "level": "info",
       "tag": "VALIDATION_END",
       "message": "Validation completed. Passed=true, Warnings=0"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.793Z",
+      "timestamp": "2026-10-05T08:03:36.180Z",
       "level": "info",
       "tag": "JOB_COMPLETE",
       "message": "Job finished successfully as completed"
     }
   ],
-  "startedAt": 1790932306745,
-  "lastHeartbeatAt": 1790932306778,
+  "startedAt": 1791187416136,
+  "lastHeartbeatAt": 1791187416164,
   "estimatedRemainingMs": 0,
   "translatedText": "﻿======================================================================\r\nDocuShift | ترجمه کامل و استخراج اختصاصی اسلایدهای ارائه: presentation_6.pptx\r\nتعداد اسلایدها: 6 | کلمات ترجمه‌شده: ۳۰\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 1 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید ۱ نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 2 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید ۲ نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 3 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید 3 نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 4 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید 4 نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 5 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید ۵ نقشه راه استراتژیک\r\n\r\n\r\n----------------------------------------------------------------------\r\n🖥️ اسلاید 6 از 6\r\n----------------------------------------------------------------------\r\n\r\nاسلاید 6 نقشه راه استراتژیک\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل اسلایدهای ارائه\r\n======================================================================\r\n",
   "pageTranslations": [
@@ -133,7 +133,7 @@
       "translatedText": "اسلاید 6 نقشه راه استراتژیک"
     }
   ],
-  "outputHash": "1821800ae1617670de492d8d841f322d9f95573bdd3b8c2b0acca97c4237b8a1",
+  "outputHash": "15d475c5ae6decd6bb4f0744bccf1207dd561ce970d36078f027fd8ce03e9ecc",
   "qualityReport": {
     "originalCount": 6,
     "outputCount": 6,
@@ -146,5 +146,5 @@
       "تطابق کامل: 6 صفحه/اسلاید ورودی به دقت حفظ شد."
     ]
   },
-  "completedAt": 1790932306793
+  "completedAt": 1791187416180
 }

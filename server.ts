@@ -832,12 +832,17 @@ app.get('/api/settings/engine', (_req: Request, res: Response) => {
 });
 
 app.post('/api/settings/engine', (req: Request, res: Response) => {
-  const { engine, localUrl, localModel } = req.body;
+  const { engine, localUrl, localModel, diagramInpainting } = req.body;
   if (engine !== 'gemini' && engine !== 'local') {
     res.status(400).json({ error: 'موتور باید gemini یا local باشد.' });
     return;
   }
-  defaultTranslator.setEngineSettings(engine, localUrl, localModel);
+  defaultTranslator.setEngineSettings(
+    engine,
+    localUrl,
+    localModel,
+    typeof diagramInpainting === 'boolean' ? diagramInpainting : undefined
+  );
   res.json({ success: true, settings: defaultTranslator.getEngineSettings() });
 });
 
@@ -845,6 +850,25 @@ app.post('/api/settings/test-local', async (req: Request, res: Response) => {
   const { localUrl, localModel } = req.body;
   const result = await defaultTranslator.testLocalConnection(localUrl, localModel);
   res.json(result);
+});
+
+// Checkpoint Restoration Endpoint
+app.post('/api/settings/restore-checkpoint', async (_req: Request, res: Response) => {
+  const scriptPath = path.join(process.cwd(), 'restore_checkpoint_v1.sh');
+  if (fs.existsSync(scriptPath)) {
+    try {
+      res.json({
+        success: true,
+        message: 'دستور بازگردانی آماده است. برای بازگردانی کامل به چک‌پوینت پایدار، دستور ./restore_checkpoint_v1.sh را در ترمینال سرور اجرا کنید یا از طریق گیت ریست نمایید.',
+        command: './restore_checkpoint_v1.sh',
+        tag: 'checkpoint-v1.0',
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err?.message || 'خطا در بررسی چک‌پوینت' });
+    }
+  } else {
+    res.status(404).json({ success: false, error: 'فایل اسکریپت چک‌پوینت یافت نشد.' });
+  }
 });
 
 // VPS Update Script Endpoint

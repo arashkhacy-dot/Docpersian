@@ -21,6 +21,7 @@ import {
 } from './persianTypographyEngine';
 import { config } from '../config/env';
 import { createDocxFile } from './docxHelper.js';
+import { defaultDiagramInpainter } from './diagramInpainter.js';
 
 const execPromise = util.promisify(exec);
 
@@ -1560,6 +1561,8 @@ export class PDFProcessor implements DocumentProcessor {
       ? Array.from({ length: totalPages }, (_, i) => i + 1)
       : diagramPagesToScan.slice(0, 25);
 
+    const inpaintedPageImagesMap = new Map<number, Buffer>();
+
     if (pagesToScan.length > 0) {
       log('info', 'VISION_TRANSLATION_START', `jobId=${job.jobId} isScanned=${isScannedDocument} pages=${pagesToScan.length}`);
       let consecutiveVisionFailures = 0;
@@ -1578,6 +1581,25 @@ export class PDFProcessor implements DocumentProcessor {
         try {
           const b64 = await this.renderPageToBase64Jpeg(job.inputPath, diagPage);
           if (b64) {
+            // Smart Diagram & Scanned Page Text Inpainting
+            if (defaultTranslator.isDiagramInpaintingEnabled()) {
+              try {
+                const pageJpgBuf = Buffer.from(b64, 'base64');
+                const inpaintResult = await defaultDiagramInpainter.inpaintDiagramImage(
+                  pageJpgBuf,
+                  'image/jpeg',
+                  isScannedDocument
+                    ? `صفحه اسکن‌شده ${diagPage} از سند: ${job.originalFileName}`
+                    : `صفحه دیاگرام و علائم فنی ${diagPage} از سند: ${job.originalFileName}`
+                );
+                if (inpaintResult.modified && inpaintResult.buffer) {
+                  inpaintedPageImagesMap.set(diagPage, inpaintResult.buffer);
+                }
+              } catch (inpaintErr) {
+                log('warn', 'PDF_DIAGRAM_INPAINT_WARN', `page=${diagPage} err=${inpaintErr}`);
+              }
+            }
+
             const visionFa = await defaultTranslator.extractAndTranslateFromImage(
               b64,
               isScannedDocument
@@ -1677,6 +1699,24 @@ export class PDFProcessor implements DocumentProcessor {
 
       const lines = pageLinesMap.get(pageIndex);
       let renderedInPlace = false;
+
+      // 1. Check if this page has an inpainted diagram image with directly embedded Persian labels
+      if (inpaintedPageImagesMap.has(pageIndex)) {
+        try {
+          const inpaintBuf = inpaintedPageImagesMap.get(pageIndex)!;
+          const embeddedImg = await outputDoc.embedJpg(inpaintBuf);
+          page.drawImage(embeddedImg, {
+            x: 0,
+            y: 0,
+            width: page.getWidth(),
+            height: page.getHeight(),
+          });
+          renderedInPlace = true;
+          log('info', 'PDF_DIAGRAM_INPAINT_EMBEDDED', `jobId=${job.jobId} page=${pageIndex}`);
+        } catch (embedErr) {
+          log('warn', 'PDF_DIAGRAM_EMBED_WARN', `page=${pageIndex} err=${embedErr}`);
+        }
+      }
 
       // Only allow in-place coordinate rendering on genuine diagram/schematic pages
       // where every item is an isolated short callout label (e.g. part numbers [1], [2], [3]...)

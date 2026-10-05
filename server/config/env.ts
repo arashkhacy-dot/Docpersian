@@ -22,6 +22,7 @@ export interface AppConfig {
   retryCount: number;
   cacheEnabled: boolean;
   reconstructionRtlEnabled: boolean;
+  diagramInpaintingEnabled: boolean;
   port: number;
   isDev: boolean;
 }
@@ -56,6 +57,7 @@ export const config: AppConfig = {
   retryCount: parseNumber(process.env.RETRY_COUNT, 5), // 5 maximum retries
   cacheEnabled: parseBoolean(process.env.CACHE_ENABLED, true),
   reconstructionRtlEnabled: parseBoolean(process.env.RECONSTRUCTION_RTL_ENABLED, true),
+  diagramInpaintingEnabled: parseBoolean(process.env.DIAGRAM_INPAINTING_ENABLED, true),
   port: parseNumber(process.env.PORT, 3000),
   isDev: process.env.NODE_ENV !== 'production',
 };

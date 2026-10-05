@@ -7,7 +7,7 @@
   "fileSizeBytes": 1457,
   "inputPath": "/app/applet/jobs_storage/job_a/input/test_a.pdf",
   "outputPath": "/app/applet/jobs_storage/job_a/output/test_a_FA.pdf",
-  "inputHash": "82b266cc03fb326a72c5d8f4b2d0c867a79ae48494bbc7eaf4e538f853090771",
+  "inputHash": "eb93293ab0ad62287543e9d6c1ed85681a1bacc363b77053482683a5f4d24a90",
   "status": "completed",
   "progress": 100,
   "currentStage": "idle",
@@ -18,9 +18,9 @@
   "processedWords": 0,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790932253381,
-  "updatedAt": 1790932253672,
-  "elapsedMs": 291,
+  "createdAt": 1791187207390,
+  "updatedAt": 1791187207715,
+  "elapsedMs": 324,
   "retryCount": 0,
   "warnings": [],
   "errors": [],
@@ -52,112 +52,112 @@
   },
   "debugLogs": [
     {
-      "timestamp": "2026-10-02T09:10:53.381Z",
+      "timestamp": "2026-10-05T08:00:07.391Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing test_a.pdf (pdf)"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.387Z",
+      "timestamp": "2026-10-05T08:00:07.397Z",
       "level": "info",
       "tag": "EXTRACTION_START",
       "message": "jobId=job_a total=3"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.428Z",
+      "timestamp": "2026-10-05T08:00:07.434Z",
       "level": "info",
       "tag": "EXTRACTION_END",
       "message": "jobId=job_a totalPages=3"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.452Z",
+      "timestamp": "2026-10-05T08:00:07.455Z",
       "level": "info",
       "tag": "BATCH_TRANSLATION_START",
       "message": "jobId=job_a textPages=3 visualPages=0"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.455Z",
+      "timestamp": "2026-10-05T08:00:07.458Z",
       "level": "info",
       "tag": "RECONSTRUCTION_START",
       "message": "jobId=job_a item=1 total=3"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.455Z",
+      "timestamp": "2026-10-05T08:00:07.458Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_a page=1"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.488Z",
+      "timestamp": "2026-10-05T08:00:07.525Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_a page=1"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.494Z",
+      "timestamp": "2026-10-05T08:00:07.526Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_a page=2"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.509Z",
+      "timestamp": "2026-10-05T08:00:07.537Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_a page=2"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.509Z",
+      "timestamp": "2026-10-05T08:00:07.538Z",
       "level": "info",
       "tag": "PAGE_RENDER_START",
       "message": "jobId=job_a page=3"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.513Z",
+      "timestamp": "2026-10-05T08:00:07.546Z",
       "level": "info",
       "tag": "PAGE_RENDER_END",
       "message": "jobId=job_a page=3"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.514Z",
+      "timestamp": "2026-10-05T08:00:07.547Z",
       "level": "info",
       "tag": "PAGE_SAVE_START",
       "message": "jobId=job_a page=3"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.666Z",
+      "timestamp": "2026-10-05T08:00:07.709Z",
       "level": "info",
       "tag": "PAGE_SAVE_END",
       "message": "jobId=job_a page=3"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.666Z",
+      "timestamp": "2026-10-05T08:00:07.710Z",
       "level": "info",
       "tag": "RECONSTRUCTION_END",
       "message": "jobId=job_a"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.668Z",
+      "timestamp": "2026-10-05T08:00:07.712Z",
       "level": "info",
       "tag": "VALIDATION_START",
       "message": "Starting independent output validation"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.672Z",
+      "timestamp": "2026-10-05T08:00:07.715Z",
       "level": "info",
       "tag": "VALIDATION_END",
       "message": "Validation completed. Passed=true, Warnings=0"
     },
     {
-      "timestamp": "2026-10-02T09:10:53.672Z",
+      "timestamp": "2026-10-05T08:00:07.715Z",
       "level": "info",
       "tag": "JOB_COMPLETE",
       "message": "Job finished successfully as completed"
     }
   ],
-  "startedAt": 1790932253381,
-  "lastHeartbeatAt": 1790932253513,
+  "startedAt": 1791187207391,
+  "lastHeartbeatAt": 1791187207546,
   "estimatedRemainingMs": 0,
-  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: test_a.pdf\r\nتعداد صفحات: 3 | تاریخ: ۱۴۰۵/۷/۱۰\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 3\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۱: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 2 از 3\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۲: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 3 از 3\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۳: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
+  "translatedText": "﻿======================================================================\r\nترجمه کامل و هوشمند سند: test_a.pdf\r\nتعداد صفحات: 3 | تاریخ: ۱۴۰۵/۷/۱۳\r\n======================================================================\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 1 از 3\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۱: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 2 از 3\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۲: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n----------------------------------------------------------------------\r\n📄 صفحه 3 از 3\r\n----------------------------------------------------------------------\r\n\r\nمحتوای صفحه ۳: مقدمه و تحلیل فنی معماری.\r\n\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند\r\n======================================================================\r\n",
   "pageTranslations": [
     {
       "pageNumber": 1,
@@ -175,7 +175,7 @@
       "translatedText": "محتوای صفحه ۳: مقدمه و تحلیل فنی معماری."
     }
   ],
-  "outputHash": "064b13c720ec027aae34ad4ae61234122e7bb0c71c5ef8e8fa394dd088039925",
+  "outputHash": "a313b5d608a344ef92f4eacb6b6ffe1b457eb39718c22ad3a06d00cba8e2d03e",
   "qualityReport": {
     "originalCount": 3,
     "outputCount": 3,
@@ -188,5 +188,5 @@
       "تطابق کامل: 3 صفحه/اسلاید ورودی به دقت حفظ شد."
     ]
   },
-  "completedAt": 1790932253672
+  "completedAt": 1791187207715
 }

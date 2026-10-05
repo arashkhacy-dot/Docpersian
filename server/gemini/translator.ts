@@ -15,6 +15,14 @@ export interface TranslationResult {
   translatedText: string;
 }
 
+export interface DiagramTextLabel {
+  originalText: string;
+  translatedText: string;
+  box_2d: [number, number, number, number]; // [ymin, xmin, ymax, xmax] 0..1000 scale
+  bgColor?: string;
+  textColor?: string;
+}
+
 export function normalizeLocalEndpoints(rawUrl: string): {
   v1ChatUrl: string;
   ollamaChatUrl: string;
@@ -38,12 +46,14 @@ export class GeminiTranslator {
   private engine: 'gemini' | 'local';
   private localUrl: string;
   private localModel: string;
+  private diagramInpainting: boolean;
 
   constructor() {
     this.model = config.geminiModel || 'gemini-3.8-flash';
     this.engine = config.translationEngine || 'gemini';
     this.localUrl = config.localModelUrl || 'http://localhost:11434/v1';
     this.localModel = config.localModelName || 'qwen2.5-vl:3b';
+    this.diagramInpainting = config.diagramInpaintingEnabled !== false;
 
     if (config.geminiApiKey) {
       this.ai = new GoogleGenAI({
@@ -64,13 +74,24 @@ export class GeminiTranslator {
       localModel: this.localModel,
       geminiModel: this.model,
       geminiAvailable: this.isApiKeyValid(),
+      diagramInpainting: this.diagramInpainting,
     };
   }
 
-  public setEngineSettings(engine: 'gemini' | 'local', localUrl?: string, localModel?: string) {
+  public setEngineSettings(
+    engine: 'gemini' | 'local',
+    localUrl?: string,
+    localModel?: string,
+    diagramInpainting?: boolean
+  ) {
     this.engine = engine;
     if (localUrl) this.localUrl = localUrl;
     if (localModel) this.localModel = localModel;
+    if (diagramInpainting !== undefined) this.diagramInpainting = diagramInpainting;
+  }
+
+  public isDiagramInpaintingEnabled(): boolean {
+    return this.diagramInpainting;
   }
 
   public async testLocalConnection(url?: string, model?: string): Promise<{
@@ -337,8 +358,8 @@ CRITICAL INSTRUCTIONS:
     const candidateModels = Array.from(
       new Set(
         overrideModel
-          ? [overrideModel, 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
-          : [this.model, 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
+          ? [overrideModel, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
+          : [this.model, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
       )
     );
 
@@ -745,10 +766,10 @@ RULES:
     }
 
     const modelsToTry = [
-      this.model,
-      'gemini-2.5-flash',
-      this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
       'gemini-flash-latest',
+      'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
+      this.model,
     ];
 
     const isVehicleDiagram = pageContext?.includes('خودرو') || pageContext?.includes('دیاگرام خودرو');
@@ -806,10 +827,10 @@ RULES:
     }
 
     const modelsToTry = [
-      this.model,
-      'gemini-2.5-flash',
-      this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
       'gemini-flash-latest',
+      'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
+      this.model,
     ];
 
     for (const model of modelsToTry) {
@@ -836,6 +857,240 @@ RULES:
     }
 
     return '';
+  }
+
+  /**
+   * Multimodal Diagram Text Inpainting Detection:
+   * Detects English text labels on diagrams, schematics, flowcharts, or vehicle manuals,
+   * calculates bounding boxes (box_2d: [ymin, xmin, ymax, xmax] 0..1000), and provides fluent Persian translations.
+   */
+  async detectAndTranslateDiagramLabels(
+    base64Image: string,
+    mimeType = 'image/png',
+    context?: string
+  ): Promise<DiagramTextLabel[]> {
+    if (!this.diagramInpainting) {
+      return [];
+    }
+
+    if (this.engine === 'local') {
+      try {
+        const localLabels = await this.detectAndTranslateDiagramLabelsViaLocal(base64Image, mimeType, context);
+        if (localLabels.length > 0) return localLabels;
+      } catch (localErr) {
+        console.warn('[LOCAL_DIAGRAM_WARN] Local diagram label detection failed, trying Gemini:', localErr);
+      }
+    }
+
+    if (!this.ai || !this.isApiKeyValid()) {
+      return [];
+    }
+
+    const modelsToTry = [
+      'gemini-flash-latest',
+      'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
+      this.model,
+    ];
+
+    const prompt = `You are an expert technical diagram, flowchart, schematic, and visual document translator into Persian (فارسی).
+Carefully inspect this diagram/image for English text labels, titles, component descriptions, callouts, arrows, and flowchart node texts.
+${context ? `Context: ${context}` : ''}
+
+For each text label found:
+1. Provide exact originalText.
+2. Provide translatedText: accurate, fluent, professional Persian (فارسی) translation.
+   MANDATORY: Connect all Persian letters properly into natural continuous script (e.g. کتاب, ورودی, خروجی, سیستم, پمپ, دیاگرام). NEVER split letters with spaces!
+3. Provide box_2d: [ymin, xmin, ymax, xmax] coordinates normalized to 0..1000 scale.
+4. Provide bgColor: background hex color behind this label (e.g. "#ffffff" or "#2563eb").
+5. Provide textColor: contrast text color for the Persian label (e.g. "#000000" or "#ffffff").
+
+Return ONLY a valid JSON array of objects adhering strictly to:
+[
+  {
+    "originalText": "...",
+    "translatedText": "...",
+    "box_2d": [ymin, xmin, ymax, xmax],
+    "bgColor": "#ffffff",
+    "textColor": "#000000"
+  }
+]
+If the image has no readable English text labels or is a photo without diagrams, return [].`;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await this.ai.models.generateContent({
+          model,
+          contents: [
+            {
+              inlineData: {
+                mimeType,
+                data: base64Image,
+              },
+            },
+            {
+              text: prompt,
+            },
+          ],
+        });
+
+        const raw = response.text?.trim() || '';
+        const parsed = this.parseDiagramLabelsJson(raw);
+        if (parsed.length > 0) {
+          return parsed;
+        }
+      } catch (err) {
+        console.warn(`[GEMINI_DIAGRAM_LABEL_WARN] Model ${model} failed:`, err);
+      }
+    }
+
+    return [];
+  }
+
+  private async detectAndTranslateDiagramLabelsViaLocal(
+    base64Image: string,
+    mimeType: string,
+    context?: string
+  ): Promise<DiagramTextLabel[]> {
+    const prompt = `You are a technical diagram translator into Persian (فارسی).
+Find all English text labels and flowchart boxes in this image.
+For each label, return JSON:
+[
+  {
+    "originalText": "...",
+    "translatedText": "...",
+    "box_2d": [ymin, xmin, ymax, xmax],
+    "bgColor": "#ffffff",
+    "textColor": "#000000"
+  }
+]
+Return ONLY JSON. If no text labels, return [].`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 35000);
+    const endpoints = normalizeLocalEndpoints(this.localUrl);
+
+    try {
+      let content = '';
+
+      // 1. Try /v1/chat/completions
+      try {
+        const response = await fetch(endpoints.v1ChatUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.localModel,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: prompt },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${mimeType};base64,${base64Image}`,
+                    },
+                  },
+                ],
+              },
+            ],
+            temperature: 0.1,
+            stream: false,
+            max_tokens: 2048,
+          }),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          content = data.choices?.[0]?.message?.content?.trim() || '';
+        }
+      } catch {}
+
+      // 2. Try Ollama native /api/chat if needed
+      if (!content) {
+        const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/i, '');
+        const response = await fetch(endpoints.ollamaChatUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: this.localModel,
+            messages: [
+              {
+                role: 'user',
+                content: prompt,
+                images: [cleanBase64],
+              },
+            ],
+            stream: false,
+            options: {
+              temperature: 0.1,
+              num_predict: 2048,
+            },
+          }),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          content = data.message?.content?.trim() || '';
+        }
+      }
+
+      return this.parseDiagramLabelsJson(content);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private parseDiagramLabelsJson(rawText: string): DiagramTextLabel[] {
+    if (!rawText || !rawText.trim()) return [];
+
+    let clean = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const firstB = clean.indexOf('[');
+    const lastB = clean.lastIndexOf(']');
+    if (firstB !== -1 && lastB > firstB) {
+      clean = clean.slice(firstB, lastB + 1);
+    }
+
+    try {
+      const arr = JSON.parse(clean);
+      if (!Array.isArray(arr)) return [];
+
+      const results: DiagramTextLabel[] = [];
+      for (const item of arr) {
+        if (!item || typeof item !== 'object') continue;
+        const orig = String(item.originalText || '').trim();
+        const tr = String(item.translatedText || '').trim();
+        const box = item.box_2d || item.box2d;
+
+        if (orig && tr && Array.isArray(box) && box.length === 4) {
+          const [ymin, xmin, ymax, xmax] = box.map((n: any) => {
+            const num = Number(n);
+            return isNaN(num) ? 0 : Math.max(0, Math.min(1000, num));
+          });
+
+          if (ymax > ymin && xmax > xmin) {
+            results.push({
+              originalText: orig,
+              translatedText: healPersianSpaces(tr),
+              box_2d: [ymin, xmin, ymax, xmax],
+              bgColor:
+                typeof item.bgColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(item.bgColor)
+                  ? item.bgColor
+                  : '#FFFFFF',
+              textColor:
+                typeof item.textColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(item.textColor)
+                  ? item.textColor
+                  : '#0F172A',
+            });
+          }
+        }
+      }
+      return results;
+    } catch {
+      return [];
+    }
   }
 
   /**

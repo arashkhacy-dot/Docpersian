@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, Server, Sparkles, CheckCircle2, AlertTriangle, RefreshCw, Zap, Shield, ExternalLink, HelpCircle } from 'lucide-react';
+import { Cpu, Server, Sparkles, CheckCircle2, AlertTriangle, RefreshCw, Zap, Shield, Image, Bookmark, RotateCcw } from 'lucide-react';
 
 interface EngineSettings {
   engine: 'gemini' | 'local';
@@ -7,6 +7,7 @@ interface EngineSettings {
   localModel: string;
   geminiModel: string;
   geminiAvailable: boolean;
+  diagramInpainting?: boolean;
 }
 
 interface EngineSettingsModalProps {
@@ -21,11 +22,13 @@ export const EngineSettingsModal: React.FC<EngineSettingsModalProps> = ({ isOpen
     localModel: 'qwen2.5-vl:3b',
     geminiModel: 'gemini-3.1-flash-lite',
     geminiAvailable: true,
+    diagramInpainting: true,
   });
 
   const [selectedEngine, setSelectedEngine] = useState<'gemini' | 'local'>('gemini');
   const [localUrl, setLocalUrl] = useState('http://localhost:11434/v1');
   const [localModel, setLocalModel] = useState('qwen2.5-vl:3b');
+  const [diagramInpainting, setDiagramInpainting] = useState<boolean>(true);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
     success: boolean;
@@ -46,6 +49,7 @@ export const EngineSettingsModal: React.FC<EngineSettingsModalProps> = ({ isOpen
           setSelectedEngine(data.engine || 'gemini');
           setLocalUrl(data.localUrl || 'http://localhost:11434/v1');
           setLocalModel(data.localModel || 'qwen2.5-vl:3b');
+          setDiagramInpainting(data.diagramInpainting !== false);
         }
       })
       .catch(() => {});
@@ -84,6 +88,7 @@ export const EngineSettingsModal: React.FC<EngineSettingsModalProps> = ({ isOpen
           engine: selectedEngine,
           localUrl,
           localModel,
+          diagramInpainting,
         }),
       });
       if (res.ok) {
@@ -306,6 +311,73 @@ export const EngineSettingsModal: React.FC<EngineSettingsModalProps> = ({ isOpen
             </div>
           </div>
         )}
+
+        {/* Feature: Diagram & Image Text Inpainting */}
+        <div className="p-4 bg-slate-900/90 rounded-xl border border-slate-800 space-y-3 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <Image className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                  جایگزینی هوشمند متون روی عکس و دیاگرام (Inpainting)
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-normal">
+                    نسخه جدید
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  تشخیص هوشمند برچسب‌های متنی روی فلوچارت‌ها، نمودارها و تصاویر فنی و جایگزینی مستقیم با فونت فارسی
+                </p>
+              </div>
+            </div>
+            {/* Toggle switch */}
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={diagramInpainting}
+                onChange={(e) => setDiagramInpainting(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px] text-slate-400">
+            <div className="flex items-center gap-1 text-slate-300">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              پوشش تمیز پس‌زمینه اصلی
+            </div>
+            <div className="flex items-center gap-1 text-slate-300">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              فونت ضخیم وزیرمتن فارسی
+            </div>
+            <div className="flex items-center gap-1 text-slate-300">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              فایل‌های PDF، پاورپوینت و ورد
+            </div>
+          </div>
+        </div>
+
+        {/* Checkpoint Safety Card */}
+        <div className="p-3.5 bg-indigo-950/40 rounded-xl border border-indigo-900/60 mb-5">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <Bookmark className="w-4 h-4 text-indigo-400" />
+              <span className="text-xs font-bold text-white">نقطه بازگشت پایدار (Checkpoint v1.0)</span>
+            </div>
+            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">
+              checkpoint-v1.0
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
+            یک چک‌پوینت امن و مستقل از وضعیت پایدار پیش از فعال‌سازی این قابلیت ثبت شده است. در صورت تمایل به بازگشت فوری به وضعیت قبلی، دستور زیر در ترمینال سرور همواره در دسترس است:
+          </p>
+          <div className="bg-black/60 px-3 py-1.5 rounded-lg border border-slate-800 text-[11px] font-mono text-emerald-300 flex items-center justify-between select-all">
+            <span>./restore_checkpoint_v1.sh</span>
+            <span className="text-[10px] text-slate-500 font-sans">یا git reset --hard checkpoint-v1.0</span>
+          </div>
+        </div>
 
         {/* Modal Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">

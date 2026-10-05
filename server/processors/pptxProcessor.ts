@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import JSZip from 'jszip';
 import { XMLValidator } from 'fast-xml-parser';
 import { DocumentProcessor } from './documentProcessor.js';
@@ -6,6 +7,7 @@ import { JobState, PageManifestItem } from '../jobs/jobState.js';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
 import { createDocxFile } from './docxHelper.js';
 import { healPersianSpaces } from './persianTypographyEngine.js';
+import { defaultDiagramInpainter } from './diagramInpainter.js';
 
 function escapeXml(unsafe: string): string {
   return unsafe
@@ -551,6 +553,51 @@ export class PPTXProcessor implements DocumentProcessor {
           }
           rebuiltDgmXml += dgmXml.substring(lastDgmIndex);
           zip.file(dgmPath, rebuiltDgmXml);
+        }
+      }
+    }
+
+    // 3.5. Smart Inpainting & Translation for Embedded Diagram Images
+    if (defaultTranslator.isDiagramInpaintingEnabled()) {
+      const mediaFiles: string[] = [];
+      zip.forEach((relativePath) => {
+        if (
+          relativePath.startsWith('ppt/media/') &&
+          /\.(png|jpe?g|webp)$/i.test(relativePath)
+        ) {
+          mediaFiles.push(relativePath);
+        }
+      });
+
+      if (mediaFiles.length > 0) {
+        await onProgress(
+          'translating',
+          totalSlides,
+          totalSlides,
+          `بررسی و ترجمه هوشمند برچسب‌های متنی در ${mediaFiles.length} دیاگرام و تصویر ارائه...`
+        );
+
+        for (let mIdx = 0; mIdx < mediaFiles.length; mIdx++) {
+          if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
+          const mediaPath = mediaFiles[mIdx];
+          const fileEntry = zip.file(mediaPath);
+          if (!fileEntry) continue;
+
+          try {
+            const imgBuffer = await fileEntry.async('nodebuffer');
+            const mimeType = mediaPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+            const inpaintResult = await defaultDiagramInpainter.inpaintDiagramImage(
+              imgBuffer,
+              mimeType,
+              `تصویر دیاگرام اسلاید ارائه: ${path.basename(mediaPath)}`
+            );
+
+            if (inpaintResult.modified) {
+              zip.file(mediaPath, inpaintResult.buffer);
+            }
+          } catch (mErr) {
+            console.warn(`[DIAGRAM_MEDIA_WARN] Skipped inpainting for ${mediaPath}:`, mErr);
+          }
         }
       }
     }

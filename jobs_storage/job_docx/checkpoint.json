@@ -7,7 +7,7 @@
   "fileSizeBytes": 838,
   "inputPath": "/app/applet/jobs_storage/job_docx/input/report.docx",
   "outputPath": "/app/applet/jobs_storage/job_docx/output/report_FA.docx",
-  "inputHash": "1d6720a16a3495e1e8a32a4988db6d665efcf422d19cfb12dbfee87279a4baa6",
+  "inputHash": "86eaf43fe7c70083b54c7060397177612af93799646879c3ac630f03e8ad1d42",
   "status": "completed",
   "progress": 100,
   "currentStage": "idle",
@@ -18,9 +18,9 @@
   "processedWords": 0,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790932306798,
-  "updatedAt": 1790932306809,
-  "elapsedMs": 11,
+  "createdAt": 1791187416186,
+  "updatedAt": 1791187416196,
+  "elapsedMs": 10,
   "retryCount": 0,
   "warnings": [],
   "errors": [],
@@ -38,34 +38,34 @@
   },
   "debugLogs": [
     {
-      "timestamp": "2026-10-02T09:11:46.798Z",
+      "timestamp": "2026-10-05T08:03:36.186Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing report.docx (docx)"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.806Z",
+      "timestamp": "2026-10-05T08:03:36.194Z",
       "level": "info",
       "tag": "VALIDATION_START",
       "message": "Starting independent output validation"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.809Z",
+      "timestamp": "2026-10-05T08:03:36.196Z",
       "level": "info",
       "tag": "VALIDATION_END",
       "message": "Validation completed. Passed=true, Warnings=0"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.809Z",
+      "timestamp": "2026-10-05T08:03:36.196Z",
       "level": "info",
       "tag": "JOB_COMPLETE",
       "message": "Job finished successfully as completed"
     }
   ],
-  "startedAt": 1790932306798,
-  "lastHeartbeatAt": 1790932306802,
+  "startedAt": 1791187416186,
+  "lastHeartbeatAt": 1791187416189,
   "estimatedRemainingMs": 0,
-  "translatedText": "﻿======================================================================\r\nDocuShift | ترجمه کامل و اختصاصی سند Word: report.docx\r\nکلمات ترجمه‌شده: ۱۳ | تاریخ: ۱۴۰۵/۷/۱۰\r\n======================================================================\r\n\r\nخلاصه اجرایی پروژه\r\n\r\nاین گزارش مشروح برای رشد درآمد سه ماهه چهارم است.\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند Word\r\n======================================================================\r\n",
+  "translatedText": "﻿======================================================================\r\nDocuShift | ترجمه کامل و اختصاصی سند Word: report.docx\r\nکلمات ترجمه‌شده: ۱۳ | تاریخ: ۱۴۰۵/۷/۱۳\r\n======================================================================\r\n\r\nخلاصه اجرایی پروژه\r\n\r\nاین گزارش مشروح برای رشد درآمد سه ماهه چهارم است.\r\n\r\n======================================================================\r\nپایان ترجمه کامل سند Word\r\n======================================================================\r\n",
   "pageTranslations": [
     {
       "pageNumber": 1,
@@ -73,7 +73,7 @@
       "translatedText": "خلاصه اجرایی پروژه\n\nاین گزارش مشروح برای رشد درآمد سه ماهه چهارم است."
     }
   ],
-  "outputHash": "e97228a8c95f090cc91e297475a598b8c797b8c00bbc41e08ae7d8d2394c3784",
+  "outputHash": "6788c8aa06bf1915420ae80c75dc38b71afdc4ef4f72fbdea5f6128beaf0bd20",
   "qualityReport": {
     "originalCount": 1,
     "outputCount": 1,
@@ -86,5 +86,5 @@
       "تطابق کامل: 1 صفحه/اسلاید ورودی به دقت حفظ شد."
     ]
   },
-  "completedAt": 1790932306809
+  "completedAt": 1791187416196
 }

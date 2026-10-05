@@ -30,9 +30,9 @@ git fetch --all 2>/dev/null || git fetch origin main 2>/dev/null || true
 git reset --hard origin/main 2>/dev/null || git pull origin main || git pull
 
 # ۲. اطمینان از نصب ابزارهای پردازش اسناد اسکن‌شده و فونت‌های فارسی
-echo "--> ۲. نصب ابزارهای بینایی و پردازش اسکن (Ghostscript & Poppler) و فونت‌ها..."
+echo "--> ۲. نصب ابزارهای بینایی و پردازش اسکن و دیاگرام (Ghostscript, Poppler & ImageMagick)..."
 sudo apt-get update -qq 2>/dev/null || true
-sudo apt-get install -y -qq ghostscript poppler-utils fonts-noto-core fonts-noto-extra fonts-sil-scheherazade 2>/dev/null || true
+sudo apt-get install -y -qq ghostscript poppler-utils imagemagick fonts-noto-core fonts-noto-extra fonts-sil-scheherazade 2>/dev/null || true
 
 # بررسی و دانلود فونت وزیرمتن در صورت نیاز
 mkdir -p server/assets/fonts

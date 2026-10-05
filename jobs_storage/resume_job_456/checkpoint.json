@@ -18,9 +18,9 @@
   "processedWords": 150,
   "sourceLanguage": "auto",
   "targetLanguage": "fa",
-  "createdAt": 1790932306723,
-  "updatedAt": 1790932306757,
-  "elapsedMs": 31,
+  "createdAt": 1791187416096,
+  "updatedAt": 1791187416137,
+  "elapsedMs": 38,
   "retryCount": 0,
   "warnings": [],
   "errors": [
@@ -40,38 +40,38 @@
   },
   "debugLogs": [
     {
-      "timestamp": "2026-10-02T09:11:46.726Z",
+      "timestamp": "2026-10-05T08:03:36.099Z",
       "level": "info",
       "tag": "JOB_START",
       "message": "Started processing resume.pdf (pdf)"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.734Z",
+      "timestamp": "2026-10-05T08:03:36.114Z",
       "level": "info",
       "tag": "ANALYSIS_DONE",
       "message": "Document analyzed: items=1, words=9"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.736Z",
+      "timestamp": "2026-10-05T08:03:36.116Z",
       "level": "info",
       "tag": "EXTRACTION_START",
       "message": "jobId=resume_job_456 total=1"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.748Z",
+      "timestamp": "2026-10-05T08:03:36.128Z",
       "level": "info",
       "tag": "EXTRACTION_END",
       "message": "jobId=resume_job_456 totalPages=1"
     },
     {
-      "timestamp": "2026-10-02T09:11:46.757Z",
+      "timestamp": "2026-10-05T08:03:36.137Z",
       "level": "info",
       "tag": "BATCH_TRANSLATION_START",
       "message": "jobId=resume_job_456 textPages=1 visualPages=0"
     }
   ],
   "cancellationRequested": false,
-  "startedAt": 1790932306726,
-  "lastHeartbeatAt": 1790932306757,
-  "estimatedRemainingMs": 23
+  "startedAt": 1791187416099,
+  "lastHeartbeatAt": 1791187416137,
+  "estimatedRemainingMs": 28
 }

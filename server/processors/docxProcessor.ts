@@ -1,9 +1,11 @@
 import fs from 'fs';
+import path from 'path';
 import JSZip from 'jszip';
 import { DocumentProcessor } from './documentProcessor.js';
 import { JobState, PageManifestItem } from '../jobs/jobState.js';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
 import { healPersianSpaces } from './persianTypographyEngine.js';
+import { defaultDiagramInpainter } from './diagramInpainter.js';
 
 export class DOCXProcessor implements DocumentProcessor {
   async analyzeDocument(inputFilePath: string): Promise<{
@@ -190,6 +192,41 @@ export class DOCXProcessor implements DocumentProcessor {
 
       // Update the file in the zip archive
       zip.file(filePath, rebuiltXml);
+    }
+
+    // Smart Inpainting & Translation for Embedded Diagram Images in Word
+    if (defaultTranslator.isDiagramInpaintingEnabled()) {
+      const docxMedia: string[] = [];
+      zip.forEach((relativePath) => {
+        if (
+          relativePath.startsWith('word/media/') &&
+          /\.(png|jpe?g|webp)$/i.test(relativePath)
+        ) {
+          docxMedia.push(relativePath);
+        }
+      });
+
+      if (docxMedia.length > 0) {
+        for (const mediaPath of docxMedia) {
+          if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
+          const fileEntry = zip.file(mediaPath);
+          if (!fileEntry) continue;
+          try {
+            const imgBuffer = await fileEntry.async('nodebuffer');
+            const mimeType = mediaPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+            const inpaintResult = await defaultDiagramInpainter.inpaintDiagramImage(
+              imgBuffer,
+              mimeType,
+              `تصویر دیاگرام سند ورد: ${path.basename(mediaPath)}`
+            );
+            if (inpaintResult.modified) {
+              zip.file(mediaPath, inpaintResult.buffer);
+            }
+          } catch (mErr) {
+            console.warn(`[DOCX_MEDIA_WARN] Skipped ${mediaPath}:`, mErr);
+          }
+        }
+      }
     }
 
     // Generate output zip buffer
