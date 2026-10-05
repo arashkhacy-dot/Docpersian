@@ -15,7 +15,7 @@ import {
   ExternalLink,
   Zap,
 } from 'lucide-react';
-import { UploadProgressInfo } from '../utils/chunkedUploader';
+import { checkUploadSession, UploadProgressInfo } from '../utils/chunkedUploader';
 
 interface UploadZoneProps {
   onFileSelect: (file: File) => void;
@@ -36,6 +36,11 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   const [cloudUrl, setCloudUrl] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingSession, setExistingSession] = useState<{
+    percent: number;
+    currentChunk: number;
+    totalChunks: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +49,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
 
   const validateAndSetFile = (file: File) => {
     setError(null);
+    setExistingSession(null);
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     const isKnownExt = allowedExtensions.includes(ext);
     const isKnownMime = [
@@ -67,6 +73,19 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
     }
 
     setSelectedFile(file);
+
+    // Auto-detect if file has completed chunks on server to enable instant resume
+    checkUploadSession(file)
+      .then((session) => {
+        if (session && session.completedChunks.length > 0) {
+          setExistingSession({
+            percent: session.percent,
+            currentChunk: Math.min(session.totalChunks, session.completedChunks.length + 1),
+            totalChunks: session.totalChunks,
+          });
+        }
+      })
+      .catch(() => setExistingSession(null));
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -339,10 +358,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                       : 'در حال اعتبارسنجی سند و ورود به میزکار...'}
                   </span>
                 </>
-              ) : uploadProgress && uploadProgress.percent > 0 ? (
+              ) : (uploadProgress && uploadProgress.percent > 0) || existingSession ? (
                 <>
                   <span>
-                    ادامه ارسال سند از قطعه {uploadProgress.currentChunk} ({uploadProgress.percent}٪ از قبل در سرور موجود است)
+                    ادامه ارسال سند از قطعه {uploadProgress?.currentChunk || existingSession?.currentChunk} ({uploadProgress?.percent || existingSession?.percent}٪ از قبل در سرور موجود است)
                   </span>
                   <ArrowLeft className="w-4 h-4" />
                 </>

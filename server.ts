@@ -313,9 +313,16 @@ app.get('/api/upload/:uploadId/status', async (req: Request, res: Response) => {
     for (const f of files) {
       const match = f.match(/^chunk_(\d+)\.part$/);
       if (match) {
-        completedChunks.push(parseInt(match[1], 10));
+        try {
+          const stat = await fs.promises.stat(path.join(uploadDir, f));
+          if (stat.size > 0) {
+            completedChunks.push(parseInt(match[1], 10));
+          }
+        } catch {}
       }
     }
+
+    completedChunks.sort((a, b) => a - b);
 
     res.json({
       uploadId,
@@ -333,14 +340,12 @@ app.post('/api/upload/chunk', chunkUpload.single('chunk'), async (req: Request, 
     const chunkIndex = parseInt(req.body.chunkIndex, 10);
 
     if (!uploadId || isNaN(chunkIndex) || !req.file) {
-      if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
       res.status(400).json({ error: 'اطلاعات قطعه ارسالی ناقص است.' });
       return;
     }
 
     const uploadDir = path.join(tempUploadsDir, uploadId);
     if (!fs.existsSync(uploadDir)) {
-      if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
       res.status(404).json({ error: 'شناسه آپلود یافت نشد یا منقضی شده است.' });
       return;
     }
@@ -350,11 +355,12 @@ app.post('/api/upload/chunk', chunkUpload.single('chunk'), async (req: Request, 
 
     res.json({ success: true, chunkIndex });
   } catch (err: any) {
+    console.error('[CHUNK_UPLOAD_ERR]', err);
     res.status(500).json({ error: err?.message || 'خطا در ذخیره قطعه فایل بر روی سرور.' });
   }
 });
 
-// 1.3 Chunked Upload: Complete and merge all chunks
+// 1.4 Chunked Upload: Complete and merge all chunks
 app.post('/api/upload/complete', async (req: Request, res: Response) => {
   try {
     const { uploadId } = req.body;
@@ -373,15 +379,26 @@ app.post('/api/upload/complete', async (req: Request, res: Response) => {
     const metaRaw = await fs.promises.readFile(metaPath, 'utf-8');
     const metadata = JSON.parse(metaRaw);
 
-    // Verify all chunks exist
+    // Verify all chunks exist and have positive size
+    const missingChunks: number[] = [];
     for (let i = 0; i < metadata.totalChunks; i++) {
       const chunkPath = path.join(uploadDir, `chunk_${i}.part`);
       if (!fs.existsSync(chunkPath)) {
-        res.status(400).json({
-          error: `قطعه شماره ${i + 1} از ${metadata.totalChunks} دریافت نشده است. لطفاً مجدداً ارسال نمایید.`,
-        });
-        return;
+        missingChunks.push(i);
+      } else {
+        const stat = await fs.promises.stat(chunkPath);
+        if (stat.size === 0) {
+          missingChunks.push(i);
+        }
       }
+    }
+
+    if (missingChunks.length > 0) {
+      res.status(400).json({
+        error: `قطعات شماره ${missingChunks.map((c) => c + 1).slice(0, 5).join(', ')} بر روی سرور دریافت نشده‌اند.`,
+        missingChunks,
+      });
+      return;
     }
 
     // Merge chunks into a single file with fast, robust sequential write
@@ -402,9 +419,6 @@ app.post('/api/upload/complete', async (req: Request, res: Response) => {
       await destFd.close();
     }
 
-    // Cleanup part files and upload session directory
-    await fs.promises.rm(uploadDir, { recursive: true, force: true }).catch(() => {});
-
     // Create and enqueue job from assembled file
     const job = await createJobFromUploadedFile(
       mergedFilePath,
@@ -412,6 +426,9 @@ app.post('/api/upload/complete', async (req: Request, res: Response) => {
       metadata.fileSize,
       metadata.mimeType
     );
+
+    // Cleanup part files and upload session directory ONLY AFTER job is successfully created
+    await fs.promises.rm(uploadDir, { recursive: true, force: true }).catch(() => {});
 
     res.status(201).json(job);
   } catch (err: any) {

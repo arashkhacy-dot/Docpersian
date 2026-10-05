@@ -77,6 +77,42 @@ pm2 restart docushift --update-env 2>/dev/null || NODE_ENV=production pm2 start 
 pm2 save
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 
+# ۶. تنظیم و ریلود Nginx برای پشتیبانی از آپلود اسناد تا ۱ گیگابایت و استریم بدون بافر
+if command -v nginx >/dev/null 2>&1; then
+  echo "--> ۶. پیکربندی Nginx برای پشتیبانی از آپلود نامحدود و استریم بدون بافر..."
+  sudo tee /etc/nginx/sites-available/docushift >/dev/null << 'EOF'
+server {
+    listen 80;
+    server_name _;
+
+    client_max_body_size 1024M;
+    client_body_timeout 600s;
+    client_header_timeout 600s;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Disable buffering for live chunked upload and SSE
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}
+EOF
+  sudo ln -sf /etc/nginx/sites-available/docushift /etc/nginx/sites-enabled/docushift 2>/dev/null || true
+  sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+  sudo nginx -t >/dev/null 2>&1 && sudo systemctl reload nginx 2>/dev/null || true
+fi
+
 echo ""
 echo "============================================================"
 echo "  ✅ به‌روزرسانی سرور با موفقیت کامل انجام شد!"

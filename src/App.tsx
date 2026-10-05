@@ -8,7 +8,7 @@ import { JobHistory } from './components/JobHistory';
 import { QualityReportModal } from './components/QualityReportModal';
 import { EngineSettingsModal } from './components/EngineSettingsModal';
 import { JobState } from './types/job';
-import { uploadFileInChunks, UploadProgressInfo } from './utils/chunkedUploader';
+import { uploadFileInChunks, checkUploadSession, CHUNK_SIZE, UploadProgressInfo } from './utils/chunkedUploader';
 
 const ACTIVE_JOB_KEY = 'docushift_active_job_id';
 
@@ -154,11 +154,10 @@ export default function App() {
       uploadAbortRef.current = null;
     }
     setIsUploading(false);
-    setUploadProgress(null);
-    setGlobalError('ارسال فایل توسط کاربر متوقف شد.');
+    setGlobalError('ارسال فایل موقتاً متوقف شد؛ اطلاعات قطعات ارسال‌شده در حافظه حفظ شده است.');
   };
 
-  // Handle document upload with smart chunking (supports large files up to 500MB without Cloud Run 32MB limits)
+  // Handle document upload with smart chunking & persistent resume
   const handleFileSelect = async (file: File) => {
     setIsUploading(true);
     setGlobalError(null);
@@ -166,22 +165,33 @@ export default function App() {
     const abortController = new AbortController();
     uploadAbortRef.current = abortController;
 
-    const isDirectCandidate = file.size <= 20 * 1024 * 1024;
-    const estChunks = isDirectCandidate ? 1 : Math.max(1, Math.ceil(file.size / (2 * 1024 * 1024)));
+    // Check if an existing session exists for this file
+    const existingSession = await checkUploadSession(file);
+    const estChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
 
-    setUploadProgress((prev) =>
-      prev && prev.percent > 0
-        ? { ...prev, statusMessage: 'در حال برقراری مجدد ارتباط...' }
-        : {
-            percent: 0,
-            uploadedBytes: 0,
-            totalBytes: file.size,
-            currentChunk: 1,
-            totalChunks: estChunks,
-            isDirect: isDirectCandidate,
-            statusMessage: isDirectCandidate ? 'آغاز ارسال مستقیم و پرسرعت...' : 'آغاز ارسال قطعه‌ای هوشمند...',
-          }
-    );
+    if (existingSession && existingSession.completedChunks.length > 0) {
+      setUploadProgress({
+        percent: existingSession.percent,
+        uploadedBytes: existingSession.uploadedBytes,
+        totalBytes: file.size,
+        currentChunk: Math.min(existingSession.totalChunks, existingSession.completedChunks.length + 1),
+        totalChunks: existingSession.totalChunks,
+        isResuming: true,
+        isDirect: false,
+        statusMessage: `ادامه ارسال از قطعه ${existingSession.completedChunks.length + 1} (${existingSession.percent}٪ از قبل در سرور موجود است)`,
+      });
+    } else {
+      const isDirectCandidate = file.size <= 2 * 1024 * 1024;
+      setUploadProgress({
+        percent: 0,
+        uploadedBytes: 0,
+        totalBytes: file.size,
+        currentChunk: 1,
+        totalChunks: isDirectCandidate ? 1 : estChunks,
+        isDirect: isDirectCandidate,
+        statusMessage: isDirectCandidate ? 'آغاز ارسال مستقیم و پرسرعت...' : 'آغاز ارسال قطعه‌ای هوشمند...',
+      });
+    }
 
     try {
       const newJob: JobState = await uploadFileInChunks(
@@ -206,7 +216,7 @@ export default function App() {
       console.error('[UPLOAD_FAILED]', err);
       setGlobalError(
         err?.message ||
-          'خطا در ارسال فایل به سرور. اطلاعات قطعات ارسال‌شده ذخیره شده است؛ برای ادامه ارسال از دکمه زیر استفاده نمایید.'
+          'خطا در برقراری ارتباط با سرور. اطلاعات قطعات ارسال‌شده ذخیره شده است؛ برای ادامه ارسال از دکمه زیر استفاده نمایید.'
       );
       setIsUploading(false);
       setUploadProgress((prev) =>
