@@ -10,11 +10,11 @@ export interface UploadProgressInfo {
   isDirect?: boolean;
 }
 
-// Files <= 2 MB use direct single-shot upload; all files > 2 MB use resilient chunking
-const DIRECT_UPLOAD_THRESHOLD = 2 * 1024 * 1024;
+// Files <= 512 KB use direct single-shot upload; all files > 512 KB use resilient chunking
+const DIRECT_UPLOAD_THRESHOLD = 512 * 1024;
 
-// 2 MB per chunk: Ideal balance between HTTP request count and mobile transfer resilience
-export const CHUNK_SIZE = 2 * 1024 * 1024;
+// 512 KB per chunk: Strictly below Nginx's default 1M client_max_body_size limit, guaranteed to pass anywhere
+export const CHUNK_SIZE = 512 * 1024;
 
 const SESSION_STORAGE_PREFIX = 'docushift_upload_session_';
 

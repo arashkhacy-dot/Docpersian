@@ -181,7 +181,7 @@ export default function App() {
         statusMessage: `ادامه ارسال از قطعه ${existingSession.completedChunks.length + 1} (${existingSession.percent}٪ از قبل در سرور موجود است)`,
       });
     } else {
-      const isDirectCandidate = file.size <= 2 * 1024 * 1024;
+      const isDirectCandidate = file.size <= 512 * 1024;
       setUploadProgress({
         percent: 0,
         uploadedBytes: 0,

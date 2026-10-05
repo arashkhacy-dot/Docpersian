@@ -291,7 +291,7 @@ app.post('/api/upload/init', async (req: Request, res: Response) => {
 
     res.json({
       uploadId,
-      chunkSize: 2 * 1024 * 1024,
+      chunkSize: 512 * 1024,
     });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'خطا در مقداردهی اولیه آپلود قطعه‌ای.' });
