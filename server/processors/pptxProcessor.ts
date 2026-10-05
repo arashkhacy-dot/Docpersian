@@ -183,7 +183,7 @@ export class PPTXProcessor implements DocumentProcessor {
   }
 
   /**
-   * Safely updates or creates <a:rPr> preserving fonts, sizes, styles while setting Persian language
+   * Safely updates or creates <a:rPr> preserving fonts, sizes, styles while setting Persian language and Vazirmatn font
    */
   private updateRunProperties(rXml: string): string {
     const match = rXml.match(/<a:rPr(\s*[\s\S]*?)(\/?)>/);
@@ -192,10 +192,19 @@ export class PPTXProcessor implements DocumentProcessor {
       const isSelfClosing = match[2] === '/' || rawAttrs.trim().endsWith('/');
       let clean = (' ' + rawAttrs).replace(/\/+$/, ' ').trim();
       clean = (' ' + clean).replace(/\s+lang="[^"]*"/g, '').replace(/\s+altLang="[^"]*"/g, '').trim();
-      const tag = `<a:rPr${clean ? ' ' + clean : ''} lang="fa-IR" altLang="en-US"${isSelfClosing ? '/>' : '>'}`;
-      return rXml.replace(match[0], tag);
+
+      if (isSelfClosing) {
+        return rXml.replace(match[0], `<a:rPr${clean ? ' ' + clean : ''} lang="fa-IR" altLang="en-US"><a:cs typeface="Vazirmatn"/></a:rPr>`);
+      } else {
+        const tag = `<a:rPr${clean ? ' ' + clean : ''} lang="fa-IR" altLang="en-US">`;
+        let updated = rXml.replace(match[0], tag);
+        if (!updated.includes('<a:cs')) {
+          updated = updated.replace(/<a:rPr([^>]*)>/, '<a:rPr$1><a:cs typeface="Vazirmatn"/>');
+        }
+        return updated;
+      }
     } else {
-      return rXml.replace(/^(<a:r(?:\s+[^>]*)?>)/, `$1<a:rPr lang="fa-IR" altLang="en-US"/>`);
+      return rXml.replace(/^(<a:r(?:\s+[^>]*)?>)/, `$1<a:rPr lang="fa-IR" altLang="en-US"><a:cs typeface="Vazirmatn"/></a:rPr>`);
     }
   }
 
@@ -245,7 +254,7 @@ export class PPTXProcessor implements DocumentProcessor {
       const closingIndex = rebuilt.lastIndexOf('</a:p>');
       if (closingIndex !== -1) {
         const prefix = rebuilt.substring(0, closingIndex);
-        rebuilt = `${prefix}<a:r><a:rPr lang="fa-IR" altLang="en-US"/><a:t>${escapeXml(translatedText)}</a:t></a:r></a:p>`;
+        rebuilt = `${prefix}<a:r><a:rPr lang="fa-IR" altLang="en-US"><a:cs typeface="Vazirmatn"/></a:rPr><a:t>${escapeXml(translatedText)}</a:t></a:r></a:p>`;
       }
     }
 

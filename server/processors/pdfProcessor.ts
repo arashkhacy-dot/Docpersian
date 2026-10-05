@@ -80,11 +80,33 @@ function drawSegmentedRtlLine(
   const toc = parseTocLine(lineText);
   if (toc) {
     try {
-      const cleanTitle = prepareRtlText(toc.title);
+      const pfxMatch = toc.title.match(/^((?:[I|V|X]+|\d+|[\u06F0-\u06F9]+)[\.\-\)]\s*)(.*)$/);
+      let pfx = '';
+      let pureTitle = toc.title;
+      if (pfxMatch) {
+        pfx = pfxMatch[1].trim();
+        pureTitle = pfxMatch[2].trim();
+      }
+
+      const cleanTitle = prepareRtlText(healPersianSpaces(pureTitle));
       const titleFont = toc.isMajorHeader && fontFamilyOrFont.bold ? fontFamilyOrFont.bold : font;
       const titleW = titleFont.widthOfTextAtSize(cleanTitle, fontSize);
+      const pfxW = pfx ? titleFont.widthOfTextAtSize(pfx, fontSize) : 0;
+
+      let titleRight = rightX;
+      if (pfx) {
+        page.drawText(pfx, {
+          x: titleRight - pfxW,
+          y,
+          size: fontSize,
+          font: titleFont,
+          color: toc.isMajorHeader ? rgb(0.06, 0.12, 0.28) : color,
+        });
+        titleRight -= pfxW + 4;
+      }
+
       page.drawText(cleanTitle, {
-        x: rightX - titleW,
+        x: titleRight - titleW,
         y,
         size: fontSize,
         font: titleFont,
@@ -104,7 +126,7 @@ function drawSegmentedRtlLine(
       });
 
       const dotStartX = leftMargin + numW + 8;
-      const dotEndX = rightX - titleW - 8;
+      const dotEndX = titleRight - titleW - 8;
       if (dotEndX > dotStartX) {
         page.drawLine({
           start: { x: dotStartX, y: y + 2 },
@@ -119,7 +141,7 @@ function drawSegmentedRtlLine(
   }
 
   // 2. Standard line drawing with de-spacing and prefix segmentation
-  const healed = healPersianSpaces(lineText);
+  const healed = sanitizePersianSymbols(healPersianSpaces(lineText));
   if (!healed || !healed.trim()) return;
 
   // Segment leading prefixes (Roman numerals, list numbers, brackets, bullets, warning labels)
@@ -129,7 +151,7 @@ function drawSegmentedRtlLine(
   );
 
   if (prefixMatch) {
-    const rawPrefix = prefixMatch[1].trim();
+    const rawPrefix = sanitizePersianSymbols(prefixMatch[1].trim());
     const rawBody = prefixMatch[2].trim();
 
     const isDangerPrefix = /^(?:خطر|DANGER)/i.test(rawPrefix);
@@ -213,28 +235,44 @@ async function extractPageLinesWithCoordinates(
 ): Promise<ExtractedLine[]> {
   try {
     const page = await parser.doc.getPage(pageIndex);
+    const viewport = page.getViewport ? page.getViewport({ scale: 1.0 }) : null;
+    const pageWidth = viewport?.width || 595;
     const content = await page.getTextContent();
     const rawItems = (content.items || []).filter((it: any) => it.str && it.str.trim());
     if (rawItems.length === 0) return [];
 
-    // Sort items top-to-bottom (descending Y), then left-to-right (ascending X)
-    rawItems.sort((a: any, b: any) => {
-      const yDiff = b.transform[5] - a.transform[5];
-      if (Math.abs(yDiff) > 4) return yDiff;
-      return a.transform[4] - b.transform[4];
-    });
+    // Check if the page has a 2-column layout (distinct items in left & right halves with gutter)
+    const leftColItems = rawItems.filter((it: any) => it.transform[4] + (it.width || 0) < pageWidth * 0.48);
+    const rightColItems = rawItems.filter((it: any) => it.transform[4] > pageWidth * 0.52);
+    const isTwoColumn = leftColItems.length >= 8 && rightColItems.length >= 8;
+
+    let sortedItems: any[] = [];
+    const sortCol = (items: any[]) =>
+      items.sort((a: any, b: any) => {
+        const yDiff = b.transform[5] - a.transform[5];
+        if (Math.abs(yDiff) > 3) return yDiff;
+        return a.transform[4] - b.transform[4];
+      });
+
+    if (isTwoColumn) {
+      // In 2-column documents, read Left Column top-to-bottom first, then Right Column top-to-bottom
+      sortedItems = [...sortCol(leftColItems), ...sortCol(rightColItems)];
+    } else {
+      sortedItems = sortCol(rawItems);
+    }
 
     const lines: ExtractedLine[] = [];
-    for (const it of rawItems) {
+    for (const it of sortedItems) {
       const x = it.transform[4];
       const y = it.transform[5];
       const fSize = Math.hypot(it.transform[0], it.transform[1]) || 9.5;
-      const w = it.width;
+      const w = it.width || 0;
       const h = it.height || fSize;
+      const maxGap = Math.min(20, Math.max(10, fSize * 1.4));
 
-      // Group words on the same horizontal line (within 4pt vertically and 35pt horizontally)
+      // Group words on the same horizontal line (within 3pt vertically and realistic word gap)
       const sameLine = lines.find(
-        (l) => Math.abs(l.y - y) <= 4 && x >= l.x && x <= l.x + l.width + 35
+        (l) => Math.abs(l.y - y) <= 3 && x >= l.x && x <= l.x + l.width + maxGap
       );
       if (sameLine) {
         sameLine.text += ' ' + it.str.trim();
@@ -985,6 +1023,20 @@ function renderPersianTextToPage(
     let lineHeight = 15.0;
     let paragraphGap = 6.0;
 
+    // Merge lone warning prefixes (e.g. "هشدار:" or "WARNING:") with following paragraph to prevent empty/orphan boxes
+    const mergedParas: string[] = [];
+    for (let pIdx = 0; pIdx < listParas.length; pIdx++) {
+      const cur = listParas[pIdx].trim();
+      const isLoneWarning = /^(?:خطر|هشدار|توجه|احتیاط|نکته|WARNING|DANGER|CAUTION|NOTE)\s*[\:：]?$/i.test(cur);
+      if (isLoneWarning && pIdx + 1 < listParas.length) {
+        mergedParas.push(`${cur} ${listParas[pIdx + 1].trim()}`);
+        pIdx++;
+      } else {
+        mergedParas.push(cur);
+      }
+    }
+    listParas = mergedParas;
+
     const calcFullH = (fSize: number, lHeight: number, pGap: number) => {
       let total = 0;
       for (const p of listParas) {
@@ -1008,26 +1060,6 @@ function renderPersianTextToPage(
       fontSize -= 0.25;
       lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
       paragraphGap = Math.max(2.0, paragraphGap - 0.25);
-    }
-
-    const isScannedPage = !sourceLines || sourceLines.length === 0;
-    const cardPaddingX = isScannedPage ? 14 : 0;
-    if (isScannedPage) {
-      try {
-        const fullBlockH = calcFullH(fontSize, lineHeight, paragraphGap);
-        const cardY = Math.max(bottomMargin + 4, curY - fullBlockH - 8);
-        const cardH = Math.min(height - cardY - 20, fullBlockH + 22);
-        page.drawRectangle({
-          x: marginX - 10,
-          y: cardY,
-          width: contentWidth + 20,
-          height: cardH,
-          color: rgb(1, 1, 1),
-          opacity: 0.95,
-          borderColor: rgb(0.85, 0.88, 0.93),
-          borderWidth: 0.8,
-        });
-      } catch {}
     }
 
     for (let uIdx = 0; uIdx < listParas.length; uIdx++) {
@@ -1055,12 +1087,12 @@ function renderPersianTextToPage(
         ? contentWidth - 26
         : isPoemLine
         ? contentWidth - 40
-        : contentWidth - cardPaddingX * 2;
+        : contentWidth;
       const effectiveRightX = isNoticeWarning
         ? rightX - 13
         : isPoemLine
         ? rightX - 20
-        : rightX - cardPaddingX;
+        : rightX;
 
       const lines = wrapPersianText(p, fontToUse, f, effectiveContentW);
 
@@ -1076,7 +1108,11 @@ function renderPersianTextToPage(
       }
 
       // Draw professional warning/danger/notice box with subtle background and crisp border
-      if (isNoticeWarning && lines.length > 0) {
+      // Only when there is substantive warning text to prevent drawing empty placeholder boxes
+      const warningBody = p.replace(/^(?:هشدار|خطر|نکته|توجه|احتیاط|WARNING|CAUTION|NOTE)\s*[\:：]?/i, '').trim();
+      const hasSubstantiveWarning = warningBody.length >= 3;
+
+      if (isNoticeWarning && lines.length > 0 && hasSubstantiveWarning) {
         const boxPadding = 6;
         const blockHeight = lines.length * lh + boxPadding * 2;
         const boxY = curY - blockHeight + lh;

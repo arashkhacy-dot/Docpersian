@@ -182,12 +182,48 @@ export class DOCXProcessor implements DocumentProcessor {
       }
       rebuiltXml += xmlContent.substring(lastIndex);
 
-      // Inject RTL support in paragraph properties (<w:pPr><w:bidi/></w:pPr>) for Persian
-      rebuiltXml = rebuiltXml.replace(/<w:pPr>([\s\S]*?)<\/w:pPr>/g, (pPrBlock, inner) => {
-        if (!inner.includes('<w:bidi')) {
-          return `<w:pPr><w:bidi/>${inner}</w:pPr>`;
+      // 1. Ensure all paragraphs have <w:pPr> with RTL and right alignment
+      rebuiltXml = rebuiltXml.replace(/<w:p(?:\s+[^>]*)?>([\s\S]*?)<\/w:p>/g, (pFull, pInner) => {
+        if (!pInner.includes('<w:pPr>')) {
+          return pFull.replace(/^(<w:p(?:\s+[^>]*)?>)/, '$1<w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr>');
         }
-        return pPrBlock;
+        return pFull;
+      });
+
+      // 2. Inject RTL (<w:bidi/>) and right alignment (<w:jc w:val="right"/>) in existing paragraph properties
+      rebuiltXml = rebuiltXml.replace(/<w:pPr>([\s\S]*?)<\/w:pPr>/g, (_pPrBlock, inner) => {
+        let updated = inner;
+        if (!updated.includes('<w:bidi')) {
+          updated = `<w:bidi/>${updated}`;
+        }
+        if (!updated.includes('<w:jc')) {
+          updated += '<w:jc w:val="right"/>';
+        } else if (updated.includes('w:val="left"')) {
+          updated = updated.replace(/w:val="left"/g, 'w:val="right"');
+        }
+        return `<w:pPr>${updated}</w:pPr>`;
+      });
+
+      // 3. Set Persian complex script font (Vazirmatn) and RTL in run properties (<w:rPr>)
+      rebuiltXml = rebuiltXml.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/g, (_rPrBlock, inner) => {
+        let updated = inner;
+        if (!updated.includes('<w:rtl')) {
+          updated = `<w:rtl/>${updated}`;
+        }
+        if (!updated.includes('<w:rFonts')) {
+          updated = `<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Vazirmatn"/>${updated}`;
+        } else if (!updated.includes('w:cs=')) {
+          updated = updated.replace(/<w:rFonts(\s*[^>]*?)\/?>/, '<w:rFonts$1 w:cs="Vazirmatn"/>');
+        }
+        return `<w:rPr>${updated}</w:rPr>`;
+      });
+
+      // 4. Ensure Word tables have RTL column flow (<w:bidiVisual/> in <w:tblPr>)
+      rebuiltXml = rebuiltXml.replace(/<w:tblPr>([\s\S]*?)<\/w:tblPr>/g, (tblBlock, inner) => {
+        if (!inner.includes('<w:bidiVisual')) {
+          return `<w:tblPr><w:bidiVisual/>${inner}</w:tblPr>`;
+        }
+        return tblBlock;
       });
 
       // Update the file in the zip archive

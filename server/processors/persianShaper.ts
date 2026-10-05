@@ -1,22 +1,11 @@
-import { shapePersianForPdf, healPersianSpaces, normalizeTableCellContent } from './persianTypographyEngine';
+import {
+  shapePersianForPdf,
+  healPersianSpaces,
+  normalizeTableCellContent,
+  sanitizePersianSymbols,
+} from './persianTypographyEngine';
 
-export { shapePersianForPdf, healPersianSpaces, normalizeTableCellContent };
-
-export function sanitizePersianSymbols(raw: string): string {
-  if (!raw) return "";
-  return raw
-    .replace(/[\uFEFF\u200B\u200E\u200F]/g, "")
-    .replace(/[«»“”]/g, "\"")
-    .replace(/[‘’]/g, "\x27")
-    .replace(/[•●■▪◦∙]/g, "-")
-    .replace(/[—–]/g, "-")
-    .replace(/\|/g, " - ")
-    .replace(/[⚠️⚠]/g, "[!]")
-    .replace(/[◄►◀▶→←⇒⇐►▼▲]/g, " : ")
-    .replace(/[※]/g, "[*]")
-    .replace(/[★☆✓✔✕✖]/g, "-")
-    .replace(/[λ]/g, "lambda");
-}
+export { shapePersianForPdf, healPersianSpaces, normalizeTableCellContent, sanitizePersianSymbols };
 
 export function prepareRtlText(text: string): string {
   return shapePersianForPdf(text);

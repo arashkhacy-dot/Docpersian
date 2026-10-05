@@ -245,6 +245,40 @@ export function healPersianSpaces(text: string): string {
     [/(^|\s)ش\s+یر\s+ین(?=$|\s|[،.؛:!؟\-])/g, '$1شیرین'],
     [/(^|\s)ش\s+لاق(?=$|\s|[،.؛:!؟\-])/g, '$1شلاق'],
 
+    // Split words specific to vehicle manuals and technical documents
+    [/(^|\s)صح\s+یح(?=$|\s|[،.؛:!؟\-])/g, '$1صحیح'],
+    [/(^|\s)هنگا\s+می(?=$|\s|[،.؛:!؟\-])/g, '$1هنگامی'],
+    [/(^|\s)تأث\s+یر(?=$|\s|[،.؛:!؟\-])/g, '$1تأثیر'],
+    [/(^|\s)پشتیبا\s+نی(?=$|\s|[،.؛:!؟\-])/g, '$1پشتیبانی'],
+    [/(^|\s)مایکروو\s+یو(?=$|\s|[،.؛:!؟\-])/g, '$1مایکروویو'],
+    [/(^|\s)شدهاند(?=$|\s|[،.؛:!؟\-])/g, '$1شده‌اند'],
+    [/(^|\s)کنس\s+ول(?=$|\s|[،.؛:!؟\-])/g, '$1کنسول'],
+    [/(^|\s)سیس\s+تم(?=$|\s|[،.؛:!؟\-])/g, '$1سیستم'],
+    [/(^|\s)دستر\s+سی(?=$|\s|[،.؛:!؟\-])/g, '$1دسترسی'],
+    [/(^|\s)اطلا\s+عات(?=$|\s|[،.؛:!؟\-])/g, '$1اطلاعات'],
+    [/(^|\s)ب\s+رقراری(?=$|\s|[،.؛:!؟\-])/g, '$1برقراری'],
+    [/(^|\s)شناسا\s+یی(?=$|\s|[،.؛:!؟\-])/g, '$1شناسایی'],
+    [/(^|\s)م\s+وتور(?=$|\s|[،.؛:!؟\-])/g, '$1موتور'],
+    [/(^|\s)ت\s+نظیم(?=$|\s|[،.؛:!؟\-])/g, '$1تنظیم'],
+    [/(^|\s)ع\s+ملکرد(?=$|\s|[،.؛:!؟\-])/g, '$1عملکرد'],
+    [/(^|\s)ض\s+روری(?=$|\s|[،.؛:!؟\-])/g, '$1ضروری'],
+    [/(^|\s)ه\s+شدار(?=$|\s|[،.؛:!؟\-])/g, '$1هشدار'],
+    [/(^|\s)ق\s+طعات(?=$|\s|[،.؛:!؟\-])/g, '$1قطعات'],
+    [/(^|\s)ت\s+صویر(?=$|\s|[،.؛:!؟\-])/g, '$1تصویر'],
+    [/(^|\s)ع\s+قبی(?=$|\s|[،.؛:!؟\-])/g, '$1عقبی'],
+    [/(^|\s)ک\s+ودک(?=$|\s|[،.؛:!؟\-])/g, '$1کودک'],
+    [/(^|\s)ک\s+ودکان(?=$|\s|[،.؛:!؟\-])/g, '$1کودکان'],
+    [/(^|\s)ل\s+وله(?=$|\s|[،.؛:!؟\-])/g, '$1لوله'],
+    [/(^|\s)ن\s+مایش(?=$|\s|[،.؛:!؟\-])/g, '$1نمایش'],
+    [/(^|\s)ف\s+یلتر(?=$|\s|[،.؛:!؟\-])/g, '$1فیلتر'],
+    [/(^|\s)ط\s+بیعی(?=$|\s|[،.؛:!؟\-])/g, '$1طبیعی'],
+    [/(^|\s)ط\s+ول(?=$|\s|[،.؛:!؟\-])/g, '$1طول'],
+    [/(^|\s)ظ\s+رفیت(?=$|\s|[،.؛:!؟\-])/g, '$1ظرفیت'],
+    [/(^|\s)ض\s+مانت(?=$|\s|[،.؛:!؟\-])/g, '$1ضمانت'],
+    [/(^|\s)پا\s+یه(?=$|\s|[،.؛:!؟\-])/g, '$1پایه'],
+    [/(^|\s)پا\s+یگاه(?=$|\s|[،.؛:!؟\-])/g, '$1پایگاه'],
+    [/(^|\s)جا\s+یگاه(?=$|\s|[،.؛:!؟\-])/g, '$1جایگاه'],
+
     // Split 'ه' / 'م' / 'ن' / 'ک' / 'گ'
     [/(^|\s)ه\s+یچ(?=$|\s|[،.؛:!؟\-])/g, '$1هیچ'],
     [/(^|\s)ه\s+م(?=$|\s|[،.؛:!؟\-])/g, '$1هم'],
@@ -555,13 +589,35 @@ export function parseRunOnTocEntries(text: string): TocEntry[] {
 
 /**
  * 4. High-Fidelity Text Preparation for PDF Drawing
- * Prepares healed text for drawing with Vazirmatn OpenType font in pdf-lib.
- * Preserves canonical Unicode so fontkit's HarfBuzz engine performs native OpenType
- * shaping while strictly maintaining right-to-left (RTL) text direction.
+ * Sanitizes symbols without TrueType glyphs (e.g. ●, ■, , ▲, ►, ✓) into clean standard glyphs (•, -, ×, [!])
+ * to prevent missing-glyph boxes (.notdef tofu), and prepares healed text for Vazirmatn in pdf-lib.
  */
+export function sanitizePersianSymbols(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/[\uFEFF\u200B\u200E\u200F\u00AD\u202A-\u202E\u2066-\u2069]/g, '')
+    // List bullets and icons without glyphs in Vazirmatn -> convert to standard bullet • (U+2022) or -
+    .replace(/[●■▪▫◆◇]/g, '•')
+    // Directional arrows without glyphs -> textual symbols
+    .replace(/[◄►◀▶→➔➜➝➞➟➡➢➣➤➥➦➧➨]/g, ' » ')
+    .replace(/[←]/g, ' « ')
+    .replace(/[▲▼]/g, ' ')
+    // Checkmarks and crosses -> text equivalents
+    .replace(/[✓✔]/g, '[✓]')
+    .replace(/[✕✖✗]/g, '×')
+    // Warning and hazard signs
+    .replace(/[⚠️⚠⚡]/g, '[!]')
+    .replace(/[※★☆]/g, '*')
+    // Standardize quotes and hyphens to supported Vazirmatn glyphs
+    .replace(/[«»“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[—–]/g, '-')
+    .replace(/\|/g, ' - ');
+}
+
 export function shapePersianForPdf(text: string): string {
   if (!text || !text.trim()) return '';
-  return normalizeTableCellContent(text).trim();
+  return sanitizePersianSymbols(normalizeTableCellContent(text)).trim();
 }
 
 /**
