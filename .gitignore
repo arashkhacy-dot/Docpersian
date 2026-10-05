@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+jobs_storage/
+test_artifacts/
+test_diagnostic_artifacts/

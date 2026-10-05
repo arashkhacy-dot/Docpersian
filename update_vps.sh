@@ -26,8 +26,8 @@ echo "========================================="
 
 # ۱. دریافت آخرین تغییرات از گیت‌هاب
 echo "--> ۱. دریافت آخرین تغییرات از گیت‌هاب (git fetch & reset)..."
-git fetch --all 2>/dev/null || git fetch origin main 2>/dev/null || true
-git reset --hard origin/main 2>/dev/null || git pull origin main || git pull
+git fetch --all --tags 2>/dev/null || true
+git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || git pull origin main 2>/dev/null || git pull origin master 2>/dev/null || git pull
 
 # ۲. اطمینان از نصب ابزارهای پردازش اسناد اسکن‌شده و فونت‌های فارسی
 echo "--> ۲. نصب ابزارهای بینایی و پردازش اسکن و دیاگرام (Ghostscript, Poppler & ImageMagick)..."
