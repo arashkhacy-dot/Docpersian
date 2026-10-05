@@ -295,6 +295,169 @@ async function extractPageLinesWithCoordinates(
   }
 }
 
+export interface SpatialBlock {
+  id: number;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  width: number;
+  height: number;
+  fontSize: number;
+  text: string;
+  isWarning: boolean;
+  lines: ExtractedLine[];
+}
+
+export function groupLinesIntoSpatialBlocks(lines: ExtractedLine[], pageWidth: number, pageHeight: number): SpatialBlock[] {
+  if (!lines || lines.length === 0) return [];
+
+  // Filter out any invalid items
+  const validLines = lines.filter((l) => l.text && l.text.trim() && l.y >= 10 && l.y <= pageHeight);
+  if (validLines.length === 0) return [];
+
+  // Sort by Y descending (top to bottom), then by X ascending
+  const sorted = [...validLines].sort((a, b) => {
+    const yDiff = b.y - a.y;
+    if (Math.abs(yDiff) > 4) return yDiff;
+    return a.x - b.x;
+  });
+
+  const blocks: SpatialBlock[] = [];
+  let currentBlock: SpatialBlock | null = null;
+
+  for (const line of sorted) {
+    if (!currentBlock) {
+      currentBlock = {
+        id: blocks.length + 1,
+        minX: line.x,
+        maxX: line.x + line.width,
+        minY: line.y,
+        maxY: line.y + line.height,
+        width: line.width,
+        height: line.height,
+        fontSize: line.fontSize,
+        text: line.text,
+        isWarning: /(?:warning|advertencia|peligro|caution|danger|هشدار|خطر|احتیاط|توجه)/i.test(line.text),
+        lines: [line],
+      };
+      continue;
+    }
+
+    // Check vertical proximity:
+    const yGap = currentBlock.minY - (line.y + line.height);
+    // Horizontal overlap or alignment:
+    const xOverlap = Math.min(currentBlock.maxX, line.x + line.width) - Math.max(currentBlock.minX, line.x);
+    const xClose = Math.abs(currentBlock.minX - line.x) < 45 || Math.abs(currentBlock.maxX - (line.x + line.width)) < 45;
+    const sameColumn = xOverlap > -25 || xClose;
+
+    // A block should continue if it's within standard line spacing
+    const isNearbyVertical = yGap >= -8 && yGap <= Math.max(28, currentBlock.fontSize * 2.4);
+
+    if (isNearbyVertical && sameColumn) {
+      currentBlock.lines.push(line);
+      currentBlock.minX = Math.min(currentBlock.minX, line.x);
+      currentBlock.maxX = Math.max(currentBlock.maxX, line.x + line.width);
+      currentBlock.minY = Math.min(currentBlock.minY, line.y);
+      currentBlock.maxY = Math.max(currentBlock.maxY, line.y + line.height);
+      currentBlock.width = currentBlock.maxX - currentBlock.minX;
+      currentBlock.height = currentBlock.maxY - currentBlock.minY;
+      currentBlock.fontSize = (currentBlock.fontSize + line.fontSize) / 2;
+      currentBlock.text += ' ' + line.text;
+      if (/(?:warning|advertencia|peligro|caution|danger|هشدار|خطر|احتیاط|توجه)/i.test(line.text)) {
+        currentBlock.isWarning = true;
+      }
+    } else {
+      blocks.push(currentBlock);
+      currentBlock = {
+        id: blocks.length + 1,
+        minX: line.x,
+        maxX: line.x + line.width,
+        minY: line.y,
+        maxY: line.y + line.height,
+        width: line.width,
+        height: line.height,
+        fontSize: line.fontSize,
+        text: line.text,
+        isWarning: /(?:warning|advertencia|peligro|caution|danger|هشدار|خطر|احتیاط|توجه)/i.test(line.text),
+        lines: [line],
+      };
+    }
+  }
+
+  if (currentBlock) {
+    blocks.push(currentBlock);
+  }
+
+  return blocks;
+}
+
+export function renderSpatialBlocks(
+  page: any,
+  blocks: SpatialBlock[],
+  blockTranslations: Map<number, string>,
+  fontFamily: any
+): boolean {
+  if (!blocks || blocks.length === 0) return false;
+  const { width: pageWidth, height: pageHeight } = page.getSize();
+  const fontReg = fontFamily.regular || fontFamily;
+  const fontBold = fontFamily.bold || fontReg;
+
+  let renderedBlocksCount = 0;
+
+  for (const block of blocks) {
+    const rawFa = blockTranslations.get(block.id);
+    if (!rawFa || !rawFa.trim()) continue;
+
+    const healed = healPersianSpaces(rawFa);
+    if (!healed || !healed.trim()) continue;
+
+    // Ensure adequate width for text flow (at least 80pt, max pageWidth - 36)
+    let targetWidth = Math.max(80, block.width);
+    targetWidth = Math.min(pageWidth - 36, targetWidth);
+
+    const rightX = Math.min(pageWidth - 14, Math.max(targetWidth + 14, block.maxX + 4));
+    const leftMargin = Math.max(14, rightX - targetWidth);
+
+    let fontSize = Math.min(10.5, Math.max(7.0, block.fontSize || 9.5));
+    let lineHeight = Math.round(fontSize * 1.34 * 10) / 10;
+
+    const fontToUse = block.isWarning ? fontBold : fontReg;
+    let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, targetWidth);
+
+    // If height exceeds available block height by too much, scale font down smoothly
+    const blockAvailableH = Math.max(30, block.height + 20);
+    while (wrappedLines.length * lineHeight > blockAvailableH && fontSize > 6.5) {
+      fontSize -= 0.35;
+      lineHeight = Math.round(fontSize * 1.30 * 10) / 10;
+      wrappedLines = wrapPersianText(healed, fontToUse, fontSize, targetWidth);
+    }
+
+    let curY = Math.min(pageHeight - 20, block.maxY + (wrappedLines.length > 1 ? 4 : 0));
+    const color = block.isWarning ? rgb(0.85, 0.15, 0.10) : rgb(0.10, 0.14, 0.22);
+
+    for (const line of wrappedLines) {
+      if (curY < 12) break;
+      drawSegmentedRtlLine(
+        page,
+        line,
+        fontFamily,
+        fontSize,
+        rightX,
+        curY,
+        color,
+        leftMargin,
+        block.isWarning
+      );
+      curY -= lineHeight;
+    }
+
+    renderedBlocksCount++;
+  }
+
+  return renderedBlocksCount >= Math.min(Math.ceil(blocks.length * 0.4), 1);
+}
+
 function renderInPlaceLines(
   page: any,
   lines: ExtractedLine[],
@@ -1113,43 +1276,8 @@ function renderPersianTextToPage(
       const hasSubstantiveWarning = warningBody.length >= 3;
 
       if (isNoticeWarning && lines.length > 0 && hasSubstantiveWarning) {
-        const boxPadding = 6;
-        const blockHeight = lines.length * lh + boxPadding * 2;
-        const boxY = curY - blockHeight + lh;
-        const boxX = marginX;
-        const boxW = contentWidth;
-
-        const bgColor = isDanger
-          ? rgb(1.0, 0.96, 0.96)
-          : isWarning
-          ? rgb(1.0, 0.98, 0.91)
-          : rgb(0.94, 0.97, 1.0);
-
-        const borderColor = isDanger
-          ? rgb(0.85, 0.15, 0.15)
-          : isWarning
-          ? rgb(0.90, 0.55, 0.10)
-          : rgb(0.20, 0.45, 0.80);
-
-        try {
-          page.drawRectangle({
-            x: boxX,
-            y: boxY,
-            width: boxW,
-            height: blockHeight,
-            color: bgColor,
-            borderColor: borderColor,
-            borderWidth: 0.8,
-          });
-
-          // Right accent bar
-          page.drawLine({
-            start: { x: boxX + boxW - 1.5, y: boxY },
-            end: { x: boxX + boxW - 1.5, y: boxY + blockHeight },
-            thickness: 3.0,
-            color: borderColor,
-          });
-        } catch {}
+        // Do not draw opaque background boxes that obliterate existing vector boxes/diagrams
+        // Warning text will be rendered in prominent bold warning color
       }
 
       for (let lIdx = 0; lIdx < lines.length; lIdx++) {
@@ -1512,6 +1640,7 @@ export class PDFProcessor implements DocumentProcessor {
     const pageUnitsToTranslate: TranslationUnit[] = [];
     const diagramPagesToScan: number[] = [];
     const pageLinesMap = new Map<number, ExtractedLine[]>();
+    const pageBlocksMap = new Map<number, SpatialBlock[]>();
 
     let parserDoc: any = null;
     try {
@@ -1526,12 +1655,22 @@ export class PDFProcessor implements DocumentProcessor {
       if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
       const pageIndex = i + 1;
       let lines: ExtractedLine[] = [];
+      let blocks: SpatialBlock[] = [];
       if (parserDoc) {
         lines = await extractPageLinesWithCoordinates(parserDoc, pageIndex);
+        if (lines.length > 0) {
+          const samplePage = copiedPages[i];
+          const { width: pW, height: pH } = samplePage.getSize();
+          blocks = groupLinesIntoSpatialBlocks(lines, pW, pH);
+        }
       }
 
       let rawPageText = '';
-      if (lines.length > 0) {
+      if (blocks.length > 0) {
+        pageBlocksMap.set(pageIndex, blocks);
+        pageLinesMap.set(pageIndex, lines);
+        rawPageText = blocks.map((b) => `[B${b.id}] ${b.text}`).join('\n\n');
+      } else if (lines.length > 0) {
         pageLinesMap.set(pageIndex, lines);
         rawPageText = lines.map((l, idx) => `[${idx + 1}] ${l.text}`).join('\n');
       } else {
@@ -1543,7 +1682,7 @@ export class PDFProcessor implements DocumentProcessor {
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
-          context: `صفحه ${pageIndex} از سند ${job.originalFileName} (برچسب‌های دیاگرام و متن با مختصات مکانی)`,
+          context: `صفحه ${pageIndex} از سند ${job.originalFileName} (بلوک‌های ساختاریافته و متن با مختصات مکانی)`,
         });
       }
       if (rawPageText.length <= 15) {
@@ -1617,8 +1756,8 @@ export class PDFProcessor implements DocumentProcessor {
         try {
           const b64 = await this.renderPageToBase64Jpeg(job.inputPath, diagPage);
           if (b64) {
-            // Smart Diagram & Scanned Page Text Inpainting
-            if (defaultTranslator.isDiagramInpaintingEnabled()) {
+            // Smart Diagram & Scanned Page Text Inpainting (ONLY for scanned documents without vector streams)
+            if (isScannedDocument && defaultTranslator.isDiagramInpaintingEnabled()) {
               try {
                 const pageJpgBuf = Buffer.from(b64, 'base64');
                 const inpaintResult = await defaultDiagramInpainter.inpaintDiagramImage(
@@ -1754,11 +1893,48 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // Only allow in-place coordinate rendering on genuine diagram/schematic pages
-      // where every item is an isolated short callout label (e.g. part numbers [1], [2], [3]...)
-      // Dense text pages, warnings, and multi-line paragraphs MUST use renderPersianTextToPage
-      // to guarantee proper paragraph wrapping, warning boxes, and prevent text collision.
+      // 1. Spatial Block-Aware Layout Reconstruction:
+      // Perfectly preserves multi-column manuals, warning boxes, and table layouts
+      // by rendering Persian text into the exact bounding box of each column/box.
+      const blocks = pageBlocksMap.get(pageIndex);
+      let renderedSpatial = false;
+
+      if (blocks && blocks.length > 0) {
+        const blockTranslations = new Map<number, string>();
+        const bPattern = /\[B?(\d+)\]\s*([\s\S]*?)(?=(?:\[B?\d+\]|$))/gi;
+        let bm: RegExpExecArray | null;
+        while ((bm = bPattern.exec(fullFaText)) !== null) {
+          blockTranslations.set(parseInt(bm[1], 10), bm[2].trim());
+        }
+
+        // If no [B#] markers found in translation, map sequentially
+        if (blockTranslations.size === 0) {
+          const paras = cleanFaTextForCompanion.split(/\r?\n\s*\r?\n/).map((p) => p.trim()).filter(Boolean);
+          if (paras.length === blocks.length) {
+            for (let bIdx = 0; bIdx < blocks.length; bIdx++) {
+              blockTranslations.set(blocks[bIdx].id, paras[bIdx]);
+            }
+          } else {
+            const subParas = cleanFaTextForCompanion.split(/\r?\n/).map((p) => p.trim()).filter(Boolean);
+            for (let bIdx = 0; bIdx < blocks.length; bIdx++) {
+              if (subParas[bIdx]) {
+                blockTranslations.set(blocks[bIdx].id, subParas[bIdx]);
+              }
+            }
+          }
+        }
+
+        renderedSpatial = renderSpatialBlocks(
+          page,
+          blocks,
+          blockTranslations,
+          fontFamily
+        );
+      }
+
+      // 2. Isolated Callout Diagram fallback for genuine schematic callouts
       const isCalloutDiagram =
+        !renderedSpatial &&
         lines &&
         lines.length >= 2 &&
         lines.length <= 20 &&
@@ -1787,7 +1963,8 @@ export class PDFProcessor implements DocumentProcessor {
         );
       }
 
-      if (!renderedInPlace && paragraphs.length > 0) {
+      // 3. Fallback for un-structured flow documents (novels, simple letters)
+      if (!renderedSpatial && !renderedInPlace && paragraphs.length > 0) {
         renderPersianTextToPage(
           page,
           paragraphs,

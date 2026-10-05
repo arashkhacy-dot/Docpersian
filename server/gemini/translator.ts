@@ -1301,6 +1301,51 @@ Return ONLY JSON. If no text labels, return [].`;
       'jaundice': 'زردی (یرقان)',
       'hemoglobinuria': 'هموگلوبینوری',
       'renal failure': 'نارسایی کلیوی',
+      // Automotive Manual Terminology (Spanish & English for Changan, Alsvin & Vehicles)
+      'alsvin': 'ALSVIN',
+      'especificaciones': 'مشخصات',
+      'nivel de emisiones': 'سطح آلایندگی',
+      'especificaciones y nivel de emisiones': 'مشخصات و سطح آلایندگی',
+      'detergente para combustible': 'شوینده سوخت',
+      'detergente': 'شوینده',
+      'combustible': 'سوخت',
+      'emisiones': 'آلایندگی',
+      'emisiones de escape': 'گازهای خروجی اگزوز',
+      'advertencia': 'هشدار:',
+      'peligro': 'خطر:',
+      'precaución': 'احتیاط:',
+      'precaucion': 'احتیاط:',
+      'atención': 'توجه:',
+      'atencion': 'توجه:',
+      'manual de usuario': 'دفترچه راهنمای کاربر',
+      'acerca del manual de usuario': 'درباره دفترچه راهنمای کاربر',
+      'asiento': 'صندلی',
+      'asientos': 'صندلی‌ها',
+      'asiento delantero': 'صندلی جلو',
+      'asiento trasero': 'صندلی عقب',
+      'cinturón de seguridad': 'کمربند ایمنی',
+      'cinturon de seguridad': 'کمربند ایمنی',
+      'cinturón': 'کمربند',
+      'cinturon': 'کمربند',
+      'bolsa de aire': 'کیسه هوا',
+      'bolsas de aire': 'کیسه‌های هوا',
+      'airbag': 'کیسه هوا',
+      'airbags': 'کیسه‌های هوا',
+      'apoyacabezas': 'پشت‌سری',
+      'ajuste de apoyacabezas': 'تنظیم پشت‌سری',
+      'ajuste del asiento': 'تنظیم صندلی',
+      'volante': 'فرمان',
+      'freno': 'ترمز',
+      'frenos': 'ترمزها',
+      'motor': 'موتور',
+      'aceite': 'روغن',
+      'batería': 'باتری',
+      'bateria': 'باتری',
+      'conductor': 'راننده',
+      'pasajero': 'سرنشین',
+      'pasajeros': 'سرنشینان',
+      'seguridad infantil': 'ایمنی کودک',
+      'changan': 'چانگان',
     };
 
     return chunk.map((item) => {
@@ -1310,16 +1355,11 @@ Return ONLY JSON. If no text labels, return [].`;
         return { id: item.id, translatedText: commonDict[lower] };
       }
 
-      // If text contains known words, substitute or add Persian equivalent indicator
+      // If text contains known words, substitute
       let translated = text;
       for (const [en, fa] of Object.entries(commonDict)) {
         const regex = new RegExp(`\\b${en}\\b`, 'gi');
         translated = translated.replace(regex, fa);
-      }
-
-      // If untouched and contains English letters, prepend or wrap gracefully
-      if (translated === text && /[a-zA-Z]/.test(text)) {
-        translated = `[ترجمه]: ${text}`;
       }
 
       return { id: item.id, translatedText: translated };

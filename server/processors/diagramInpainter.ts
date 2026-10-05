@@ -27,8 +27,16 @@ function formatPersianVisualText(rawPersian: string): string {
   try {
     // 1. Reshape cursive Arabic/Persian letters to presentation forms (e.g. ﺟﻌﺒﻪ)
     const reshaped = arabicPersianReshaper.ArabicShaper.convertArabic(rawPersian);
-    // 2. Reverse character order for left-to-right raster graphics engines like ImageMagick/FreeType
-    return reshaped.split('').reverse().join('');
+    // 2. Tokenize by Arabic script vs LTR (Latin words, numbers, punctuation)
+    // Only Arabic segments should be reversed for LTR raster engines! Latin/digits remain in natural order!
+    const tokens = reshaped.match(/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]+|[^\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g) || [reshaped];
+    const visualTokens = tokens.map((tok) => {
+      if (/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(tok)) {
+        return tok.split('').reverse().join('');
+      }
+      return tok;
+    });
+    return visualTokens.reverse().join('');
   } catch {
     return rawPersian;
   }
