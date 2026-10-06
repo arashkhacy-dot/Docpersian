@@ -74,18 +74,20 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
 
     setSelectedFile(file);
 
-    // Auto-detect if file has completed chunks on server to enable instant resume
-    checkUploadSession(file)
-      .then((session) => {
-        if (session && session.completedChunks.length > 0) {
-          setExistingSession({
-            percent: session.percent,
-            currentChunk: Math.min(session.totalChunks, session.completedChunks.length + 1),
-            totalChunks: session.totalChunks,
-          });
-        }
-      })
-      .catch(() => setExistingSession(null));
+    // Auto-detect if file has completed chunks on server to enable instant resume (only for massive files > 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      checkUploadSession(file)
+        .then((session) => {
+          if (session && session.completedChunks.length > 0) {
+            setExistingSession({
+              percent: session.percent,
+              currentChunk: Math.min(session.totalChunks, session.completedChunks.length + 1),
+              totalChunks: session.totalChunks,
+            });
+          }
+        })
+        .catch(() => setExistingSession(null));
+    }
   };
 
   const handleDrag = (e: React.DragEvent) => {

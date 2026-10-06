@@ -1346,6 +1346,18 @@ Return ONLY JSON. If no text labels, return [].`;
       'pasajeros': 'سرنشینان',
       'seguridad infantil': 'ایمنی کودک',
       'changan': 'چانگان',
+      'bosch': 'Bosch',
+      'bosch kt700': 'Bosch KT700',
+      'kt700': 'KT700',
+      'obd': 'OBD',
+      'can': 'CAN',
+      'k-line': 'K-line',
+      'vin': 'VIN',
+      'sbr': 'SBR',
+      'recordatorio de cinturón de seguridad': 'یادآور کمربند ایمنی (SBR)',
+      'recordatorio del cinturón de seguridad': 'یادآور کمربند ایمنی (SBR)',
+      'recordatorio de cinturón': 'یادآور کمربند ایمنی',
+      'recordatorio': 'یادآور',
     };
 
     return chunk.map((item) => {

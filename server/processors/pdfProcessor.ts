@@ -91,11 +91,12 @@ function drawSegmentedRtlLine(
       const cleanTitle = prepareRtlText(healPersianSpaces(pureTitle));
       const titleFont = toc.isMajorHeader && fontFamilyOrFont.bold ? fontFamilyOrFont.bold : font;
       const titleW = titleFont.widthOfTextAtSize(cleanTitle, fontSize);
-      const pfxW = pfx ? titleFont.widthOfTextAtSize(pfx, fontSize) : 0;
+      const cleanPfx = /[\u0600-\u06FF]/.test(pfx) ? prepareRtlText(pfx) : pfx;
+      const pfxW = cleanPfx ? titleFont.widthOfTextAtSize(cleanPfx, fontSize) : 0;
 
       let titleRight = rightX;
-      if (pfx) {
-        page.drawText(pfx, {
+      if (cleanPfx) {
+        page.drawText(cleanPfx, {
           x: titleRight - pfxW,
           y,
           size: fontSize,
@@ -171,25 +172,29 @@ function drawSegmentedRtlLine(
       ? rgb(0.10, 0.35, 0.65)
       : color;
 
+    const hasPersianInPrefix = /[\u0600-\u06FF]/.test(rawPrefix);
+    const cleanPrefix = hasPersianInPrefix ? prepareRtlText(rawPrefix) : rawPrefix;
     const cleanBody = prepareRtlText(rawBody);
     const bodyFont =
       isBold && fontFamilyOrFont.bold
         ? fontFamilyOrFont.bold
         : fontFamilyOrFont.regular || font;
 
-    const pW = prefixFont.widthOfTextAtSize(rawPrefix, fontSize);
+    const pW = cleanPrefix ? prefixFont.widthOfTextAtSize(cleanPrefix, fontSize) : 0;
     const bW = cleanBody ? bodyFont.widthOfTextAtSize(cleanBody, fontSize) : 0;
 
     let curRight = rightX;
     // Draw prefix on the right
-    page.drawText(rawPrefix, {
-      x: curRight - pW,
-      y,
-      size: fontSize,
-      font: prefixFont,
-      color: prefixColor,
-    });
-    curRight -= pW + 6;
+    if (cleanPrefix) {
+      page.drawText(cleanPrefix, {
+        x: curRight - pW,
+        y,
+        size: fontSize,
+        font: prefixFont,
+        color: prefixColor,
+      });
+      curRight -= pW + 6;
+    }
 
     if (cleanBody) {
       const drawX = Math.max(leftMargin, curRight - bW);
@@ -241,38 +246,23 @@ async function extractPageLinesWithCoordinates(
     const rawItems = (content.items || []).filter((it: any) => it.str && it.str.trim());
     if (rawItems.length === 0) return [];
 
-    // Check if the page has a 2-column layout (distinct items in left & right halves with gutter)
-    const leftColItems = rawItems.filter((it: any) => it.transform[4] + (it.width || 0) < pageWidth * 0.48);
-    const rightColItems = rawItems.filter((it: any) => it.transform[4] > pageWidth * 0.52);
-    const isTwoColumn = leftColItems.length >= 8 && rightColItems.length >= 8;
-
-    let sortedItems: any[] = [];
-    const sortCol = (items: any[]) =>
-      items.sort((a: any, b: any) => {
-        const yDiff = b.transform[5] - a.transform[5];
-        if (Math.abs(yDiff) > 3) return yDiff;
-        return a.transform[4] - b.transform[4];
-      });
-
-    if (isTwoColumn) {
-      // In 2-column documents, read Left Column top-to-bottom first, then Right Column top-to-bottom
-      sortedItems = [...sortCol(leftColItems), ...sortCol(rightColItems)];
-    } else {
-      sortedItems = sortCol(rawItems);
-    }
+    // Sort items in natural reading order: top-to-bottom (descending Y), then left-to-right (ascending X)
+    rawItems.sort((a: any, b: any) => {
+      const yDiff = b.transform[5] - a.transform[5];
+      if (Math.abs(yDiff) > 4) return yDiff;
+      return a.transform[4] - b.transform[4];
+    });
 
     const lines: ExtractedLine[] = [];
-    for (const it of sortedItems) {
+    for (const it of rawItems) {
       const x = it.transform[4];
       const y = it.transform[5];
       const fSize = Math.hypot(it.transform[0], it.transform[1]) || 9.5;
       const w = it.width || 0;
       const h = it.height || fSize;
-      const maxGap = Math.min(20, Math.max(10, fSize * 1.4));
-
-      // Group words on the same horizontal line (within 3pt vertically and realistic word gap)
+      // Group words on the same horizontal line (within 4pt vertically and 35pt horizontally)
       const sameLine = lines.find(
-        (l) => Math.abs(l.y - y) <= 3 && x >= l.x && x <= l.x + l.width + maxGap
+        (l) => Math.abs(l.y - y) <= 4 && x >= l.x && x <= l.x + l.width + 35
       );
       if (sameLine) {
         sameLine.text += ' ' + it.str.trim();
@@ -1105,10 +1095,15 @@ function renderPersianTextToPage(
   if (listParas.length === 0) return;
 
   // 3. Classify page type: Diagram / Schematic page vs Standard content page
-  const isPureShortItems = listParas.length >= 4 && listParas.every((p) => p.length < 85);
+  const isPureCalloutLegend =
+    listParas.length >= 6 &&
+    listParas.every((p) => p.length <= 42 && !/(?:خطر|هشدار|توجه|احتیاط|WARNING|DANGER|CAUTION|NOTE)\s*[\:：]/i.test(p)) &&
+    listParas.some((p) => /^(?:\[?\d+\]?|[•●\-])/.test(p.trim()));
+
   const isDiagramPage =
-    (textBounds.hasTopImage && textBounds.imageBottomY !== null && textBounds.imageBottomY > height * 0.35) ||
-    (textBounds.hasTopImage && isPureShortItems);
+    textBounds.hasTopImage &&
+    textBounds.imageBottomY !== null &&
+    textBounds.imageBottomY > height * 0.35;
 
   // 4. Determine available vertical space aligned 1-to-1 with source document
   let startY: number;
@@ -1124,8 +1119,8 @@ function renderPersianTextToPage(
   let curY = startY;
   const availableHeight = Math.max(50, curY - bottomMargin);
 
-  // 5. Diagram Page: 2-Column Balanced Legend below Diagram
-  if (isDiagramPage && isPureShortItems && listParas.length >= 6 && width >= 440) {
+  // 5. Diagram Page: 2-Column Balanced Legend strictly for genuine callout lists below diagrams
+  if (isDiagramPage && isPureCalloutLegend && width >= 440) {
     const colGap = 20;
     const colW = (contentWidth - colGap) / 2;
     const rightColX = rightX;
@@ -1655,22 +1650,12 @@ export class PDFProcessor implements DocumentProcessor {
       if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
       const pageIndex = i + 1;
       let lines: ExtractedLine[] = [];
-      let blocks: SpatialBlock[] = [];
       if (parserDoc) {
         lines = await extractPageLinesWithCoordinates(parserDoc, pageIndex);
-        if (lines.length > 0) {
-          const samplePage = copiedPages[i];
-          const { width: pW, height: pH } = samplePage.getSize();
-          blocks = groupLinesIntoSpatialBlocks(lines, pW, pH);
-        }
       }
 
       let rawPageText = '';
-      if (blocks.length > 0) {
-        pageBlocksMap.set(pageIndex, blocks);
-        pageLinesMap.set(pageIndex, lines);
-        rawPageText = blocks.map((b) => `[B${b.id}] ${b.text}`).join('\n\n');
-      } else if (lines.length > 0) {
+      if (lines.length > 0) {
         pageLinesMap.set(pageIndex, lines);
         rawPageText = lines.map((l, idx) => `[${idx + 1}] ${l.text}`).join('\n');
       } else {
@@ -1682,7 +1667,7 @@ export class PDFProcessor implements DocumentProcessor {
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
-          context: `صفحه ${pageIndex} از سند ${job.originalFileName} (بلوک‌های ساختاریافته و متن با مختصات مکانی)`,
+          context: `صفحه ${pageIndex} از سند ${job.originalFileName} (برچسب‌های دیاگرام و متن با مختصات مکانی)`,
         });
       }
       if (rawPageText.length <= 15) {
@@ -1893,48 +1878,8 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // 1. Spatial Block-Aware Layout Reconstruction:
-      // Perfectly preserves multi-column manuals, warning boxes, and table layouts
-      // by rendering Persian text into the exact bounding box of each column/box.
-      const blocks = pageBlocksMap.get(pageIndex);
-      let renderedSpatial = false;
-
-      if (blocks && blocks.length > 0) {
-        const blockTranslations = new Map<number, string>();
-        const bPattern = /\[B?(\d+)\]\s*([\s\S]*?)(?=(?:\[B?\d+\]|$))/gi;
-        let bm: RegExpExecArray | null;
-        while ((bm = bPattern.exec(fullFaText)) !== null) {
-          blockTranslations.set(parseInt(bm[1], 10), bm[2].trim());
-        }
-
-        // If no [B#] markers found in translation, map sequentially
-        if (blockTranslations.size === 0) {
-          const paras = cleanFaTextForCompanion.split(/\r?\n\s*\r?\n/).map((p) => p.trim()).filter(Boolean);
-          if (paras.length === blocks.length) {
-            for (let bIdx = 0; bIdx < blocks.length; bIdx++) {
-              blockTranslations.set(blocks[bIdx].id, paras[bIdx]);
-            }
-          } else {
-            const subParas = cleanFaTextForCompanion.split(/\r?\n/).map((p) => p.trim()).filter(Boolean);
-            for (let bIdx = 0; bIdx < blocks.length; bIdx++) {
-              if (subParas[bIdx]) {
-                blockTranslations.set(blocks[bIdx].id, subParas[bIdx]);
-              }
-            }
-          }
-        }
-
-        renderedSpatial = renderSpatialBlocks(
-          page,
-          blocks,
-          blockTranslations,
-          fontFamily
-        );
-      }
-
-      // 2. Isolated Callout Diagram fallback for genuine schematic callouts
+      // 1. Isolated Callout Diagram fallback for genuine schematic callouts
       const isCalloutDiagram =
-        !renderedSpatial &&
         lines &&
         lines.length >= 2 &&
         lines.length <= 20 &&
@@ -1963,8 +1908,8 @@ export class PDFProcessor implements DocumentProcessor {
         );
       }
 
-      // 3. Fallback for un-structured flow documents (novels, simple letters)
-      if (!renderedSpatial && !renderedInPlace && paragraphs.length > 0) {
+      // 2. High-Fidelity Flow Reconstruction with Proportional Leading, Tables & Warning Cards
+      if (!renderedInPlace && paragraphs.length > 0) {
         renderPersianTextToPage(
           page,
           paragraphs,

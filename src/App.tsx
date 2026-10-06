@@ -169,7 +169,9 @@ export default function App() {
     const existingSession = await checkUploadSession(file);
     const estChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
 
-    if (existingSession && existingSession.completedChunks.length > 0) {
+    const isDirectCandidate = file.size <= 100 * 1024 * 1024;
+
+    if (!isDirectCandidate && existingSession && existingSession.completedChunks.length > 0) {
       setUploadProgress({
         percent: existingSession.percent,
         uploadedBytes: existingSession.uploadedBytes,
@@ -181,7 +183,6 @@ export default function App() {
         statusMessage: `ادامه ارسال از قطعه ${existingSession.completedChunks.length + 1} (${existingSession.percent}٪ از قبل در سرور موجود است)`,
       });
     } else {
-      const isDirectCandidate = file.size <= 512 * 1024;
       setUploadProgress({
         percent: 0,
         uploadedBytes: 0,

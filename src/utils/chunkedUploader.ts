@@ -10,11 +10,11 @@ export interface UploadProgressInfo {
   isDirect?: boolean;
 }
 
-// Files <= 512 KB use direct single-shot upload; all files > 512 KB use resilient chunking
-const DIRECT_UPLOAD_THRESHOLD = 512 * 1024;
+// Files up to 100 MB use direct single-shot turbo stream (instantaneous, 1 request, 2-3 seconds)
+const DIRECT_UPLOAD_THRESHOLD = 100 * 1024 * 1024;
 
-// 512 KB per chunk: Strictly below Nginx's default 1M client_max_body_size limit, guaranteed to pass anywhere
-export const CHUNK_SIZE = 512 * 1024;
+// 10 MB per chunk: Strictly for very large files (> 100MB) or extreme network resilience
+export const CHUNK_SIZE = 10 * 1024 * 1024;
 
 const SESSION_STORAGE_PREFIX = 'docushift_upload_session_';
 
@@ -595,29 +595,31 @@ export async function uploadFileInChunks(
 ): Promise<any> {
   const sessionKey = getSessionStorageKey(file);
 
-  // If previous chunked session exists, always resume chunked directly
+  // For all standard files (<= 100MB), always prioritize direct fast upload
+  // and clear any stale chunk sessions from localStorage to prevent slow chunk loops
+  if (file.size <= DIRECT_UPLOAD_THRESHOLD) {
+    try {
+      localStorage.removeItem(sessionKey);
+    } catch {}
+
+    // Only fallback to chunked if direct upload explicitly failed in current execution session
+    if (!directUploadFailedFiles.has(sessionKey)) {
+      try {
+        return await uploadDirectFile(file, onProgress, signal);
+      } catch (err: any) {
+        if (signal?.aborted) throw err;
+        console.warn('[DIRECT_UPLOAD_FALLBACK_TO_CHUNKS]', err);
+        directUploadFailedFiles.add(sessionKey);
+      }
+    }
+    return await uploadFileInParallelChunks(file, onProgress, signal);
+  }
+
+  // Files > 100 MB use resumable chunked upload
   const savedSessionRaw = localStorage.getItem(sessionKey);
   if (savedSessionRaw) {
     return await uploadFileInParallelChunks(file, onProgress, signal);
   }
 
-  // If this file previously failed direct upload, use chunked
-  if (directUploadFailedFiles.has(sessionKey)) {
-    return await uploadFileInParallelChunks(file, onProgress, signal);
-  }
-
-  // For tiny files <= 2MB, try direct single stream with graceful fallback
-  if (file.size <= DIRECT_UPLOAD_THRESHOLD) {
-    try {
-      return await uploadDirectFile(file, onProgress, signal);
-    } catch (err: any) {
-      if (signal?.aborted) throw err;
-      console.warn('[DIRECT_UPLOAD_FALLBACK_TO_CHUNKS]', err);
-      directUploadFailedFiles.add(sessionKey);
-      return await uploadFileInParallelChunks(file, onProgress, signal);
-    }
-  }
-
-  // All files > 2MB use resilient chunked upload with persistent resume
   return await uploadFileInParallelChunks(file, onProgress, signal);
 }
