@@ -306,77 +306,112 @@ export function groupLinesIntoSpatialBlocks(lines: ExtractedLine[], pageWidth: n
   const validLines = lines.filter((l) => l.text && l.text.trim() && l.y >= 10 && l.y <= pageHeight);
   if (validLines.length === 0) return [];
 
-  // Sort by Y descending (top to bottom), then by X ascending
-  const sorted = [...validLines].sort((a, b) => {
-    const yDiff = b.y - a.y;
-    if (Math.abs(yDiff) > 4) return yDiff;
-    return a.x - b.x;
-  });
-
-  const blocks: SpatialBlock[] = [];
-  let currentBlock: SpatialBlock | null = null;
-
-  for (const line of sorted) {
-    if (!currentBlock) {
-      currentBlock = {
-        id: blocks.length + 1,
-        minX: line.x,
-        maxX: line.x + line.width,
-        minY: line.y,
-        maxY: line.y + line.height,
-        width: line.width,
-        height: line.height,
-        fontSize: line.fontSize,
-        text: line.text,
-        isWarning: /(?:warning|advertencia|peligro|caution|danger|هشدار|خطر|احتیاط|توجه)/i.test(line.text),
-        lines: [line],
-      };
-      continue;
+  const n = validLines.length;
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = (i: number): number => {
+    let root = i;
+    while (root !== parent[root]) root = parent[root];
+    let curr = i;
+    while (curr !== root) {
+      const next = parent[curr];
+      parent[curr] = root;
+      curr = next;
     }
+    return root;
+  };
+  const union = (i: number, j: number) => {
+    const rootI = find(i);
+    const rootJ = find(j);
+    if (rootI !== rootJ) parent[rootI] = rootJ;
+  };
 
-    // Check vertical proximity:
-    const yGap = currentBlock.minY - (line.y + line.height);
-    // Horizontal overlap or alignment:
-    const xOverlap = Math.min(currentBlock.maxX, line.x + line.width) - Math.max(currentBlock.minX, line.x);
-    const xClose = Math.abs(currentBlock.minX - line.x) < 45 || Math.abs(currentBlock.maxX - (line.x + line.width)) < 45;
-    const sameColumn = xOverlap > -25 || xClose;
+  for (let i = 0; i < n; i++) {
+    const a = validLines[i];
+    const aRight = a.x + a.width;
+    const aTop = a.y + a.height;
 
-    // A block should continue if it's within standard line spacing
-    const isNearbyVertical = yGap >= -8 && yGap <= Math.max(28, currentBlock.fontSize * 2.4);
+    for (let j = i + 1; j < n; j++) {
+      const b = validLines[j];
+      const bRight = b.x + b.width;
+      const bTop = b.y + b.height;
 
-    if (isNearbyVertical && sameColumn) {
-      currentBlock.lines.push(line);
-      currentBlock.minX = Math.min(currentBlock.minX, line.x);
-      currentBlock.maxX = Math.max(currentBlock.maxX, line.x + line.width);
-      currentBlock.minY = Math.min(currentBlock.minY, line.y);
-      currentBlock.maxY = Math.max(currentBlock.maxY, line.y + line.height);
-      currentBlock.width = currentBlock.maxX - currentBlock.minX;
-      currentBlock.height = currentBlock.maxY - currentBlock.minY;
-      currentBlock.fontSize = (currentBlock.fontSize + line.fontSize) / 2;
-      currentBlock.text += ' ' + line.text;
-      if (/(?:warning|advertencia|peligro|caution|danger|هشدار|خطر|احتیاط|توجه)/i.test(line.text)) {
-        currentBlock.isWarning = true;
+      // Vertical distance
+      const vDist = Math.abs(a.y - b.y);
+      const vGap = Math.max(0, Math.max(a.y, b.y) - Math.min(aTop, bTop));
+      const maxAllowedVGap = Math.max(22, Math.max(a.fontSize, b.fontSize) * 2.8);
+
+      if (vGap > maxAllowedVGap && vDist > 32) continue;
+
+      // Horizontal overlap or close column alignment
+      const hOverlap = Math.min(aRight, bRight) - Math.max(a.x, b.x);
+      const isLeftAligned = Math.abs(a.x - b.x) <= 20;
+      const isRightAligned = Math.abs(aRight - bRight) <= 20;
+      const isCenterAligned = Math.abs((a.x + aRight) / 2 - (b.x + bRight) / 2) <= 25;
+
+      // Gutter separation guard:
+      // If there is a distinct horizontal gap between lines (gutter > 18pt), they belong to different columns or table cells!
+      const isGutterSeparated = aRight + 18 < b.x || bRight + 18 < a.x;
+      if (isGutterSeparated) continue;
+
+      if (hOverlap > -10 || isLeftAligned || isRightAligned || isCenterAligned) {
+        union(i, j);
       }
-    } else {
-      blocks.push(currentBlock);
-      currentBlock = {
-        id: blocks.length + 1,
-        minX: line.x,
-        maxX: line.x + line.width,
-        minY: line.y,
-        maxY: line.y + line.height,
-        width: line.width,
-        height: line.height,
-        fontSize: line.fontSize,
-        text: line.text,
-        isWarning: /(?:warning|advertencia|peligro|caution|danger|هشدار|خطر|احتیاط|توجه)/i.test(line.text),
-        lines: [line],
-      };
     }
   }
 
-  if (currentBlock) {
-    blocks.push(currentBlock);
+  // Group into clusters
+  const clusters = new Map<number, ExtractedLine[]>();
+  for (let i = 0; i < n; i++) {
+    const root = find(i);
+    if (!clusters.has(root)) clusters.set(root, []);
+    clusters.get(root)!.push(validLines[i]);
+  }
+
+  const blocks: SpatialBlock[] = [];
+  for (const clusterLines of clusters.values()) {
+    // Sort lines inside each block: natural reading order (top-to-bottom descending Y, then left-to-right)
+    clusterLines.sort((a, b) => {
+      const yDiff = b.y - a.y;
+      if (Math.abs(yDiff) > 3) return yDiff;
+      return a.x - b.x;
+    });
+
+    const minX = Math.min(...clusterLines.map((l) => l.x));
+    const maxX = Math.max(...clusterLines.map((l) => l.x + l.width));
+    const minY = Math.min(...clusterLines.map((l) => l.y));
+    const maxY = Math.max(...clusterLines.map((l) => l.y + l.height));
+    const avgFontSize = clusterLines.reduce((s, l) => s + l.fontSize, 0) / clusterLines.length;
+    const text = clusterLines.map((l) => l.text.trim()).join(' ');
+
+    const isWarning = clusterLines.some((l) =>
+      /(?:warning|advertencia|peligro|caution|danger|هشدار|خطر|احتیاط|توجه)/i.test(l.text)
+    );
+
+    blocks.push({
+      id: 0,
+      minX,
+      maxX,
+      minY,
+      maxY,
+      width: maxX - minX,
+      height: maxY - minY,
+      fontSize: avgFontSize,
+      text,
+      isWarning,
+      lines: clusterLines,
+    });
+  }
+
+  // Sort blocks in original document reading order: top-to-bottom, then left-to-right
+  blocks.sort((a, b) => {
+    const yDiff = b.maxY - a.maxY;
+    if (Math.abs(yDiff) > 35) return yDiff;
+    return a.minX - b.minX;
+  });
+
+  // Assign 1-indexed IDs
+  for (let idx = 0; idx < blocks.length; idx++) {
+    blocks[idx].id = idx + 1;
   }
 
   return blocks;
@@ -385,7 +420,8 @@ export function groupLinesIntoSpatialBlocks(lines: ExtractedLine[], pageWidth: n
 export function renderSpatialBlocks(
   page: any,
   blocks: SpatialBlock[],
-  blockTranslations: Map<number, string>,
+  translatedResultsMap: Map<string, string>,
+  pageIndex: number,
   fontFamily: any
 ): boolean {
   if (!blocks || blocks.length === 0) return false;
@@ -396,35 +432,50 @@ export function renderSpatialBlocks(
   let renderedBlocksCount = 0;
 
   for (const block of blocks) {
-    const rawFa = blockTranslations.get(block.id);
+    // 1. Fetch exact translation for this block
+    let rawFa = translatedResultsMap.get(`p${pageIndex}_b${block.id}`);
+    if (!rawFa) {
+      const pageText = translatedResultsMap.get(`page_${pageIndex}`);
+      if (pageText) {
+        const boxMatch = pageText.match(
+          new RegExp(`\\[B(?:OX)?_?${block.id}\\]\\s*([\\s\\S]*?)(?=(?:\\[B(?:OX)?_?\\d+\\]|$))`, 'i')
+        );
+        if (boxMatch) {
+          rawFa = boxMatch[1].trim();
+        }
+      }
+    }
     if (!rawFa || !rawFa.trim()) continue;
 
-    const healed = healPersianSpaces(rawFa);
+    const healed = sanitizePersianSymbols(healPersianSpaces(rawFa));
     if (!healed || !healed.trim()) continue;
 
-    // Ensure adequate width for text flow (at least 80pt, max pageWidth - 36)
-    let targetWidth = Math.max(80, block.width);
-    targetWidth = Math.min(pageWidth - 36, targetWidth);
+    // 2. Container Bounding Box
+    // Width of container (at least 45pt, max pageWidth - 24)
+    const containerWidth = Math.max(45, Math.min(pageWidth - 28, block.width));
+    // In RTL, the text starts at the right edge of this container
+    const rightX = Math.min(pageWidth - 14, Math.max(containerWidth + 14, block.maxX + 4));
+    const leftMargin = Math.max(12, rightX - containerWidth);
 
-    const rightX = Math.min(pageWidth - 14, Math.max(targetWidth + 14, block.maxX + 4));
-    const leftMargin = Math.max(14, rightX - targetWidth);
-
-    let fontSize = Math.min(10.5, Math.max(7.0, block.fontSize || 9.5));
-    let lineHeight = Math.round(fontSize * 1.34 * 10) / 10;
-
+    // Initial font metrics
+    let fontSize = Math.min(10.0, Math.max(6.8, block.fontSize || 9.0));
+    let lineHeight = Math.round(fontSize * 1.32 * 10) / 10;
     const fontToUse = block.isWarning ? fontBold : fontReg;
-    let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, targetWidth);
 
-    // If height exceeds available block height by too much, scale font down smoothly
-    const blockAvailableH = Math.max(30, block.height + 20);
-    while (wrappedLines.length * lineHeight > blockAvailableH && fontSize > 6.5) {
-      fontSize -= 0.35;
+    let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
+
+    // 3. Dynamic Height Fitting:
+    // Scale font size down smoothly so Persian text fits 100% inside container height
+    const availableH = Math.max(28, block.height + 16);
+    while (wrappedLines.length * lineHeight > availableH && fontSize > 5.8) {
+      fontSize -= 0.3;
       lineHeight = Math.round(fontSize * 1.30 * 10) / 10;
-      wrappedLines = wrapPersianText(healed, fontToUse, fontSize, targetWidth);
+      wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
     }
 
-    let curY = Math.min(pageHeight - 20, block.maxY + (wrappedLines.length > 1 ? 4 : 0));
-    const color = block.isWarning ? rgb(0.85, 0.15, 0.10) : rgb(0.10, 0.14, 0.22);
+    // 4. Vertical starting position at top of container
+    let curY = Math.min(pageHeight - 20, block.maxY + (wrappedLines.length > 1 ? 2 : 0));
+    const color = block.isWarning ? rgb(0.85, 0.12, 0.10) : rgb(0.10, 0.14, 0.22);
 
     for (const line of wrappedLines) {
       if (curY < 12) break;
@@ -1650,26 +1701,56 @@ export class PDFProcessor implements DocumentProcessor {
       if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
       const pageIndex = i + 1;
       let lines: ExtractedLine[] = [];
+      let blocks: SpatialBlock[] = [];
+
       if (parserDoc) {
         lines = await extractPageLinesWithCoordinates(parserDoc, pageIndex);
+        if (lines.length > 0) {
+          const samplePage = copiedPages[i];
+          const { width: pW, height: pH } = samplePage.getSize();
+          blocks = groupLinesIntoSpatialBlocks(lines, pW, pH);
+        }
       }
 
       let rawPageText = '';
-      if (lines.length > 0) {
+      if (blocks.length > 0) {
+        pageBlocksMap.set(pageIndex, blocks);
+        pageLinesMap.set(pageIndex, lines);
+
+        rawPageText = blocks.map((b) => `[BOX_${b.id}] ${b.text}`).join('\n\n');
+        pageRawTexts[i] = rawPageText;
+
+        // Register each spatial block as an individual unit to guarantee 1-to-1 exact translation and placement
+        for (const b of blocks) {
+          if (b.text && b.text.trim()) {
+            pageUnitsToTranslate.push({
+              id: `p${pageIndex}_b${b.id}`,
+              text: b.text.trim(),
+              context: `صفحه ${pageIndex}، بخش ${b.id}${b.isWarning ? ' (هشدار ایمنی)' : ''} از سند ${job.originalFileName}`,
+            });
+          }
+        }
+      } else if (lines.length > 0) {
         pageLinesMap.set(pageIndex, lines);
         rawPageText = lines.map((l, idx) => `[${idx + 1}] ${l.text}`).join('\n');
-      } else {
-        rawPageText = (fastPageTexts[i] || '').trim();
-      }
-      pageRawTexts[i] = rawPageText;
-
-      if (rawPageText.length > 0) {
+        pageRawTexts[i] = rawPageText;
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
           context: `صفحه ${pageIndex} از سند ${job.originalFileName} (برچسب‌های دیاگرام و متن با مختصات مکانی)`,
         });
+      } else {
+        rawPageText = (fastPageTexts[i] || '').trim();
+        pageRawTexts[i] = rawPageText;
+        if (rawPageText.length > 0) {
+          pageUnitsToTranslate.push({
+            id: `page_${pageIndex}`,
+            text: rawPageText,
+            context: `صفحه ${pageIndex} از سند ${job.originalFileName}`,
+          });
+        }
       }
+
       if (rawPageText.length <= 15) {
         diagramPagesToScan.push(pageIndex);
       }
@@ -1908,8 +1989,24 @@ export class PDFProcessor implements DocumentProcessor {
         );
       }
 
-      // 2. High-Fidelity Flow Reconstruction with Proportional Leading, Tables & Warning Cards
-      if (!renderedInPlace && paragraphs.length > 0) {
+      // 2. Spatial Block-Aware 1-to-1 Layout Placement:
+      // Perfectly preserves multi-column manuals, warning boxes, and table layouts
+      // by placing Persian text into the exact physical bounding box of each column/box.
+      const blocks = pageBlocksMap.get(pageIndex);
+      let renderedSpatial = false;
+
+      if (!renderedInPlace && blocks && blocks.length > 0) {
+        renderedSpatial = renderSpatialBlocks(
+          page,
+          blocks,
+          translatedResultsMap,
+          pageIndex,
+          fontFamily
+        );
+      }
+
+      // 3. Fallback for un-structured flow documents (novels, simple letters)
+      if (!renderedInPlace && !renderedSpatial && paragraphs.length > 0) {
         renderPersianTextToPage(
           page,
           paragraphs,
