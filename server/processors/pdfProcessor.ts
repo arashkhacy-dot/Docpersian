@@ -31,6 +31,58 @@ export function toPersianDigits(n: number | string): string {
   return String(n).replace(/\d/g, (d) => pDigits[parseInt(d, 10)]);
 }
 
+export function toAsciiDigits(s: string): string {
+  return String(s)
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
+}
+
+export function extractBlockTranslation(fullText: string, blockId: number): string | null {
+  if (!fullText || !fullText.trim()) return null;
+
+  const lines = fullText.split(/\r?\n/);
+  let capturing = false;
+  const capturedLines: string[] = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line.startsWith('[')) {
+      const closeBracket = line.indexOf(']');
+      if (closeBracket !== -1) {
+        const header = line.substring(1, closeBracket).toLowerCase();
+        const digits = header.match(/\d+|[\u06F0-\u06F9]|[\u0660-\u0669]/);
+        if (digits) {
+          const num = parseInt(toAsciiDigits(digits[0]), 10);
+          if (num === blockId) {
+            capturing = true;
+            const rest = line.substring(closeBracket + 1).replace(/^[:：\s-]+/, '').trim();
+            if (rest) capturedLines.push(rest);
+            continue;
+          } else if (capturing) {
+            break;
+          }
+        }
+      }
+    }
+
+    if (capturing) {
+      capturedLines.push(rawLine);
+    }
+  }
+
+  if (capturedLines.length > 0) {
+    const result = capturedLines.join('\n').trim();
+    if (result) return result;
+  }
+
+  const paras = fullText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
+  if (paras[blockId - 1]) {
+    return paras[blockId - 1].replace(/^\[[^\]]*\][:：\s-]*/, '').trim();
+  }
+
+  return null;
+}
+
 const standardFontDataUrl = path.join(process.cwd(), 'node_modules/pdfjs-dist/standard_fonts/');
 
 function createPdfParser(data: Uint8Array | Buffer): PDFParse {
@@ -438,19 +490,7 @@ export function renderSpatialBlocks(
     if (!rawFa) {
       const pageText = translatedResultsMap.get(`page_${pageIndex}`);
       if (pageText) {
-        // Try [بخش X] or [BOX X] or [X]
-        const boxMatch = pageText.match(
-          new RegExp(`\\[(?:بخش|BOX|بخش\\s*شماره)?\\s*${block.id}[^\\]]*\\]\\s*([\\s\\S]*?)(?=(?:\\[(?:بخش|BOX|بخش\\s*شماره)?\\s*\\d+[^\\]]*\\]|$)`, 'i')
-        );
-        if (boxMatch && boxMatch[1].trim()) {
-          rawFa = boxMatch[1].trim();
-        } else {
-          // Fallback to corresponding block slice from page text
-          const paras = pageText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
-          if (paras[block.id - 1]) {
-            rawFa = paras[block.id - 1];
-          }
-        }
+        rawFa = extractBlockTranslation(pageText, block.id) || undefined;
       }
     }
     if (!rawFa || !rawFa.trim()) continue;
@@ -1829,18 +1869,9 @@ export class PDFProcessor implements DocumentProcessor {
           const blocks = pageBlocksMap.get(pNum);
           if (blocks && blocks.length > 0) {
             for (const b of blocks) {
-              const boxRegex = new RegExp(
-                `\\[(?:بخش|BOX|بخش\\s*شماره)?\\s*${b.id}[^\\]]*\\]\\s*([\\s\\S]*?)(?=(?:\\[(?:بخش|BOX|بخش\\s*شماره)?\\s*\\d+[^\\]]*\\]|$))`,
-                'i'
-              );
-              const match = res.translatedText.match(boxRegex);
-              if (match && match[1].trim()) {
-                translatedResultsMap.set(`p${pNum}_b${b.id}`, match[1].trim());
-              } else {
-                const paras = res.translatedText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
-                if (paras[b.id - 1]) {
-                  translatedResultsMap.set(`p${pNum}_b${b.id}`, paras[b.id - 1]);
-                }
+              const blockText = extractBlockTranslation(res.translatedText, b.id);
+              if (blockText) {
+                translatedResultsMap.set(`p${pNum}_b${b.id}`, blockText);
               }
             }
           }
@@ -1972,11 +2003,11 @@ export class PDFProcessor implements DocumentProcessor {
       const words = fullFaText.split(/\s+/).filter(Boolean).length;
       processedWordCount += words;
 
-      const cleanFaTextForCompanion = fullFaText.replace(/^\[(?:بخش|BOX|\d+)[^\]]*\]\s*/gm, '').trim();
+      const cleanFaTextForCompanion = fullFaText.replace(/^\[(?:بخش|BOX|\d+)[^\]]*\][:：\s-]*/gm, '').trim();
 
       pageTranslations.push({
         pageNumber: pageIndex,
-        text: rawPageText.replace(/^\[(?:بخش|BOX|\d+)[^\]]*\]\s*/gm, ''),
+        text: rawPageText.replace(/^\[(?:بخش|BOX|\d+)[^\]]*\][:：\s-]*/gm, ''),
         translatedText: cleanFaTextForCompanion,
       });
 
