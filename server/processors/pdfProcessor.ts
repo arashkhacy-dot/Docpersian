@@ -46,22 +46,22 @@ export function extractBlockTranslation(fullText: string, blockId: number): stri
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (line.startsWith('[')) {
-      const closeBracket = line.indexOf(']');
-      if (closeBracket !== -1) {
-        const header = line.substring(1, closeBracket).toLowerCase();
-        const digits = header.match(/\d+|[\u06F0-\u06F9]|[\u0660-\u0669]/);
-        if (digits) {
-          const num = parseInt(toAsciiDigits(digits[0]), 10);
-          if (num === blockId) {
-            capturing = true;
-            const rest = line.substring(closeBracket + 1).replace(/^[:：\s-]+/, '').trim();
-            if (rest) capturedLines.push(rest);
-            continue;
-          } else if (capturing) {
-            break;
-          }
-        }
+
+    // Check if line starts with or contains a block header:
+    // [بخش 1], [بخش ۱ (هشدار ایمنی)], [BOX 1], [1], بخش 1:, **بخش 1**:
+    const headerMatch = line.match(
+      /^(?:\[|\(|\*\*|#)?\s*(?:بخش|قسمت|بلوک|BOX|واحد)?\s*(\d+|[\u06F0-\u06F9]|[\u0660-\u0669]+)[^\]\):\*]*[\]\):\*]+[\s:：-]*(.*)$/i
+    );
+
+    if (headerMatch) {
+      const num = parseInt(toAsciiDigits(headerMatch[1]), 10);
+      if (num === blockId) {
+        capturing = true;
+        const rest = headerMatch[2].replace(/^[:：\s-]+/, '').trim();
+        if (rest) capturedLines.push(rest);
+        continue;
+      } else if (capturing) {
+        break;
       }
     }
 
@@ -75,9 +75,12 @@ export function extractBlockTranslation(fullText: string, blockId: number): stri
     if (result) return result;
   }
 
+  // Fallback: Paragraph splitting by double newlines or single blank lines
   const paras = fullText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
   if (paras[blockId - 1]) {
-    return paras[blockId - 1].replace(/^\[[^\]]*\][:：\s-]*/, '').trim();
+    return paras[blockId - 1]
+      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:بخش|قسمت|بلوک|BOX|واحد)?\s*\d+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
+      .trim();
   }
 
   return null;
@@ -498,12 +501,11 @@ export function renderSpatialBlocks(
     const healed = sanitizePersianSymbols(healPersianSpaces(rawFa));
     if (!healed || !healed.trim()) continue;
 
-    // 2. Container Bounding Box
-    // Width of container (at least 45pt, max pageWidth - 24)
-    const containerWidth = Math.max(45, Math.min(pageWidth - 28, block.width));
-    // In RTL, the text starts at the right edge of this container
-    const rightX = Math.min(pageWidth - 14, Math.max(containerWidth + 14, block.maxX + 4));
-    const leftMargin = Math.max(12, rightX - containerWidth);
+    // 2. Physical Container Bounding Box
+    // Maintain the exact horizontal position and width of the original content/box
+    const leftMargin = Math.max(14, block.minX);
+    const rightX = Math.min(pageWidth - 14, Math.max(leftMargin + 30, block.maxX));
+    const containerWidth = Math.max(30, rightX - leftMargin);
 
     // Initial font metrics
     let fontSize = Math.min(10.0, Math.max(6.8, block.fontSize || 9.0));
@@ -513,40 +515,17 @@ export function renderSpatialBlocks(
     let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
 
     // 3. Dynamic Height Fitting:
-    // Scale font size down smoothly so Persian text fits 100% inside container height
-    const availableH = Math.max(28, block.height + 16);
-    while (wrappedLines.length * lineHeight > availableH && fontSize > 5.8) {
+    // Scale font size down smoothly so Persian text fits inside container height
+    const availableH = Math.max(28, block.height + 12);
+    while (wrappedLines.length * lineHeight > availableH && fontSize > 5.5) {
       fontSize -= 0.3;
       lineHeight = Math.round(fontSize * 1.30 * 10) / 10;
       wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
     }
 
-    // 4. Vertical starting position at top of container
-    let curY = Math.min(pageHeight - 20, block.maxY + (wrappedLines.length > 1 ? 2 : 0));
+    // 4. Vertical starting position at top of container (leaving small padding at top)
+    let curY = Math.min(pageHeight - 20, block.maxY - 2);
     const color = block.isWarning ? rgb(0.85, 0.12, 0.10) : rgb(0.10, 0.14, 0.22);
-
-    // Draw subtle warning card border if this is a warning callout block
-    if (block.isWarning && wrappedLines.length > 0) {
-      try {
-        const cardLeft = Math.max(8, leftMargin - 4);
-        const cardRight = Math.min(pageWidth - 8, rightX + 4);
-        const cardWidth = cardRight - cardLeft;
-        const totalTextHeight = wrappedLines.length * lineHeight;
-        const cardHeight = Math.min(availableH + 8, totalTextHeight + 10);
-        const cardY = Math.max(10, curY - totalTextHeight - 2);
-
-        page.drawRectangle({
-          x: cardLeft,
-          y: cardY,
-          width: cardWidth,
-          height: cardHeight,
-          borderColor: rgb(0.92, 0.55, 0.15),
-          borderWidth: 0.8,
-          color: rgb(0.99, 0.98, 0.95),
-          opacity: 0.88,
-        });
-      } catch {}
-    }
 
     for (const line of wrappedLines) {
       if (curY < 12) break;
@@ -1414,7 +1393,10 @@ function renderPersianTextToPage(
   }
 
   // 7. Refined Book Page Framing: Header & Footer with Persian Page Numbers
-  if (totalPages > 1 && pageIndex > 0) {
+  // Only add header/footer lines for pure narrative book pages without existing vector structures
+  const hasExistingPageVectorStructure = (sourceLines && sourceLines.length > 0) || textBounds.maxY !== null;
+
+  if (totalPages > 1 && pageIndex > 0 && !hasExistingPageVectorStructure) {
     try {
       // Running Header (only on pages after cover page 1)
       if (pageIndex > 1 && !isDiagramPage) {
@@ -2056,10 +2038,34 @@ export class PDFProcessor implements DocumentProcessor {
       );
       pageAnalyses.push(layoutAnalysis);
 
-      // 2. Spatial Block-Aware 1-to-1 Layout Placement (PRIORITY):
-      // Perfectly preserves multi-column manuals, warning boxes, and table layouts
-      // by placing Persian text into the exact physical bounding box of each column/box.
+      // 2. Structured Layout & Table Grid Placement:
+      // If the page is a table grid (multiple columns and aligned cells) or has spatial blocks:
       let renderedSpatial = false;
+
+      // For tables, line-level in-place coordinate rendering achieves 100% cell placement without leaving cells empty!
+      if (!renderedInPlace && (layoutAnalysis.isTableGrid || (lines.length >= 6 && layoutAnalysis.layoutType === 'table_grid'))) {
+        const transMap = new Map<number, string>();
+        const pattern = /\[(\d+)\]\s*([^\n\r]+)/g;
+        let m: RegExpExecArray | null;
+        while ((m = pattern.exec(fullFaText)) !== null) {
+          transMap.set(parseInt(m[1], 10), m[2].trim());
+        }
+
+        renderedInPlace = renderInPlaceLines(
+          page,
+          lines,
+          transMap,
+          fullFaText,
+          fontFamily
+        );
+        if (renderedInPlace) {
+          renderedBlocksMap.set(pageIndex, lines.length);
+        }
+      }
+
+      // 3. Spatial Block-Aware 1-to-1 Layout Placement:
+      // Perfectly preserves multi-column manuals, warning boxes, and section blocks
+      // by placing Persian text into the exact physical bounding box of each column/box.
       if (!renderedInPlace && blocks.length > 0) {
         // For two-column layouts, sort blocks in natural RTL reading order:
         // Right-column blocks first (descending Y), then Left-column blocks (descending Y)
@@ -2086,20 +2092,8 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // 3. Isolated Callout Diagram fallback (ONLY if no spatial blocks exist)
-      const isCalloutDiagram =
-        !renderedSpatial &&
-        lines.length >= 2 &&
-        lines.length <= 20 &&
-        lines.every((l) => l.text.length < 50) &&
-        paragraphs.length <= 22 &&
-        paragraphs.every((p) => p.length < 80) &&
-        !cleanFaTextForCompanion.includes('خطر:') &&
-        !cleanFaTextForCompanion.includes('هشدار:') &&
-        !cleanFaTextForCompanion.includes('توجه:') &&
-        !cleanFaTextForCompanion.includes('احتیاط:');
-
-      if (!renderedSpatial && isCalloutDiagram) {
+      // 4. Line-level In-Place Placement fallback (for tables, schematics, or when spatial blocks had partial matches)
+      if (!renderedInPlace && !renderedSpatial && lines.length > 0) {
         const transMap = new Map<number, string>();
         const pattern = /\[(\d+)\]\s*([^\n\r]+)/g;
         let m: RegExpExecArray | null;
@@ -2114,9 +2108,12 @@ export class PDFProcessor implements DocumentProcessor {
           fullFaText,
           fontFamily
         );
+        if (renderedInPlace) {
+          renderedBlocksMap.set(pageIndex, lines.length);
+        }
       }
 
-      // 4. Fallback for un-structured flow documents (novels, simple letters)
+      // 5. Fallback for un-structured flow documents (novels, simple letters)
       if (!renderedInPlace && !renderedSpatial && paragraphs.length > 0) {
         renderPersianTextToPage(
           page,

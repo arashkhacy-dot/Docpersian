@@ -651,14 +651,14 @@ export interface TocEntry {
 }
 
 /**
- * Parses a single TOC line (e.g., 'I. شرح خودرو ................. 12' or '12 ........ مقدمه')
+ * Parses a single TOC line (e.g., 'I. شرح خودرو ................. 12' or '12 ........ مقدمه' or 'عنوان    12')
  */
 export function parseTocLine(line: string): TocEntry | null {
   if (!line || !line.trim()) return null;
   const cleaned = healPersianSpaces(line.trim());
 
-  // Pattern 1: Title .......... 12
-  const pattern1 = /^(.*?)\s*([\.·•\-–—]{3,})\s*(\d+|[\u06F0-\u06F9]+)\s*$/;
+  // Pattern 1: Title .......... 12 (at least 2 dots, dashes, or bullets)
+  const pattern1 = /^(.*?)\s*([\.·•\-–—]{2,})\s*(\d+|[\u06F0-\u06F9]+)\s*$/;
   const m1 = cleaned.match(pattern1);
   if (m1) {
     const rawTitle = normalizeTableCellContent(m1[1].trim());
@@ -675,7 +675,7 @@ export function parseTocLine(line: string): TocEntry | null {
   }
 
   // Pattern 2: 12 .......... Title
-  const pattern2 = /^(\d+|[\u06F0-\u06F9]+)\s*([\.·•\-–—]{3,})\s*(.*?)$/;
+  const pattern2 = /^(\d+|[\u06F0-\u06F9]+)\s*([\.·•\-–—]{2,})\s*(.*?)$/;
   const m2 = cleaned.match(pattern2);
   if (m2) {
     const rawTitle = normalizeTableCellContent(m2[3].trim());
@@ -689,6 +689,36 @@ export function parseTocLine(line: string): TocEntry | null {
         isMajorHeader: isMajor,
       };
     }
+  }
+
+  // Pattern 3: Spaced or tabbed column Title    12
+  const pattern3 = /^(.*?)\s{3,}(\d+|[\u06F0-\u06F9]+)$/;
+  const m3 = cleaned.match(pattern3);
+  if (m3 && m3[1].trim().length > 1) {
+    const rawTitle = normalizeTableCellContent(m3[1].trim());
+    const isMajor = /^(?:[I|V|X]+|\d+|[\u06F0-\u06F9]+)\s*[\.\-]\s*/.test(rawTitle);
+    return {
+      isToc: true,
+      title: rawTitle,
+      dots: '................................................................',
+      pageNumber: m3[2].trim(),
+      isMajorHeader: isMajor,
+    };
+  }
+
+  // Pattern 4: Spaced or tabbed column 12    Title
+  const pattern4 = /^(\d+|[\u06F0-\u06F9]+)\s{3,}(.*?)$/;
+  const m4 = cleaned.match(pattern4);
+  if (m4 && m4[2].trim().length > 1) {
+    const rawTitle = normalizeTableCellContent(m4[2].trim());
+    const isMajor = /^(?:[I|V|X]+|\d+|[\u06F0-\u06F9]+)\s*[\.\-]\s*/.test(rawTitle);
+    return {
+      isToc: true,
+      title: rawTitle,
+      dots: '................................................................',
+      pageNumber: m4[1].trim(),
+      isMajorHeader: isMajor,
+    };
   }
 
   return null;

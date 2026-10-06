@@ -17,6 +17,7 @@ export interface PageLayoutAnalysis {
   blocks: SpatialBlock[];
   lines: ExtractedLine[];
   isTwoColumn: boolean;
+  isTableGrid: boolean;
   leftColumnBounds?: { minX: number; maxX: number };
   rightColumnBounds?: { minX: number; maxX: number };
   hasWarningBoxes: boolean;
@@ -143,6 +144,7 @@ export class LayoutComparisonEngine {
       blocks: blocks || [],
       lines: validLines,
       isTwoColumn,
+      isTableGrid,
       leftColumnBounds,
       rightColumnBounds,
       hasWarningBoxes,
