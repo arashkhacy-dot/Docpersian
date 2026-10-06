@@ -30,6 +30,7 @@ export interface QualityReport {
   tablesPreserved: 'preserved' | 'modified' | 'warnings';
   validationStatus: 'passed' | 'warnings' | 'failed';
   notes: string[];
+  layoutAudit?: any;
 }
 
 export interface DebugLogEntry {

@@ -236,6 +236,11 @@ export class GeminiTranslator {
       });
 
       await Promise.all(batchPromises);
+
+      // Add gentle pacing between batches to prevent API rate bursts
+      if (i + maxConcurrency < chunks.length) {
+        await new Promise((r) => setTimeout(r, 250));
+      }
     }
 
     return results;
@@ -272,9 +277,9 @@ export class GeminiTranslator {
 
     const modelsToTry = [
       this.model,
-      'gemini-2.5-flash',
-      this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
       'gemini-flash-latest',
+      this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
+      'gemini-3.1-pro-preview',
     ];
 
     for (const modelCandidate of modelsToTry) {
@@ -301,9 +306,9 @@ export class GeminiTranslator {
       }
     }
 
-    // If all model candidates failed once, do 1 fast retry with short jitter
-    if (attempt <= 2) {
-      const backoffMs = 500 + Math.random() * 500;
+    // If all model candidates failed once, retry with exponential backoff
+    if (attempt <= 3) {
+      const backoffMs = 1200 * Math.pow(2, attempt - 1) + Math.random() * 500;
       await new Promise((res) => setTimeout(res, backoffMs));
       return this.translateChunkWithRetry(chunk, attempt + 1);
     }
@@ -358,66 +363,76 @@ CRITICAL INSTRUCTIONS:
     const candidateModels = Array.from(
       new Set(
         overrideModel
-          ? [overrideModel, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
-          : [this.model, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
+          ? [overrideModel, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
+          : [this.model, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
       )
     );
 
-    for (const modelCandidate of candidateModels) {
-      try {
-        const response = await this.ai.models.generateContent({
-          model: modelCandidate,
-          contents: JSON.stringify(inputPayload),
-          config: {
-            systemInstruction,
-            temperature: 0.1,
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.STRING },
-                  translatedText: { type: Type.STRING },
+    // Exponential backoff retry loop for quota (429) and high-demand (503) protection
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      for (const modelCandidate of candidateModels) {
+        try {
+          const response = await this.ai.models.generateContent({
+            model: modelCandidate,
+            contents: JSON.stringify(inputPayload),
+            config: {
+              systemInstruction,
+              temperature: 0.1,
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    translatedText: { type: Type.STRING },
+                  },
+                  required: ['id', 'translatedText'],
                 },
-                required: ['id', 'translatedText'],
               },
             },
-          },
-        });
-
-        const responseText = response.text?.trim() || '[]';
-        const parsed = JSON.parse(responseText) as Array<{ id: string; translatedText: string }>;
-        const mappedResults: TranslationResult[] = [];
-        const parsedMap = new Map(parsed.map((p) => [p.id, p.translatedText]));
-
-        for (const item of chunk) {
-          const tr = parsedMap.get(item.id);
-          const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
-          mappedResults.push({
-            id: item.id,
-            translatedText: finalText,
           });
-        }
-        return mappedResults;
-      } catch (err: any) {
-        const errMsg = String(err?.message || err || '');
-        const isBusyOrQuota =
-          err?.status === 503 ||
-          err?.status === 429 ||
-          err?.status === 500 ||
-          err?.status === 502 ||
-          err?.code === 503 ||
-          errMsg.includes('503') ||
-          errMsg.includes('UNAVAILABLE') ||
-          errMsg.includes('high demand') ||
-          errMsg.includes('RESOURCE_EXHAUSTED') ||
-          errMsg.includes('quota');
 
-        console.warn(`[GEMINI_CALL_FAIL] Model ${modelCandidate} failed (isBusy=${isBusyOrQuota}):`, errMsg.substring(0, 120));
-        if (isBusyOrQuota) {
-          continue;
+          const responseText = response.text?.trim() || '[]';
+          const parsed = JSON.parse(responseText) as Array<{ id: string; translatedText: string }>;
+          const mappedResults: TranslationResult[] = [];
+          const parsedMap = new Map(parsed.map((p) => [p.id, p.translatedText]));
+
+          for (const item of chunk) {
+            const tr = parsedMap.get(item.id);
+            const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
+            mappedResults.push({
+              id: item.id,
+              translatedText: finalText,
+            });
+          }
+          return mappedResults;
+        } catch (err: any) {
+          const errMsg = String(err?.message || err || '');
+          const isBusyOrQuota =
+            err?.status === 503 ||
+            err?.status === 429 ||
+            err?.status === 500 ||
+            err?.status === 502 ||
+            err?.code === 503 ||
+            errMsg.includes('503') ||
+            errMsg.includes('UNAVAILABLE') ||
+            errMsg.includes('high demand') ||
+            errMsg.includes('RESOURCE_EXHAUSTED') ||
+            errMsg.includes('quota');
+
+          console.warn(`[GEMINI_CALL_FAIL] Model ${modelCandidate} failed (isBusy=${isBusyOrQuota}, attempt=${attempt}/4):`, errMsg.substring(0, 120));
+          if (isBusyOrQuota) {
+            continue;
+          }
         }
+      }
+
+      // If all candidate models in this attempt were rate-limited or busy, sleep with backoff before next attempt
+      if (attempt < 4) {
+        const waitMs = Math.min(1500 * Math.pow(2, attempt - 1) + Math.random() * 600, 20000);
+        console.info(`[GEMINI_RATE_LIMIT_BACKOFF] Waiting ${Math.round(waitMs)}ms before retry attempt ${attempt + 1}...`);
+        await new Promise((r) => setTimeout(r, waitMs));
       }
     }
 

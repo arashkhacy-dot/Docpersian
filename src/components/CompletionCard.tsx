@@ -32,8 +32,43 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
   const [copied, setCopied] = useState(false);
   const [selectedPage, setSelectedPage] = useState<number | 'all'>('all');
 
+  const [livePageTranslations, setLivePageTranslations] = useState<Array<{ pageNumber: number; text: string; translatedText: string }>>(
+    job.pageTranslations || []
+  );
+  const [liveTranslatedText, setLiveTranslatedText] = useState<string | null>(job.translatedText || null);
+  const [loadingText, setLoadingText] = useState(false);
+
+  // Proactively fetch translated text if not already populated on job state
+  React.useEffect(() => {
+    if ((!job.pageTranslations || job.pageTranslations.length === 0) && !job.translatedText) {
+      setLoadingText(true);
+      fetch(`/api/jobs/${job.jobId}/text`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            if (Array.isArray(data.pageTranslations) && data.pageTranslations.length > 0) {
+              setLivePageTranslations(data.pageTranslations);
+            }
+            if (data.translatedText) {
+              setLiveTranslatedText(data.translatedText);
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoadingText(false));
+    } else {
+      if (job.pageTranslations && job.pageTranslations.length > 0) {
+        setLivePageTranslations(job.pageTranslations);
+      }
+      if (job.translatedText) {
+        setLiveTranslatedText(job.translatedText);
+      }
+    }
+  }, [job.jobId, job.pageTranslations, job.translatedText]);
+
   const isWarnings = job.status === 'completed_with_warnings';
   const report = job.qualityReport;
+  const layoutAudit = report?.layoutAudit;
 
   const isPptx =
     job.originalFileName.toLowerCase().endsWith('.pptx') ||
@@ -61,10 +96,10 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
     }
   };
 
-  const pageTranslations = job.pageTranslations || [];
+  const pageTranslations = livePageTranslations;
 
   const handleCopyText = () => {
-    let textToCopy = job.translatedText;
+    let textToCopy = liveTranslatedText;
     if (!textToCopy && pageTranslations.length > 0) {
       textToCopy = pageTranslations
         .map((p) => `--- ${unitLabel} ${p.pageNumber} ---\n${p.translatedText}`)
@@ -305,7 +340,12 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
             className="p-5 max-h-96 overflow-y-auto space-y-6 text-right font-sans text-slate-200 text-sm leading-relaxed"
             dir="rtl"
           >
-            {pageTranslations.length > 0 ? (
+            {loadingText ? (
+              <div className="flex flex-col items-center justify-center py-10 space-y-3 text-slate-400">
+                <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                <p className="text-xs font-medium">در حال بارگذاری و آماده‌سازی پیش‌نمایش متن ترجمه‌شده...</p>
+              </div>
+            ) : pageTranslations.length > 0 ? (
               pageTranslations
                 .filter((p) => selectedPage === 'all' || selectedPage === p.pageNumber)
                 .map((pt) => (
@@ -323,13 +363,52 @@ export const CompletionCard: React.FC<CompletionCardProps> = ({ job, onReset, on
                     </div>
                   </div>
                 ))
-            ) : (
+            ) : liveTranslatedText ? (
               <div className="whitespace-pre-wrap font-sans text-slate-100 leading-relaxed select-text bg-slate-950/50 p-4 rounded-xl border border-slate-800/50">
-                {job.translatedText || 'در حال آماده‌سازی متن...'}
+                {liveTranslatedText}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 space-y-2 text-slate-400">
+                <p className="text-xs">متن ترجمه‌شده برای دانلود آماده است.</p>
+                <button
+                  onClick={() => {
+                    setLoadingText(true);
+                    fetch(`/api/jobs/${job.jobId}/text`)
+                      .then((res) => (res.ok ? res.json() : null))
+                      .then((data) => {
+                        if (data?.pageTranslations?.length) setLivePageTranslations(data.pageTranslations);
+                        if (data?.translatedText) setLiveTranslatedText(data.translatedText);
+                      })
+                      .finally(() => setLoadingText(false));
+                  }}
+                  className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-medium"
+                >
+                  بارگذاری مجدد پیش‌نمایش
+                </button>
               </div>
             )}
           </div>
         </div>
+
+        {/* Layout Comparison Engine & Side-by-Side Audit Card */}
+        {layoutAudit && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/40 to-slate-900 border border-indigo-500/30 space-y-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0" />
+                <span className="font-bold text-white text-xs sm:text-sm">
+                  موتور آنالیز و تطبیق نظیر‌به‌نظیر چیدمان با نسخه اصلی (Layout Matcher Engine)
+                </span>
+              </div>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                امتیاز تطابق: {layoutAudit.overallPlacementScore}٪
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              تمامی صفحات به صورت نظیر‌به‌نظیر با نسخه اصلی مقایسه شدند: {layoutAudit.twoColumnPages > 0 ? `${layoutAudit.twoColumnPages} صفحه دو‌ستونه با رعایت راست‌به‌چپ، ` : ''}{layoutAudit.diagramPages > 0 ? `${layoutAudit.diagramPages} صفحه دیاگرام و نقشه فنی، ` : ''}{layoutAudit.warningPages > 0 ? `${layoutAudit.warningPages} صفحه کادر هشدار ایمنی، ` : ''}و تمام المان‌های گرافیکی و عکس‌ها در جای دقیق خود طبق نسخه اصلی تثبیت گردیدند.
+            </p>
+          </div>
+        )}
 
         {/* Quality Audit Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

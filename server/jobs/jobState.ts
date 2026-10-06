@@ -61,6 +61,7 @@ export interface QualityReport {
   tablesPreserved: 'preserved' | 'warnings' | 'not_applicable';
   validationStatus: 'passed' | 'warnings' | 'failed';
   notes: string[];
+  layoutAudit?: any;
 }
 
 export interface DebugLogEntry {

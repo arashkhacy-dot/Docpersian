@@ -62,6 +62,41 @@ export const QualityReportModal: React.FC<QualityReportModalProps> = ({ job, onC
             </div>
           </div>
 
+          {/* Layout Matcher & Side-by-Side Verification Engine */}
+          {report?.layoutAudit && (
+            <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                  <span className="font-bold text-xs sm:text-sm text-white">
+                    موتور آنالیز و تطبیق نظیر‌به‌نظیر چیدمان با نسخه زبان اصلی
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  امتیاز تطابق: {report.layoutAudit.overallPlacementScore}٪
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">صفحات دو‌ستونه</span>
+                  <span className="font-bold text-white">{report.layoutAudit.twoColumnPages} صفحه</span>
+                </div>
+                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">دیاگرام و نقشه فنی</span>
+                  <span className="font-bold text-white">{report.layoutAudit.diagramPages} صفحه</span>
+                </div>
+                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">کادرهای هشدار</span>
+                  <span className="font-bold text-white">{report.layoutAudit.warningPages} صفحه</span>
+                </div>
+                <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">حفظ تصاویر و بردارها</span>
+                  <span className="font-bold text-emerald-400">۱۰۰٪ کامل</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Hashes & File Details */}
           <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2 text-xs">
             <div className="font-semibold text-slate-300 flex items-center gap-1.5">

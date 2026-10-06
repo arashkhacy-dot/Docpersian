@@ -167,9 +167,11 @@ export class DocumentValidator {
         countMatch
           ? `تطابق کامل: ${inputCount} صفحه/اسلاید ورودی به دقت حفظ شد.`
           : `هشدار عدم تطابق صفحات: ورودی ${inputCount} و خروجی ${outputCount}`,
+        ...(job.qualityReport?.notes || []),
         ...warnings,
         ...errors,
       ],
+      layoutAudit: job.qualityReport?.layoutAudit,
     };
 
     return {

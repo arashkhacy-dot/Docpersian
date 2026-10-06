@@ -475,8 +475,18 @@ app.get('/api/jobs/recent', async (_req: Request, res: Response) => {
   res.json(jobs);
 });
 
-// Helper to serialize job state cleanly for client UI (omits massive translated text dumps & caps logs)
+// Helper to serialize job state cleanly for client UI (omits text dumps during in-flight processing, includes on completion)
 function serializeJobForClient(job: JobState) {
+  const isTerminal = ['completed', 'completed_with_warnings', 'failed', 'cancelled'].includes(job.status);
+  if (isTerminal) {
+    return {
+      ...job,
+      pageTranslations: job.pageTranslations || [],
+      translatedText: job.translatedText || '',
+      debugLogs: (job.debugLogs || []).slice(-35),
+    };
+  }
+
   const { translatedText, pageTranslations, ...rest } = job;
   return {
     ...rest,
