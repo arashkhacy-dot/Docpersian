@@ -443,31 +443,75 @@ CRITICAL INSTRUCTIONS:
     const parsedMap = new Map<string, string>();
     if (!content || !content.trim()) return parsedMap;
 
-    // 1. Direct or Markdown-stripped JSON parsing
-    try {
-      const cleanJson = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      const parsed = JSON.parse(cleanJson);
-      if (Array.isArray(parsed)) {
-        for (const it of parsed) {
-          if (it?.id && typeof it?.translatedText === 'string') {
-            parsedMap.set(it.id, it.translatedText);
-          }
-        }
-        if (parsedMap.size > 0) return parsedMap;
+    const unwrapCodeFences = (raw: string): string => {
+      const fenceMatch = raw.match(/```(?:json|text|markdown)?\s*([\s\S]*?)\s*```/i);
+      if (fenceMatch && fenceMatch[1].trim()) {
+        return fenceMatch[1].trim();
       }
-    } catch {}
+      return raw.replace(/^```(?:json|text|markdown)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    };
 
-    // 2. Bracket array extraction [ ... ]
-    const firstB = content.indexOf('[');
-    const lastB = content.lastIndexOf(']');
-    if (firstB !== -1 && lastB > firstB) {
+    const repairJsonControlChars = (rawJson: string): string => {
+      let inString = false;
+      let escaped = false;
+      let out = '';
+      for (let i = 0; i < rawJson.length; i++) {
+        const ch = rawJson[i];
+        if (ch === '"' && !escaped) {
+          inString = !inString;
+          out += ch;
+        } else if (inString && ch === '\n') {
+          out += '\\n';
+        } else if (inString && ch === '\r') {
+          out += '\\r';
+        } else if (inString && ch === '\t') {
+          out += '\\t';
+        } else {
+          out += ch;
+        }
+        escaped = ch === '\\' && !escaped;
+      }
+      return out;
+    };
+
+    const cleanCandidate = unwrapCodeFences(content);
+
+    // 1. Direct or repaired JSON parsing
+    for (const textToTry of [cleanCandidate, content]) {
       try {
-        const slice = content.slice(firstB, lastB + 1);
-        const parsed = JSON.parse(slice);
+        const repaired = repairJsonControlChars(textToTry);
+        const parsed = JSON.parse(repaired);
+
+        // A. Array of objects: [{ id, translatedText }]
         if (Array.isArray(parsed)) {
           for (const it of parsed) {
-            if (it?.id && typeof it?.translatedText === 'string') {
-              parsedMap.set(it.id, it.translatedText);
+            const rawId = it?.id !== undefined ? String(it.id).trim() : '';
+            const rawText = it?.translatedText || it?.text || it?.translation || it?.persian || it?.result;
+            if (rawId && typeof rawText === 'string') {
+              parsedMap.set(rawId, rawText);
+            }
+          }
+          if (parsedMap.size > 0) return parsedMap;
+        }
+
+        // B. Object with list: { translations: [...] } or { results: [...] }
+        if (parsed && typeof parsed === 'object') {
+          const list = parsed.translations || parsed.results || parsed.items || parsed.data || parsed.output;
+          if (Array.isArray(list)) {
+            for (const it of list) {
+              const rawId = it?.id !== undefined ? String(it.id).trim() : '';
+              const rawText = it?.translatedText || it?.text || it?.translation || it?.persian || it?.result;
+              if (rawId && typeof rawText === 'string') {
+                parsedMap.set(rawId, rawText);
+              }
+            }
+            if (parsedMap.size > 0) return parsedMap;
+          }
+
+          // C. Key-value dictionary: { "page_1": "...", "B1": "..." }
+          for (const item of chunk) {
+            if (parsed[item.id] && typeof parsed[item.id] === 'string') {
+              parsedMap.set(item.id, parsed[item.id]);
             }
           }
           if (parsedMap.size > 0) return parsedMap;
@@ -475,22 +519,63 @@ CRITICAL INSTRUCTIONS:
       } catch {}
     }
 
-    // 3. Regex match { "id": "...", "translatedText": "..." }
-    const regex = /"id"\s*:\s*"([^"]+)"[\s\S]*?"translatedText"\s*:\s*"([\s\S]*?)(?<!\\)"/g;
-    let m;
-    while ((m = regex.exec(content)) !== null) {
-      parsedMap.set(m[1], m[2].replace(/\\n/g, '\n').replace(/\\"/g, '"'));
+    // 2. Bracket slice extraction [ ... ]
+    const firstB = cleanCandidate.indexOf('[');
+    const lastB = cleanCandidate.lastIndexOf(']');
+    if (firstB !== -1 && lastB > firstB) {
+      try {
+        const slice = cleanCandidate.slice(firstB, lastB + 1);
+        const repaired = repairJsonControlChars(slice);
+        const parsed = JSON.parse(repaired);
+        if (Array.isArray(parsed)) {
+          for (const it of parsed) {
+            const rawId = it?.id !== undefined ? String(it.id).trim() : '';
+            const rawText = it?.translatedText || it?.text || it?.translation || it?.persian || it?.result;
+            if (rawId && typeof rawText === 'string') {
+              parsedMap.set(rawId, rawText);
+            }
+          }
+          if (parsedMap.size > 0) return parsedMap;
+        }
+      } catch {}
+    }
+
+    // 3. Regex match for items: { "id": "...", "translatedText": "..." }
+    const itemRegex = /"id"\s*:\s*(?:"([^"]+)"|(\d+))[\s\S]*?"(?:translatedText|text|translation|result)"\s*:\s*"([\s\S]*?)(?<!\\)"/g;
+    let m: RegExpExecArray | null;
+    while ((m = itemRegex.exec(content)) !== null) {
+      const matchedId = (m[1] || m[2] || '').trim();
+      const matchedText = (m[3] || '').replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      if (matchedId && matchedText) {
+        parsedMap.set(matchedId, matchedText);
+      }
     }
     if (parsedMap.size > 0) return parsedMap;
 
-    // 4. Fallback for single item: if local model outputted raw Persian text without JSON
+    // 4. Fallback for single item: if model returned plain Persian text or markdown
     if (chunk.length === 1) {
-      const cleanText = content
-        .replace(/```[\s\S]*?```/g, '')
-        .replace(/^[^{\[]*?Here is the translation:?\s*/i, '')
+      let rawText = cleanCandidate
+        .replace(/^[^{\[]*?(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, '')
         .trim();
-      if (cleanText.length > 5) {
-        parsedMap.set(chunk[0].id, cleanText);
+      // Remove any lingering outer braces/brackets if invalid JSON
+      if (rawText.startsWith('{') && rawText.endsWith('}')) {
+        const innerTextMatch = rawText.match(/"(?:translatedText|text|translation)":\s*"([\s\S]*?)"/);
+        if (innerTextMatch) rawText = innerTextMatch[1];
+      }
+      if (rawText.length > 2) {
+        parsedMap.set(chunk[0].id, rawText);
+        return parsedMap;
+      }
+    }
+
+    // 5. Multi-item fallback by line or block tags
+    if (chunk.length > 1) {
+      for (const item of chunk) {
+        const tagPattern = new RegExp(`(?:\\[|\b)${item.id}(?:\\]|:)\\s*([^\\[\\n]+)`, 'i');
+        const match = content.match(tagPattern);
+        if (match && match[1]?.trim()) {
+          parsedMap.set(item.id, match[1].trim());
+        }
       }
     }
 
@@ -505,22 +590,23 @@ CRITICAL INSTRUCTIONS:
     }));
 
     const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
-Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON array of objects adhering strictly to [{ "id": "...", "translatedText": "..." }].
+Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON object adhering strictly to:
+{"translations": [{"id": "...", "translatedText": "..."}]}
 CRITICAL RULES:
-1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words (e.g. NEVER output "ک تاب", "ج دا یی", "ح روف", "خ روج", "اس ت", "مد ل", "کا در", "م طالعه", "صف حه"). Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه".
-2. Preserve all numbers, bracketed markers [1], [2], codes, and line breaks.`;
+1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words (e.g. NEVER output "ک تاب", "ج دا یی", "ح روف", "خ روج", "اس ت", "مد ل", "کا در", "م طالعه", "صف حه", "م ی دهد", "کیس ه"). Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه", "می‌دهد", "کیسه".
+2. Preserve all block IDs like [B1], [B2], [B3], table row numbers, technical codes, and line breaks.`;
 
-    const prompt = `Input items to translate into Persian:\n${JSON.stringify(inputPayload)}`;
+    const prompt = `Input items to translate into Persian:\n${JSON.stringify({ items: inputPayload })}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
+    const timeout = setTimeout(() => controller.abort(), 90000); // Generous 90s for local VPS models
 
     const endpoints = normalizeLocalEndpoints(this.localUrl);
 
     try {
       let content = '';
 
-      // 1. Try OpenAI-compatible /v1/chat/completions first
+      // 1. Try OpenAI-compatible /v1/chat/completions first (with json_object format)
       try {
         const response = await fetch(endpoints.v1ChatUrl, {
           method: 'POST',
@@ -533,7 +619,8 @@ CRITICAL RULES:
             ],
             temperature: 0.1,
             stream: false,
-            max_tokens: 2500,
+            max_tokens: 3500,
+            response_format: { type: 'json_object' },
           }),
           signal: controller.signal,
         });
@@ -546,7 +633,7 @@ CRITICAL RULES:
         // Fall through to Ollama native /api/chat
       }
 
-      // 2. If no content yet, try Ollama native /api/chat
+      // 2. If no content yet, try Ollama native /api/chat (with format: 'json')
       if (!content) {
         const response = await fetch(endpoints.ollamaChatUrl, {
           method: 'POST',
@@ -558,9 +645,10 @@ CRITICAL RULES:
               { role: 'user', content: prompt },
             ],
             stream: false,
+            format: 'json',
             options: {
               temperature: 0.1,
-              num_predict: 2500,
+              num_predict: 3500,
             },
           }),
           signal: controller.signal,

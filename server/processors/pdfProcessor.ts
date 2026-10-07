@@ -37,7 +37,7 @@ export function toAsciiDigits(s: string): string {
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
 }
 
-export function extractBlockTranslation(fullText: string, blockId: number): string | null {
+export function extractBlockTranslation(fullText: string, blockId: number, totalBlocks = 1): string | null {
   if (!fullText || !fullText.trim()) return null;
 
   const lines = fullText.split(/\r?\n/);
@@ -47,17 +47,16 @@ export function extractBlockTranslation(fullText: string, blockId: number): stri
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    // Check if line starts with or contains a block header:
-    // [بخش 1], [بخش ۱ (هشدار ایمنی)], [BOX 1], [1], بخش 1:, **بخش 1**:
+    // Match all block headers: [B1], [BLOCK 1], [بخش 1], [بخش ۱ (هشدار ایمنی)], [1], [۱], B1:, بخش 1:, 1-, 1.
     const headerMatch = line.match(
-      /^(?:\[|\(|\*\*|#)?\s*(?:بخش|قسمت|بلوک|BOX|واحد)?\s*(\d+|[\u06F0-\u06F9]|[\u0660-\u0669]+)[^\]\):\*]*[\]\):\*]+[\s:：-]*(.*)$/i
+      /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*]*[\]\):\*]+[\s:：-]*(.*)$/i
     );
 
     if (headerMatch) {
       const num = parseInt(toAsciiDigits(headerMatch[1]), 10);
       if (num === blockId) {
         capturing = true;
-        const rest = headerMatch[2].replace(/^[:：\s-]+/, '').trim();
+        const rest = headerMatch[2].replace(/^[\]\)\s:：-]+/, '').trim();
         if (rest) capturedLines.push(rest);
         continue;
       } else if (capturing) {
@@ -66,6 +65,11 @@ export function extractBlockTranslation(fullText: string, blockId: number): stri
     }
 
     if (capturing) {
+      // Check if this line is a new block marker that didn't stop in regex
+      const isNextMarker = /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*]*[\]\):\*]+/i.test(line);
+      if (isNextMarker && capturedLines.length > 0) {
+        break;
+      }
       capturedLines.push(rawLine);
     }
   }
@@ -75,11 +79,27 @@ export function extractBlockTranslation(fullText: string, blockId: number): stri
     if (result) return result;
   }
 
-  // Fallback: Paragraph splitting by double newlines or single blank lines
-  const paras = fullText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
-  if (paras[blockId - 1]) {
-    return paras[blockId - 1]
-      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:بخش|قسمت|بلوک|BOX|واحد)?\s*\d+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
+  // Fallback 1: Paragraph splitting by double newlines
+  const doubleNewlineParas = fullText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
+  if (doubleNewlineParas.length > 1 && doubleNewlineParas[blockId - 1]) {
+    return doubleNewlineParas[blockId - 1]
+      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
+      .trim();
+  }
+
+  // Fallback 2: Single newline splitting (for tables, short snippets, or tagless AI outputs)
+  const singleNewlineLines = fullText.split(/\r?\n/).map((p) => p.trim()).filter(Boolean);
+  if (singleNewlineLines.length >= totalBlocks && singleNewlineLines[blockId - 1]) {
+    return singleNewlineLines[blockId - 1]
+      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
+      .trim();
+  }
+
+  // Fallback 3: Return proportional candidate so boxes/table cells are NEVER left empty
+  if (doubleNewlineParas.length > 0) {
+    const idx = Math.min(blockId - 1, doubleNewlineParas.length - 1);
+    return doubleNewlineParas[idx]
+      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
       .trim();
   }
 
@@ -493,8 +513,12 @@ export function renderSpatialBlocks(
     if (!rawFa) {
       const pageText = translatedResultsMap.get(`page_${pageIndex}`);
       if (pageText) {
-        rawFa = extractBlockTranslation(pageText, block.id) || undefined;
+        rawFa = extractBlockTranslation(pageText, block.id, blocks.length) || undefined;
       }
+    }
+    // Safety fallback: if translation is completely missing for this block, retain block text so box is NEVER blank
+    if (!rawFa || !rawFa.trim()) {
+      rawFa = block.text;
     }
     if (!rawFa || !rawFa.trim()) continue;
 
@@ -508,23 +532,23 @@ export function renderSpatialBlocks(
     const containerWidth = Math.max(30, rightX - leftMargin);
 
     // Initial font metrics
-    let fontSize = Math.min(10.0, Math.max(6.8, block.fontSize || 9.0));
-    let lineHeight = Math.round(fontSize * 1.32 * 10) / 10;
+    let fontSize = Math.min(10.0, Math.max(6.5, block.fontSize || 9.0));
+    let lineHeight = Math.round(fontSize * 1.30 * 10) / 10;
     const fontToUse = block.isWarning ? fontBold : fontReg;
 
     let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
 
     // 3. Dynamic Height Fitting:
-    // Scale font size down smoothly so Persian text fits inside container height
+    // Scale font size down smoothly so Persian text fits inside container height without overflow
     const availableH = Math.max(28, block.height + 12);
-    while (wrappedLines.length * lineHeight > availableH && fontSize > 5.5) {
+    while (wrappedLines.length * lineHeight > availableH && fontSize > 4.8) {
       fontSize -= 0.3;
-      lineHeight = Math.round(fontSize * 1.30 * 10) / 10;
+      lineHeight = Math.round(fontSize * 1.28 * 10) / 10;
       wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
     }
 
-    // 4. Vertical starting position at top of container (leaving small padding at top)
-    let curY = Math.min(pageHeight - 20, block.maxY - 2);
+    // 4. Vertical starting position at top of container (leaving small padding below header)
+    let curY = Math.min(pageHeight - 20, block.maxY - (block.isWarning && block.height > 35 ? 4 : 2));
     const color = block.isWarning ? rgb(0.85, 0.12, 0.10) : rgb(0.10, 0.14, 0.22);
 
     for (const line of wrappedLines) {
@@ -546,7 +570,7 @@ export function renderSpatialBlocks(
     renderedBlocksCount++;
   }
 
-  return renderedBlocksCount >= Math.min(Math.ceil(blocks.length * 0.4), 1);
+  return renderedBlocksCount > 0;
 }
 
 function renderInPlaceLines(
@@ -562,7 +586,7 @@ function renderInPlaceLines(
 
   const linesByNewline = rawTranslatedText
     .split(/\r?\n/)
-    .map((s) => s.trim().replace(/^\[\d+\]\s*/, ''))
+    .map((s) => s.trim().replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, ''))
     .filter(Boolean);
 
   let candidateLines = linesByNewline;
@@ -573,11 +597,6 @@ function renderInPlaceLines(
     }
   }
 
-  // Prevent dumping mismatched lines into coordinates when transMap is empty
-  if (transMap.size === 0 && Math.abs(candidateLines.length - lines.length) > 2) {
-    return false;
-  }
-
   let renderedCount = 0;
 
   for (let idx = 0; idx < lines.length; idx++) {
@@ -585,6 +604,10 @@ function renderInPlaceLines(
     let fa = transMap.get(idx + 1);
     if (!fa && candidateLines[idx]) {
       fa = candidateLines[idx];
+    }
+    // Safety fallback: if cell translation missing, preserve original line text
+    if (!fa || !fa.trim()) {
+      fa = orig.text;
     }
     if (!fa || !fa.trim()) continue;
 
@@ -597,7 +620,7 @@ function renderInPlaceLines(
     let tw = font.widthOfTextAtSize(clean, fSize);
 
     // If Persian text is wider than the original box, scale font size smoothly to fit inside
-    while (tw > targetW * 1.25 && fSize > 6.0) {
+    while (tw > targetW * 1.25 && fSize > 5.5) {
       fSize -= 0.35;
       tw = font.widthOfTextAtSize(clean, fSize);
     }
@@ -620,8 +643,7 @@ function renderInPlaceLines(
     } catch {}
   }
 
-  // Only consider in-place successful if a significant portion of page lines were placed
-  return renderedCount >= Math.min(Math.ceil(lines.length * 0.5), 3);
+  return renderedCount > 0;
 }
 
 let cachedFontBytes: Buffer | null = null;
@@ -1771,14 +1793,14 @@ export class PDFProcessor implements DocumentProcessor {
         pageLinesMap.set(pageIndex, lines);
 
         // Build structured text for the entire page with clear, unambiguous block markers
-        rawPageText = blocks.map((b) => `[بخش ${b.id}${b.isWarning ? ' (هشدار ایمنی)' : ''}]: ${b.text}`).join('\n\n');
+        rawPageText = blocks.map((b) => `[B${b.id}]: ${b.text}`).join('\n\n');
         pageRawTexts[i] = rawPageText;
 
         // Register page as a single cohesive translation unit (keeps total count matching pages, not 500+ items!)
         pageUnitsToTranslate.push({
           id: `page_${pageIndex}`,
           text: rawPageText,
-          context: `صفحه ${pageIndex} از ${totalPages} سند ${job.originalFileName} (شامل بخش‌های تفکیکی متن، کادرهای هشدار و دیاگرام). برچسب‌های [بخش X] را در ابتدای هر بخش ترجمه‌شده حفظ کنید.`,
+          context: `صفحه ${pageIndex} از ${totalPages} سند ${job.originalFileName} (شامل بخش‌های تفکیکی متن، کادرهای هشدار و دیاگرام). برچسب‌های [B1]، [B2] را در ابتدای هر بخش ترجمه‌شده عیناً حفظ کنید.`,
         });
       } else if (lines.length > 0) {
         pageLinesMap.set(pageIndex, lines);
@@ -1851,7 +1873,7 @@ export class PDFProcessor implements DocumentProcessor {
           const blocks = pageBlocksMap.get(pNum);
           if (blocks && blocks.length > 0) {
             for (const b of blocks) {
-              const blockText = extractBlockTranslation(res.translatedText, b.id);
+              const blockText = extractBlockTranslation(res.translatedText, b.id, blocks.length);
               if (blockText) {
                 translatedResultsMap.set(`p${pNum}_b${b.id}`, blockText);
               }
@@ -1985,11 +2007,11 @@ export class PDFProcessor implements DocumentProcessor {
       const words = fullFaText.split(/\s+/).filter(Boolean).length;
       processedWordCount += words;
 
-      const cleanFaTextForCompanion = fullFaText.replace(/^\[(?:بخش|BOX|\d+)[^\]]*\][:：\s-]*/gm, '').trim();
+      const cleanFaTextForCompanion = fullFaText.replace(/^\[(?:B|BLOCK|بخش|BOX|قسمت|\d+)[^\]]*\][:：\s-]*/gim, '').trim();
 
       pageTranslations.push({
         pageNumber: pageIndex,
-        text: rawPageText.replace(/^\[(?:بخش|BOX|\d+)[^\]]*\][:：\s-]*/gm, ''),
+        text: rawPageText.replace(/^\[(?:B|BLOCK|بخش|BOX|قسمت|\d+)[^\]]*\][:：\s-]*/gim, ''),
         translatedText: cleanFaTextForCompanion,
       });
 
@@ -2045,10 +2067,11 @@ export class PDFProcessor implements DocumentProcessor {
       // For tables, line-level in-place coordinate rendering achieves 100% cell placement without leaving cells empty!
       if (!renderedInPlace && (layoutAnalysis.isTableGrid || (lines.length >= 6 && layoutAnalysis.layoutType === 'table_grid'))) {
         const transMap = new Map<number, string>();
-        const pattern = /\[(\d+)\]\s*([^\n\r]+)/g;
+        const pattern = /(?:\[(?:B|BLOCK|بخش|)\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]]*\]|(?:\b|^)([\d\u06F0-\u06F9\u0660-\u0669]+)[\.:\-])\s*([^\n\r]+)/g;
         let m: RegExpExecArray | null;
         while ((m = pattern.exec(fullFaText)) !== null) {
-          transMap.set(parseInt(m[1], 10), m[2].trim());
+          const num = parseInt(toAsciiDigits(m[1] || m[2]), 10);
+          if (num > 0) transMap.set(num, m[3].trim());
         }
 
         renderedInPlace = renderInPlaceLines(
@@ -2068,16 +2091,23 @@ export class PDFProcessor implements DocumentProcessor {
       // by placing Persian text into the exact physical bounding box of each column/box.
       if (!renderedInPlace && blocks.length > 0) {
         // For two-column layouts, sort blocks in natural RTL reading order:
-        // Right-column blocks first (descending Y), then Left-column blocks (descending Y)
+        // Spanning headers/boxes first, then Right-column blocks (descending Y), then Left-column blocks (descending Y)
         const sortedBlocks = [...blocks];
         if (layoutAnalysis.isTwoColumn) {
           const midX = page.getWidth() * 0.50;
+          // CRITICAL INVARIANT: NEVER drop spanning blocks (wide warning boxes, tables, headers)!
+          const spanning = sortedBlocks.filter((b) => b.minX < midX - 25 && b.maxX > midX + 25);
           const rightCol = sortedBlocks.filter((b) => b.minX >= midX - 25);
-          const leftCol = sortedBlocks.filter((b) => b.maxX <= midX + 25);
+          const leftCol = sortedBlocks.filter((b) => b.maxX <= midX + 25 && b.minX < midX - 25);
           rightCol.sort((a, b) => b.maxY - a.maxY);
           leftCol.sort((a, b) => b.maxY - a.maxY);
+          spanning.sort((a, b) => b.maxY - a.maxY);
+
+          const topSpanning = spanning.filter((b) => b.maxY > page.getHeight() * 0.65);
+          const bottomSpanning = spanning.filter((b) => b.maxY <= page.getHeight() * 0.65);
+
           sortedBlocks.length = 0;
-          sortedBlocks.push(...rightCol, ...leftCol);
+          sortedBlocks.push(...topSpanning, ...rightCol, ...leftCol, ...bottomSpanning);
         }
 
         renderedSpatial = renderSpatialBlocks(
@@ -2095,10 +2125,11 @@ export class PDFProcessor implements DocumentProcessor {
       // 4. Line-level In-Place Placement fallback (for tables, schematics, or when spatial blocks had partial matches)
       if (!renderedInPlace && !renderedSpatial && lines.length > 0) {
         const transMap = new Map<number, string>();
-        const pattern = /\[(\d+)\]\s*([^\n\r]+)/g;
+        const pattern = /(?:\[(?:B|BLOCK|بخش|)\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]]*\]|(?:\b|^)([\d\u06F0-\u06F9\u0660-\u0669]+)[\.:\-])\s*([^\n\r]+)/g;
         let m: RegExpExecArray | null;
         while ((m = pattern.exec(fullFaText)) !== null) {
-          transMap.set(parseInt(m[1], 10), m[2].trim());
+          const num = parseInt(toAsciiDigits(m[1] || m[2]), 10);
+          if (num > 0) transMap.set(num, m[3].trim());
         }
 
         renderedInPlace = renderInPlaceLines(
