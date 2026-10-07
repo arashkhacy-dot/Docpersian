@@ -1,6 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import { exec } from 'child_process';
+import util from 'util';
 import JSZip from 'jszip';
+
+const execPromise = util.promisify(exec);
 import { DocumentProcessor } from './documentProcessor.js';
 import { JobState, PageManifestItem } from '../jobs/jobState.js';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
@@ -88,6 +93,7 @@ export class DOCXProcessor implements DocumentProcessor {
 
     let totalWords = 0;
     const allDocxTranslatedParagraphs: string[] = [];
+    const globalTransMap: Record<string, string> = {};
     const estimatedPages = job.totalItems || 1;
 
     for (let idx = 0; idx < targetFiles.length; idx++) {
@@ -160,6 +166,10 @@ export class DOCXProcessor implements DocumentProcessor {
         const unitId = `docx_${idx}_${i}`;
         const rawTranslated = translationMap.get(unitId) || m.text;
         const translated = healPersianSpaces(rawTranslated);
+
+        if (m.text && translated && translated !== m.text && /[\u0600-\u06FF]/.test(translated)) {
+          globalTransMap[m.text.trim()] = translated.trim();
+        }
 
         totalWords += translated.split(/\s+/).filter(Boolean).length;
         if (translated.trim()) {
@@ -272,7 +282,30 @@ export class DOCXProcessor implements DocumentProcessor {
       compressionOptions: { level: 6 },
     });
 
-    await fs.promises.writeFile(job.outputPath, outputBuffer);
+    let generatedViaPython = false;
+    try {
+      await execPromise('python3 -c "import docx"');
+      if (Object.keys(globalTransMap).length > 0) {
+        const transJsonPath = path.join(os.tmpdir(), `docx_trans_${Date.now()}.json`);
+        await fs.promises.writeFile(transJsonPath, JSON.stringify(globalTransMap, null, 2), 'utf-8');
+        const scriptPath = path.resolve(process.cwd(), 'scripts/python_doc_tools.py');
+        await execPromise(
+          `python3 "${scriptPath}" --action apply --type docx --input "${job.inputPath}" --output "${job.outputPath}" --translations "${transJsonPath}"`
+        );
+        await fs.promises.unlink(transJsonPath).catch(() => {});
+
+        if (fs.existsSync(job.outputPath) && fs.statSync(job.outputPath).size > 1000) {
+          generatedViaPython = true;
+          console.log('[DOCX] Successfully generated Word document using native python-docx engine!');
+        }
+      }
+    } catch {
+      // Fall through to JSZip output
+    }
+
+    if (!generatedViaPython) {
+      await fs.promises.writeFile(job.outputPath, outputBuffer);
+    }
 
     // Update manifest
     for (const item of job.manifest.items) {

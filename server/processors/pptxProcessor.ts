@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import { exec } from 'child_process';
+import util from 'util';
 import JSZip from 'jszip';
 import { XMLValidator } from 'fast-xml-parser';
+
+const execPromise = util.promisify(exec);
 import { DocumentProcessor } from './documentProcessor.js';
 import { JobState, PageManifestItem } from '../jobs/jobState.js';
 import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
@@ -216,6 +221,11 @@ export class PPTXProcessor implements DocumentProcessor {
    * 4. Complete elimination of corrupted self-closing tags
    */
   private reconstructParagraph(pXml: string, translatedText: string, isTitle: boolean): string {
+    const isTranslated = translatedText && translatedText !== pXml && /[\u0600-\u06FF]/.test(translatedText);
+    if (!isTranslated) {
+      return pXml;
+    }
+
     const targetAlgn = isTitle && pXml.includes('algn="ctr"') ? 'ctr' : 'r';
     let rebuilt = this.updateParagraphProperties(pXml, targetAlgn);
 
@@ -625,7 +635,38 @@ export class PPTXProcessor implements DocumentProcessor {
       compressionOptions: { level: 6 },
     });
 
-    await fs.promises.writeFile(job.outputPath, outputBuffer);
+    let generatedViaPython = false;
+    try {
+      await execPromise('python3 -c "import pptx"');
+      const transMap: Record<string, string> = {};
+      for (const st of slideTranslations) {
+        const oLines = st.text.split('\n\n');
+        const tLines = st.translatedText.split('\n\n');
+        for (let k = 0; k < oLines.length; k++) {
+          if (oLines[k] && tLines[k]) {
+            transMap[oLines[k].trim()] = tLines[k].trim();
+          }
+        }
+      }
+      const transJsonPath = path.join(os.tmpdir(), `pptx_trans_${Date.now()}.json`);
+      await fs.promises.writeFile(transJsonPath, JSON.stringify(transMap, null, 2), 'utf-8');
+      const scriptPath = path.resolve(process.cwd(), 'scripts/python_doc_tools.py');
+      await execPromise(
+        `python3 "${scriptPath}" --action apply --type pptx --input "${job.inputPath}" --output "${job.outputPath}" --translations "${transJsonPath}"`
+      );
+      await fs.promises.unlink(transJsonPath).catch(() => {});
+
+      if (fs.existsSync(job.outputPath) && fs.statSync(job.outputPath).size > 1000) {
+        generatedViaPython = true;
+        console.log('[PPTX] Successfully generated presentation using native python-pptx engine!');
+      }
+    } catch {
+      // Fall through to JSZip output
+    }
+
+    if (!generatedViaPython) {
+      await fs.promises.writeFile(job.outputPath, outputBuffer);
+    }
 
     // 5. Invariant Verification: Guarantee 100% Slide Count Match
     const verifyZip = await JSZip.loadAsync(outputBuffer);

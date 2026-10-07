@@ -26,6 +26,7 @@ export interface DiagramTextLabel {
 export function normalizeLocalEndpoints(rawUrl: string): {
   v1ChatUrl: string;
   ollamaChatUrl: string;
+  ollamaGenerateUrl: string;
   v1ModelsUrl: string;
   ollamaTagsUrl: string;
 } {
@@ -35,6 +36,7 @@ export function normalizeLocalEndpoints(rawUrl: string): {
   return {
     v1ChatUrl: `${base}/v1/chat/completions`,
     ollamaChatUrl: `${base}/api/chat`,
+    ollamaGenerateUrl: `${base}/api/generate`,
     v1ModelsUrl: `${base}/v1/models`,
     ollamaTagsUrl: `${base}/api/tags`,
   };
@@ -577,10 +579,37 @@ CRITICAL INSTRUCTIONS:
     // 5. Multi-item fallback by line or block tags
     if (chunk.length > 1) {
       for (const item of chunk) {
-        const tagPattern = new RegExp(`(?:\\[|\b)${item.id}(?:\\]|:)\\s*([^\\[\\n]+)`, 'i');
+        const tagPattern = new RegExp(`(?:\\[|\\b)${item.id}(?:\\]|:)\\s*([^\\n\\[]+)`, 'i');
         const match = content.match(tagPattern);
         if (match && match[1]?.trim()) {
           parsedMap.set(item.id, match[1].trim());
+        }
+      }
+    }
+
+    // 6. Numbered line fallback [1], [2], 1., 2., 1-, 2-
+    if (chunk.length > 1 && parsedMap.size < chunk.length) {
+      for (let idx = 0; idx < chunk.length; idx++) {
+        if (parsedMap.has(chunk[idx].id)) continue;
+        const num = idx + 1;
+        const numPattern = new RegExp(`(?:^\\[${num}\\]|^${num}[\\.\\-:]|\\n\\[${num}\\]|\\n${num}[\\.\\-:])\\s*([^\\n\\[]+)`, 'im');
+        const match = content.match(numPattern);
+        if (match && match[1]?.trim()) {
+          parsedMap.set(chunk[idx].id, match[1].trim());
+        }
+      }
+    }
+
+    // 7. Line-by-line fallback if model returned N non-empty Persian lines
+    if (chunk.length > 1 && parsedMap.size === 0) {
+      const persianLines = content
+        .split(/\r?\n/)
+        .map((l) => l.trim().replace(/^(?:\d+[\\.\\-\\)]|\\[\\d+\\]|[•\\-\\*])\\s*/, '').trim())
+        .filter((l) => l.length > 1 && /[\\u0600-\\u06FF]/.test(l));
+
+      if (persianLines.length >= chunk.length) {
+        for (let idx = 0; idx < chunk.length; idx++) {
+          parsedMap.set(chunk[idx].id, persianLines[idx]);
         }
       }
     }
@@ -608,7 +637,7 @@ CRITICAL RULES:
       : `Content to translate into Persian:\n${text}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000); // 45s per chunk
+    const timeout = setTimeout(() => controller.abort(), 90000); // 90s generous timeout
 
     try {
       let content = '';
@@ -668,14 +697,54 @@ CRITICAL RULES:
         } catch {}
       }
 
-      if (!content) return text;
+      // 3. Try Ollama native /api/generate fallback (most stable endpoint across all models)
+      if (!content && !controller.signal.aborted) {
+        try {
+          const response = await fetch(endpoints.ollamaGenerateUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: this.localModel,
+              prompt: `${systemInstruction}\n\n${prompt}`,
+              stream: false,
+              options: {
+                temperature: 0.1,
+                num_predict: 2048,
+              },
+            }),
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            content = data.response?.trim() || '';
+          }
+        } catch {}
+      }
 
       // Clean markdown code blocks if wrapped
       const clean = content
-        .replace(/^```(?:markdown|text)?\s*/i, '')
-        .replace(/\s*```$/i, '')
-        .replace(/^(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, '')
-        .trim();
+        ? content
+            .replace(/^```(?:markdown|text)?\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .replace(/^(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, '')
+            .trim()
+        : '';
+
+      // If local translation succeeded and has Persian text, return it
+      if (clean && /[\u0600-\u06FF]/.test(clean)) {
+        return clean;
+      }
+
+      // If local model failed or returned non-Persian, fallback to Gemini if available
+      if (this.ai && this.isApiKeyValid()) {
+        try {
+          const gemRes = await this.callGeminiTranslate([{ id: 'single_fallback', text, context }]);
+          if (gemRes[0]?.translatedText && /[\u0600-\u06FF]/.test(gemRes[0].translatedText)) {
+            return gemRes[0].translatedText;
+          }
+        } catch {}
+      }
 
       return clean || text;
     } finally {
@@ -694,14 +763,14 @@ CRITICAL RULES:
       const unit = chunk[0];
       const textToTranslate = unit.text.trim();
 
-      // If page is dense with many blocks and text > 1600 characters:
-      // Sub-divide by blocks to prevent context overflow and reduce latency from 90s down to 10s per sub-batch
+      // If page has multiple blocks or is longer than 500 characters:
+      // Sub-divide into small fast sub-batches to prevent Ollama lockups and keep latency under 8s per sub-batch
       const blockSegments = textToTranslate.split(/(?=\[B\d+\])/g).filter(Boolean);
-      if (blockSegments.length > 8 && textToTranslate.length > 1600) {
+      if (blockSegments.length > 2 || textToTranslate.length > 500) {
         const subBatches: string[] = [];
         let currentBatch = '';
         for (const seg of blockSegments) {
-          if (currentBatch.length + seg.length > 1200 && currentBatch.length > 0) {
+          if (currentBatch.length + seg.length > 450 && currentBatch.length > 0) {
             subBatches.push(currentBatch);
             currentBatch = seg;
           } else {
@@ -717,7 +786,9 @@ CRITICAL RULES:
         }
 
         const finalText = healPersianSpaces(combinedTranslation);
-        return [{ id: unit.id, translatedText: finalText || unit.text }];
+        if (finalText && /[\u0600-\u06FF]/.test(finalText)) {
+          return [{ id: unit.id, translatedText: finalText }];
+        }
       }
 
       // Standard single page translation
@@ -727,23 +798,17 @@ CRITICAL RULES:
     }
 
     // MULTI-ITEM BATCH TRANSLATION
-    const inputPayload = chunk.map((c) => ({
-      id: c.id,
-      text: c.text,
-      context: c.context || '',
-    }));
-
+    const linesToTranslate = chunk.map((c, i) => `[${i + 1}] ${c.text}`).join('\n');
     const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
-Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON object adhering strictly to:
-{"translations": [{"id": "...", "translatedText": "..."}]}
+Translate each item faithfully into fluent, formal Persian. Output each translated item with its matching tag [1], [2] at the start of each line, or return valid JSON: {"translations": [{"id": "...", "translatedText": "..."}]}.
 CRITICAL RULES:
-1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words. Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه", "می‌دهد", "کیسه".
-2. Preserve all block IDs like [B1], [B2], [B3], table row numbers, technical codes, and line breaks.`;
+1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words (e.g. کتاب, جدایی, حروف, خروج, است, مدل, کادر, مطالعه, صفحه).
+2. Preserve numbers, technical codes, and line breaks.`;
 
-    const prompt = `Input items to translate into Persian:\n${JSON.stringify({ items: inputPayload })}`;
+    const prompt = `Items to translate into Persian:\n\n${linesToTranslate}\n\nTranslate each item into fluent Persian:`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 50000);
+    const timeout = setTimeout(() => controller.abort(), 75000);
 
     try {
       let content = '';
@@ -803,6 +868,31 @@ CRITICAL RULES:
         } catch {}
       }
 
+      // 3. Try Ollama native /api/generate
+      if (!content && !controller.signal.aborted) {
+        try {
+          const response = await fetch(endpoints.ollamaGenerateUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: this.localModel,
+              prompt: `${systemInstruction}\n\n${prompt}`,
+              stream: false,
+              options: {
+                temperature: 0.1,
+                num_predict: 2500,
+              },
+            }),
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            content = data.response?.trim() || '';
+          }
+        } catch {}
+      }
+
       const parsedMap = this.parseLocalTranslationResponse(content, chunk);
       const mappedResults: TranslationResult[] = [];
 
@@ -814,6 +904,27 @@ CRITICAL RULES:
           translatedText: finalText,
         });
       }
+
+      // Fallback to Gemini for any items that failed to translate or don't contain Persian
+      if (this.ai && this.isApiKeyValid()) {
+        const untranslated = mappedResults.filter((r) => {
+          const orig = chunk.find((c) => c.id === r.id);
+          return r.translatedText === orig?.text || !/[\u0600-\u06FF]/.test(r.translatedText);
+        });
+        if (untranslated.length > 0) {
+          const toTranslate = chunk.filter((c) => untranslated.some((u) => u.id === c.id));
+          try {
+            const gemResults = await this.callGeminiTranslate(toTranslate);
+            const gemMap = new Map(gemResults.map((g) => [g.id, g.translatedText]));
+            for (const r of mappedResults) {
+              if (gemMap.has(r.id) && gemMap.get(r.id)?.trim()) {
+                r.translatedText = gemMap.get(r.id)!;
+              }
+            }
+          } catch {}
+        }
+      }
+
       return mappedResults;
     } finally {
       clearTimeout(timeout);

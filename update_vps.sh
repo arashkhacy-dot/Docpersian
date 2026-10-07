@@ -41,7 +41,7 @@ git pull origin "$ACTIVE_BRANCH" 2>/dev/null || git reset --hard "origin/$ACTIVE
 # ۲. اطمینان از نصب ابزارهای پردازش اسناد و فونت‌های سرور
 echo "--> ۲. نصب ابزارهای بینایی، پایتون و پردازش اسناد (Ghostscript, Poppler, Python-PPTX, Python-DOCX)..."
 sudo apt-get update -qq 2>/dev/null || true
-sudo apt-get install -y -qq ghostscript poppler-utils imagemagick fonts-noto-core fonts-noto-extra fonts-sil-scheherazade python3-pip python3-setuptools 2>/dev/null || true
+sudo apt-get install -y -qq ghostscript poppler-utils imagemagick fonts-noto-core fonts-noto-extra fonts-sil-scheherazade python3-pip python3-docx python3-setuptools 2>/dev/null || true
 pip3 install --quiet --break-system-packages python-pptx python-docx 2>/dev/null || pip3 install --quiet python-pptx python-docx 2>/dev/null || true
 
 # بررسی و دانلود فونت‌های منظم و برجسته وزیرمتن در صورت نیاز

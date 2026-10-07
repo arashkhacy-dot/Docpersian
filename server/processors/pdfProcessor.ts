@@ -49,7 +49,7 @@ export function extractBlockTranslation(fullText: string, blockId: number, total
 
     // Match all block headers: [B1], [BLOCK 1], [بخش 1], [بخش ۱ (هشدار ایمنی)], [1], [۱], B1:, بخش 1:, 1-, 1.
     const headerMatch = line.match(
-      /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*]*[\]\):\*]+[\s:：-]*(.*)$/i
+      /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*\.\-]*[\]\):\*\.\-]+[\s:：-]*(.*)$/i
     );
 
     if (headerMatch) {
@@ -66,7 +66,7 @@ export function extractBlockTranslation(fullText: string, blockId: number, total
 
     if (capturing) {
       // Check if this line is a new block marker that didn't stop in regex
-      const isNextMarker = /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*]*[\]\):\*]+/i.test(line);
+      const isNextMarker = /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*\.\-]*[\]\):\*\.\-]+/i.test(line);
       if (isNextMarker && capturedLines.length > 0) {
         break;
       }
@@ -298,7 +298,19 @@ function drawSegmentedRtlLine(
       font,
       color,
     });
-  } catch {}
+  } catch {
+    try {
+      const safeText = clean.replace(/[^\u0020-\u007E\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, ' ');
+      const safeW = font.widthOfTextAtSize(safeText, fontSize);
+      page.drawText(safeText, {
+        x: Math.max(leftMargin, rightX - safeW),
+        y,
+        size: fontSize,
+        font,
+        color,
+      });
+    } catch {}
+  }
 }
 
 export interface ExtractedLine {
@@ -1995,9 +2007,9 @@ export class PDFProcessor implements DocumentProcessor {
       const rawPageText = pageRawTexts[i];
       const manifestItem = job.manifest?.items?.find((it) => it.index === pageIndex);
 
-      const fullFaText =
-        translatedResultsMap.get(`page_${pageIndex}`) ||
-        rawPageText;
+      const translatedFa = translatedResultsMap.get(`page_${pageIndex}`);
+      const isActuallyTranslated = !!translatedFa && /[\u0600-\u06FF]/.test(translatedFa);
+      const fullFaText = isActuallyTranslated ? translatedFa! : rawPageText;
 
       if (!fullFaText || !fullFaText.trim()) {
         pageTranslations.push({
@@ -2034,13 +2046,16 @@ export class PDFProcessor implements DocumentProcessor {
         .map((p) => p.trim())
         .filter((p) => p.length > 0);
 
-      // Strip original English text from page content streams to avoid text collision,
-      // while keeping all original raster photos, schematics, lines, and drawings 100% intact!
-      const textBounds = stripTextFromPageStreams(page, outputDoc);
+      // Strip original English text from page content streams ONLY IF we have a verified Persian translation!
+      // If page was not translated (e.g. rate-limited, offline or untranslated), keep original text 100% intact!
+      let textBounds = { maxY: null, minY: null, hasTopImage: false, imageBottomY: null, imageTopY: null };
+      if (isActuallyTranslated) {
+        textBounds = stripTextFromPageStreams(page, outputDoc);
+      }
 
       const lines = pageLinesMap.get(pageIndex) || [];
       const blocks = pageBlocksMap.get(pageIndex) || [];
-      let renderedInPlace = false;
+      let renderedInPlace = !isActuallyTranslated; // If not translated, original layout is already pristine!
 
       // 1. Check if this page has an inpainted diagram image with directly embedded Persian labels
       if (inpaintedPageImagesMap.has(pageIndex)) {

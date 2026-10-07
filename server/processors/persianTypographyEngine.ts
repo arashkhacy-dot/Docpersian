@@ -24,7 +24,9 @@ import path from 'path';
 import fontkit from '@pdf-lib/fontkit';
 import { rgb, PDFDocument, PDFFont } from 'pdf-lib';
 import pkg from 'arabic-persian-reshaper';
+import bidiFactory from 'bidi-js';
 const { PersianShaper } = pkg;
+const bidi = bidiFactory();
 
 // Complete Persian alphabet and connecting/non-connecting character sets
 export const PERSIAN_CHARS = 'ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیآئؤةۀ';
@@ -810,7 +812,19 @@ export function sanitizePersianSymbols(raw: string): string {
 
 export function shapePersianForPdf(text: string): string {
   if (!text || !text.trim()) return '';
-  return sanitizePersianSymbols(normalizeTableCellContent(text)).trim();
+  const sanitized = sanitizePersianSymbols(normalizeTableCellContent(text)).trim();
+  if (!sanitized) return '';
+  // Check if text has Persian/Arabic characters
+  if (!/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(sanitized)) {
+    return sanitized;
+  }
+  try {
+    const shaped = PersianShaper.convertArabic(sanitized);
+    const levels = bidi.getEmbeddingLevels(shaped, 'rtl');
+    return bidi.getReorderedString(shaped, levels);
+  } catch (err) {
+    return sanitized;
+  }
 }
 
 /**
