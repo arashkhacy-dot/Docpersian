@@ -254,16 +254,16 @@ export class GeminiTranslator {
       try {
         return await this.callLocalTranslate(chunk);
       } catch (localErr) {
-        console.warn('[LOCAL_MODEL_WARNING] Local model translation failed, retrying once:', localErr);
+        console.warn(`[LOCAL_MODEL_WARNING] Local model translation failed for ${chunk.map(c => c.id).join(', ')}, retrying once:`, localErr);
         // Fast 1.5s retry before giving up on local model
         try {
           await new Promise((res) => setTimeout(res, 1500));
           return await this.callLocalTranslate(chunk);
         } catch (retryErr) {
-          console.warn('[LOCAL_MODEL_WARNING] Local model retry also failed, falling back to Gemini candidates:', retryErr);
+          console.warn(`[LOCAL_MODEL_WARNING] Local model retry also failed for ${chunk.map(c => c.id).join(', ')}:`, retryErr);
         }
 
-        // Try Gemini with multi-model fallback and 503 protection
+        // Try Gemini with multi-model fallback and 503 protection if configured
         if (this.ai && this.isApiKeyValid()) {
           try {
             return await this.callGeminiTranslate(chunk);
@@ -271,7 +271,13 @@ export class GeminiTranslator {
             console.warn('[GEMINI_FALLBACK_FAIL] Gemini fallback failed, safely preserving text:', gemErr);
           }
         }
-        return this.fallbackTranslate(chunk);
+
+        // Safety Preservation: never block whole document on single slow page
+        console.info(`[SAFE_PRESERVATION] Preserving original text for ${chunk.map(c => c.id).join(', ')} to ensure continuous pipeline progress.`);
+        return chunk.map((c) => ({
+          id: c.id,
+          translatedText: c.text,
+        }));
       }
     }
 
@@ -582,31 +588,32 @@ CRITICAL INSTRUCTIONS:
     return parsedMap;
   }
 
-  private async callLocalTranslate(chunk: TranslationUnit[]): Promise<TranslationResult[]> {
-    const inputPayload = chunk.map((c) => ({
-      id: c.id,
-      text: c.text,
-      context: c.context || '',
-    }));
+  private async translateSingleTextViaLocal(
+    text: string,
+    endpoints: { v1ChatUrl: string; ollamaChatUrl: string },
+    context?: string
+  ): Promise<string> {
+    if (!text || !text.trim()) return '';
 
-    const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
-Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON object adhering strictly to:
-{"translations": [{"id": "...", "translatedText": "..."}]}
+    const systemInstruction = `You are an expert technical and automotive document translator into Persian (فارسی).
+Translate the following document content into accurate, natural, fluent Persian (فارسی روان و اصیل).
 CRITICAL RULES:
-1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words (e.g. NEVER output "ک تاب", "ج دا یی", "ح روف", "خ روج", "اس ت", "مد ل", "کا در", "م طالعه", "صف حه", "م ی دهد", "کیس ه"). Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه", "می‌دهد", "کیسه".
-2. Preserve all block IDs like [B1], [B2], [B3], table row numbers, technical codes, and line breaks.`;
+1. Output ONLY the translated Persian content directly. Do NOT include any introductory or conversational filler (e.g. "Here is the translation:").
+2. All Persian words MUST be written with natural cursive connectivity and complete spelling. Never separate letters inside words (e.g. write "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه", "می‌دهد", "کیسه").
+3. Preserve all block markers like [B1], [B2], [B3], section headers, numbers, and technical codes exactly at the start of each line or section.
+4. Keep original paragraphs and line breaks intact.`;
 
-    const prompt = `Input items to translate into Persian:\n${JSON.stringify({ items: inputPayload })}`;
+    const prompt = context
+      ? `Document Context: ${context}\n\nContent to translate into Persian:\n${text}`
+      : `Content to translate into Persian:\n${text}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000); // Generous 90s for local VPS models
-
-    const endpoints = normalizeLocalEndpoints(this.localUrl);
+    const timeout = setTimeout(() => controller.abort(), 45000); // 45s per chunk
 
     try {
       let content = '';
 
-      // 1. Try OpenAI-compatible /v1/chat/completions first (with json_object format)
+      // 1. Try OpenAI-compatible /v1/chat/completions
       try {
         const response = await fetch(endpoints.v1ChatUrl, {
           method: 'POST',
@@ -619,8 +626,7 @@ CRITICAL RULES:
             ],
             temperature: 0.1,
             stream: false,
-            max_tokens: 3500,
-            response_format: { type: 'json_object' },
+            max_tokens: 2048,
           }),
           signal: controller.signal,
         });
@@ -630,12 +636,121 @@ CRITICAL RULES:
           content = data.choices?.[0]?.message?.content?.trim() || '';
         }
       } catch (v1Err) {
-        // Fall through to Ollama native /api/chat
+        // Fall through
       }
 
-      // 2. If no content yet, try Ollama native /api/chat (with format: 'json')
-      if (!content) {
-        const response = await fetch(endpoints.ollamaChatUrl, {
+      // 2. Try Ollama native /api/chat
+      if (!content && !controller.signal.aborted) {
+        try {
+          const response = await fetch(endpoints.ollamaChatUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: this.localModel,
+              messages: [
+                { role: 'system', content: systemInstruction },
+                { role: 'user', content: prompt },
+              ],
+              stream: false,
+              options: {
+                temperature: 0.1,
+                num_predict: 2048,
+                num_ctx: 4096,
+              },
+            }),
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            content = data.message?.content?.trim() || '';
+          }
+        } catch {}
+      }
+
+      if (!content) return text;
+
+      // Clean markdown code blocks if wrapped
+      const clean = content
+        .replace(/^```(?:markdown|text)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .replace(/^(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, '')
+        .trim();
+
+      return clean || text;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async callLocalTranslate(chunk: TranslationUnit[]): Promise<TranslationResult[]> {
+    if (chunk.length === 0) return [];
+    const endpoints = normalizeLocalEndpoints(this.localUrl);
+
+    // OPTIMIZATION: Single Document Page Translation
+    // For single pages, do NOT force JSON grammar in Ollama! It causes 5x slowdown and grammar lockups.
+    // Instead, ask directly for Persian translation preserving block tags [B1], [B2], etc.
+    if (chunk.length === 1) {
+      const unit = chunk[0];
+      const textToTranslate = unit.text.trim();
+
+      // If page is dense with many blocks and text > 1600 characters:
+      // Sub-divide by blocks to prevent context overflow and reduce latency from 90s down to 10s per sub-batch
+      const blockSegments = textToTranslate.split(/(?=\[B\d+\])/g).filter(Boolean);
+      if (blockSegments.length > 8 && textToTranslate.length > 1600) {
+        const subBatches: string[] = [];
+        let currentBatch = '';
+        for (const seg of blockSegments) {
+          if (currentBatch.length + seg.length > 1200 && currentBatch.length > 0) {
+            subBatches.push(currentBatch);
+            currentBatch = seg;
+          } else {
+            currentBatch += seg;
+          }
+        }
+        if (currentBatch.length > 0) subBatches.push(currentBatch);
+
+        let combinedTranslation = '';
+        for (const subText of subBatches) {
+          const subRes = await this.translateSingleTextViaLocal(subText, endpoints, unit.context);
+          combinedTranslation += (combinedTranslation ? '\n\n' : '') + subRes;
+        }
+
+        const finalText = healPersianSpaces(combinedTranslation);
+        return [{ id: unit.id, translatedText: finalText || unit.text }];
+      }
+
+      // Standard single page translation
+      const translated = await this.translateSingleTextViaLocal(textToTranslate, endpoints, unit.context);
+      const finalText = healPersianSpaces(translated);
+      return [{ id: unit.id, translatedText: finalText || unit.text }];
+    }
+
+    // MULTI-ITEM BATCH TRANSLATION
+    const inputPayload = chunk.map((c) => ({
+      id: c.id,
+      text: c.text,
+      context: c.context || '',
+    }));
+
+    const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
+Translate each text item faithfully into fluent, formal Persian. Return ONLY a valid JSON object adhering strictly to:
+{"translations": [{"id": "...", "translatedText": "..."}]}
+CRITICAL RULES:
+1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words. Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه", "می‌دهد", "کیسه".
+2. Preserve all block IDs like [B1], [B2], [B3], table row numbers, technical codes, and line breaks.`;
+
+    const prompt = `Input items to translate into Persian:\n${JSON.stringify({ items: inputPayload })}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 50000);
+
+    try {
+      let content = '';
+
+      // 1. Try OpenAI-compatible /v1/chat/completions first
+      try {
+        const response = await fetch(endpoints.v1ChatUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -644,22 +759,48 @@ CRITICAL RULES:
               { role: 'system', content: systemInstruction },
               { role: 'user', content: prompt },
             ],
+            temperature: 0.1,
             stream: false,
-            format: 'json',
-            options: {
-              temperature: 0.1,
-              num_predict: 3500,
-            },
+            max_tokens: 2500,
           }),
           signal: controller.signal,
         });
 
         if (response.ok) {
           const data = await response.json();
-          content = data.message?.content?.trim() || '';
-        } else {
-          throw new Error(`Local model HTTP error: ${response.status} ${response.statusText}`);
+          content = data.choices?.[0]?.message?.content?.trim() || '';
         }
+      } catch (v1Err) {
+        // Fall through
+      }
+
+      // 2. Try Ollama native /api/chat
+      if (!content && !controller.signal.aborted) {
+        try {
+          const response = await fetch(endpoints.ollamaChatUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: this.localModel,
+              messages: [
+                { role: 'system', content: systemInstruction },
+                { role: 'user', content: prompt },
+              ],
+              stream: false,
+              options: {
+                temperature: 0.1,
+                num_predict: 2500,
+                num_ctx: 4096,
+              },
+            }),
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            content = data.message?.content?.trim() || '';
+          }
+        } catch {}
       }
 
       const parsedMap = this.parseLocalTranslationResponse(content, chunk);

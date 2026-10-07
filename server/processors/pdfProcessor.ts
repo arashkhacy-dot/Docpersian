@@ -1775,6 +1775,17 @@ export class PDFProcessor implements DocumentProcessor {
     for (let i = 0; i < totalPages; i++) {
       if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
       const pageIndex = i + 1;
+
+      // Update live extraction progress periodically so user sees steady progress
+      if (pageIndex === 1 || pageIndex % 5 === 0 || pageIndex === totalPages) {
+        await onProgress(
+          'extracting',
+          pageIndex,
+          totalPages,
+          `استخراج متون و تفکیک ساختار صفحه ${pageIndex} از ${totalPages}...`
+        );
+      }
+
       let lines: ExtractedLine[] = [];
       let blocks: SpatialBlock[] = [];
 

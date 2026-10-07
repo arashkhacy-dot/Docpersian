@@ -18,9 +18,6 @@ export const CHUNK_SIZE = 10 * 1024 * 1024;
 
 const SESSION_STORAGE_PREFIX = 'docushift_upload_session_';
 
-// Track files that failed direct upload in this session so we don't re-attempt direct
-const directUploadFailedFiles = new Set<string>();
-
 export function getSessionStorageKey(file: File): string {
   return `${SESSION_STORAGE_PREFIX}${encodeURIComponent(file.name)}_${file.size}`;
 }
@@ -111,12 +108,13 @@ export function clearUploadSession(file: File): void {
 }
 
 /**
- * Direct Single-Stream Turbo Upload (For small files <= 2MB)
+ * Direct Single-Stream Turbo Upload with Automatic Quick Retry
  */
-function uploadDirectFile(
+function uploadDirectFileOnce(
   file: File,
   onProgress?: (info: UploadProgressInfo) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  attemptNumber = 1
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -129,7 +127,7 @@ function uploadDirectFile(
     formData.append('file', file, file.name);
 
     let watchdogTimer: any = null;
-    const resetWatchdog = (timeoutMs = 60000) => {
+    const resetWatchdog = (timeoutMs = 45000) => {
       if (watchdogTimer) clearTimeout(watchdogTimer);
       watchdogTimer = setTimeout(() => {
         xhr.abort();
@@ -149,7 +147,7 @@ function uploadDirectFile(
     let lastTime = startTime;
     let smoothedSpeed = 0;
 
-    resetWatchdog();
+    resetWatchdog(35000);
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
@@ -170,11 +168,12 @@ function uploadDirectFile(
         const isBytesDone = e.loaded >= e.total;
         const percent = isBytesDone ? 99 : Math.min(98, Math.round((e.loaded / e.total) * 100));
 
+        // When all bytes are uploaded, give server 180s to ingest and index document
         if (isBytesDone) {
-          // Upload bytes transferred; wait for server processing without aggressive abort
-          resetWatchdog(120000);
+          resetWatchdog(180000);
         } else {
-          resetWatchdog(60000);
+          // If in progress, reset stall watchdog for another 35 seconds
+          resetWatchdog(35000);
         }
 
         onProgress?.({
@@ -186,7 +185,9 @@ function uploadDirectFile(
           speedFormatted: formatUploadSpeed(smoothedSpeed),
           isDirect: true,
           statusMessage: isBytesDone
-            ? 'ارسال فایل کامل شد؛ در حال پردازش در سرور...'
+            ? 'ارسال فایل کامل شد؛ در حال اعتبارسنجی در سرور...'
+            : attemptNumber > 1
+            ? `در حال ارسال مستقیم (تلاش مجدد ${attemptNumber})...`
             : 'در حال ارسال مستقیم سند به سرور...',
         });
       }
@@ -235,10 +236,26 @@ function uploadDirectFile(
       reject(new Error('مهلت ارسال مستقیم به پایان رسید.'));
     };
 
-    xhr.timeout = 120000;
+    xhr.timeout = 240000;
     xhr.open('POST', '/api/jobs');
     xhr.send(formData);
   });
+}
+
+async function uploadDirectFile(
+  file: File,
+  onProgress?: (info: UploadProgressInfo) => void,
+  signal?: AbortSignal
+): Promise<any> {
+  try {
+    return await uploadDirectFileOnce(file, onProgress, signal, 1);
+  } catch (err: any) {
+    if (signal?.aborted) throw err;
+    console.warn('[DIRECT_UPLOAD_FIRST_ATTEMPT_FAILED]', err);
+    // Auto-retry once on network hiccup before falling back
+    await new Promise((r) => setTimeout(r, 800));
+    return await uploadDirectFileOnce(file, onProgress, signal, 2);
+  }
 }
 
 /**
@@ -602,15 +619,12 @@ export async function uploadFileInChunks(
       localStorage.removeItem(sessionKey);
     } catch {}
 
-    // Only fallback to chunked if direct upload explicitly failed in current execution session
-    if (!directUploadFailedFiles.has(sessionKey)) {
-      try {
-        return await uploadDirectFile(file, onProgress, signal);
-      } catch (err: any) {
-        if (signal?.aborted) throw err;
-        console.warn('[DIRECT_UPLOAD_FALLBACK_TO_CHUNKS]', err);
-        directUploadFailedFiles.add(sessionKey);
-      }
+    // Try direct upload with automatic retry first
+    try {
+      return await uploadDirectFile(file, onProgress, signal);
+    } catch (err: any) {
+      if (signal?.aborted) throw err;
+      console.warn('[DIRECT_UPLOAD_FALLBACK_TO_CHUNKS]', err);
     }
     return await uploadFileInParallelChunks(file, onProgress, signal);
   }

@@ -39,9 +39,10 @@ git checkout "$ACTIVE_BRANCH" 2>/dev/null || git checkout -B "$ACTIVE_BRANCH" "o
 git pull origin "$ACTIVE_BRANCH" 2>/dev/null || git reset --hard "origin/$ACTIVE_BRANCH" 2>/dev/null || git pull origin main 2>/dev/null || git reset --hard origin/main 2>/dev/null || git pull 2>/dev/null || true
 
 # ۲. اطمینان از نصب ابزارهای پردازش اسناد و فونت‌های سرور
-echo "--> ۲. نصب ابزارهای بینایی، پردازش دیاگرام و اسکن (Ghostscript, Poppler & ImageMagick)..."
+echo "--> ۲. نصب ابزارهای بینایی، پایتون و پردازش اسناد (Ghostscript, Poppler, Python-PPTX, Python-DOCX)..."
 sudo apt-get update -qq 2>/dev/null || true
-sudo apt-get install -y -qq ghostscript poppler-utils imagemagick fonts-noto-core fonts-noto-extra fonts-sil-scheherazade 2>/dev/null || true
+sudo apt-get install -y -qq ghostscript poppler-utils imagemagick fonts-noto-core fonts-noto-extra fonts-sil-scheherazade python3-pip python3-setuptools 2>/dev/null || true
+pip3 install --quiet --break-system-packages python-pptx python-docx 2>/dev/null || pip3 install --quiet python-pptx python-docx 2>/dev/null || true
 
 # بررسی و دانلود فونت‌های منظم و برجسته وزیرمتن در صورت نیاز
 mkdir -p server/assets/fonts
@@ -100,8 +101,8 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Disable buffering for live chunked upload and SSE
-        proxy_request_buffering off;
+        # Enable buffering for incoming client upload to prevent mobile TCP stalls, disable response buffering for SSE
+        proxy_request_buffering on;
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
