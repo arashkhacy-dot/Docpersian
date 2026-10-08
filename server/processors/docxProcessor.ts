@@ -213,27 +213,33 @@ export class DOCXProcessor implements DocumentProcessor {
         `استخراج متون ساختاریافته ${filePath}`
       );
 
-      // Collect all text nodes with their indexes and content
-      const regex = /<w:t(?:\s+[^>]*)?>([\s\S]*?)<\/w:t>/g;
+      // Collect all paragraphs with their complete text for coherent translation and minimal token usage
+      const pRegex = /<w:p(?:\s+[^>]*)?>([\s\S]*?)<\/w:p>/g;
       const units: TranslationUnit[] = [];
-      const matches: Array<{ fullMatch: string; text: string; start: number; end: number }> = [];
+      const paragraphMatches: Array<{ fullMatch: string; text: string; start: number; end: number }> = [];
 
       let match: RegExpExecArray | null;
       let count = 0;
 
-      while ((match = regex.exec(xmlContent)) !== null) {
-        const text = match[1];
-        if (text && text.trim().length > 0) {
+      while ((match = pRegex.exec(xmlContent)) !== null) {
+        const pInner = match[1];
+        const tMatches = pInner.match(/<w:t(?:\s+[^>]*)?>([\s\S]*?)<\/w:t>/g) || [];
+        const fullText = tMatches
+          .map((t) => t.replace(/<[^>]+>/g, ''))
+          .join('')
+          .trim();
+
+        if (fullText.length > 0) {
           units.push({
             id: `docx_${idx}_${count++}`,
-            text: text,
+            text: fullText,
             context: `فایل سند ورد ${filePath}`,
           });
-          matches.push({
+          paragraphMatches.push({
             fullMatch: match[0],
-            text,
+            text: fullText,
             start: match.index,
-            end: regex.lastIndex,
+            end: pRegex.lastIndex,
           });
         }
       }
@@ -259,18 +265,18 @@ export class DOCXProcessor implements DocumentProcessor {
         `بازسازی برچسب‌های OpenXML و تنظیم جهت راست‌به‌چپ در ${filePath}`
       );
 
-      // Replace text in XML content while preserving all attributes and tags
+      // Rebuild XML content with paragraph-level RTL preservation
       let rebuiltXml = '';
       let lastIndex = 0;
 
-      for (let i = 0; i < matches.length; i++) {
-        const m = matches[i];
+      for (let i = 0; i < paragraphMatches.length; i++) {
+        const pm = paragraphMatches[i];
         const unitId = `docx_${idx}_${i}`;
-        const rawTranslated = translationMap.get(unitId) || m.text;
+        const rawTranslated = translationMap.get(unitId) || pm.text;
         const translated = healPersianSpaces(rawTranslated);
 
-        if (m.text && translated && translated !== m.text && /[\u0600-\u06FF]/.test(translated)) {
-          globalTransMap[m.text.trim()] = translated.trim();
+        if (pm.text && translated && translated !== pm.text && /[\u0600-\u06FF]/.test(translated)) {
+          globalTransMap[pm.text.trim()] = translated.trim();
         }
 
         totalWords += translated.split(/\s+/).filter(Boolean).length;
@@ -278,9 +284,8 @@ export class DOCXProcessor implements DocumentProcessor {
           allDocxTranslatedParagraphs.push(translated.trim());
         }
 
-        rebuiltXml += xmlContent.substring(lastIndex, m.start);
+        rebuiltXml += xmlContent.substring(lastIndex, pm.start);
 
-        // Escape XML entities in translated text
         const safeText = translated
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
@@ -288,9 +293,58 @@ export class DOCXProcessor implements DocumentProcessor {
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&apos;');
 
-        // Preserve original tag wrapper with xml:space="preserve"
-        rebuiltXml += `<w:t xml:space="preserve">${safeText}</w:t>`;
-        lastIndex = m.end;
+        let pRebuilt = pm.fullMatch;
+
+        // Ensure <w:pPr> has RTL and right alignment
+        if (!pRebuilt.includes('<w:pPr>')) {
+          pRebuilt = pRebuilt.replace(/^(<w:p(?:\s+[^>]*)?>)/, '$1<w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr>');
+        } else {
+          pRebuilt = pRebuilt.replace(/<w:pPr>([\s\S]*?)<\/w:pPr>/, (_m, inner) => {
+            let u = inner;
+            if (!u.includes('<w:bidi')) u = `<w:bidi/>${u}`;
+            if (!u.includes('<w:jc')) u = `${u}<w:jc w:val="right"/>`;
+            else u = u.replace(/<w:jc\s+w:val="[^"]*"\/>/, '<w:jc w:val="right"/>');
+            return `<w:pPr>${u}</w:pPr>`;
+          });
+        }
+
+        // Replace text in runs: put translated text into the first run, clear subsequent runs
+        let firstRunDone = false;
+        pRebuilt = pRebuilt.replace(/<w:r(?:\s+[^>]*)?>([\s\S]*?)<\/w:r>/g, (rFull, rInner) => {
+          if (!firstRunDone) {
+            firstRunDone = true;
+            let runRebuilt = rFull;
+            // Inject Vazirmatn font and RTL run property
+            if (!runRebuilt.includes('<w:rPr>')) {
+              runRebuilt = runRebuilt.replace(/^(<w:r(?:\s+[^>]*)?>)/, '$1<w:rPr><w:rFonts w:cs="Vazirmatn"/><w:rtl/></w:rPr>');
+            } else {
+              runRebuilt = runRebuilt.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/, (_m, rPrInner) => {
+                let u = rPrInner;
+                if (!u.includes('<w:rtl')) u = `<w:rtl/>${u}`;
+                if (!u.includes('w:cs=')) u = `<w:rFonts w:cs="Vazirmatn"/>${u}`;
+                return `<w:rPr>${u}</w:rPr>`;
+              });
+            }
+
+            if (/<w:t(?:\s+[^>]*)?>([\s\S]*?)<\/w:t>/.test(runRebuilt)) {
+              runRebuilt = runRebuilt.replace(/<w:t(?:\s+[^>]*)?>([\s\S]*?)<\/w:t>/, `<w:t xml:space="preserve">${safeText}</w:t>`);
+            } else {
+              runRebuilt = runRebuilt.replace(/<\/w:r>/, `<w:t xml:space="preserve">${safeText}</w:t></w:r>`);
+            }
+            return runRebuilt;
+          } else {
+            // Remove text from subsequent runs to prevent repeated English or duplicate text
+            return rFull.replace(/<w:t(?:\s+[^>]*)?>[\s\S]*?<\/w:t>/g, '');
+          }
+        });
+
+        // If paragraph had no runs, append one
+        if (!firstRunDone) {
+          pRebuilt = pRebuilt.replace(/<\/w:p>/, `<w:r><w:rPr><w:rFonts w:cs="Vazirmatn"/><w:rtl/></w:rPr><w:t xml:space="preserve">${safeText}</w:t></w:r></w:p>`);
+        }
+
+        rebuiltXml += pRebuilt;
+        lastIndex = pm.end;
       }
       rebuiltXml += xmlContent.substring(lastIndex);
 

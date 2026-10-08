@@ -361,9 +361,9 @@ CRITICAL INSTRUCTIONS:
    - NEVER merge distinct items, list elements, table rows, or diagram callout labels into a single continuous run-on sentence.
    - If the input contains component labels, parts lists, or diagram annotations (e.g., car parts, equipment controls, dashboard symbols), output EACH item or label on its OWN separate line (separated by \\n).
    - If items are numbered or bulleted, maintain clear numbering (1., 2., ... or •) at the start of each line so each component description is completely distinct and legible.
-7. POSITION-INDEXED LINES (CRITICAL):
-   - If input lines begin with bracketed index markers like [1], [2], [3]... (which map directly to diagram callout boxes, table cells, and spatial coordinates), you MUST preserve the exact bracketed marker [1], [2], [3]... at the start of each translated line.
-   - Do not drop or reorder the bracketed index markers.
+7. POSITION-INDEXED LINES & BLOCK MARKERS (CRITICAL):
+   - If input lines begin with block markers like [B1], [B2], [B3]... or bracketed index markers like [1], [2], [3]... (which map directly to diagram callout boxes, table cells, and spatial coordinates), you MUST preserve the exact marker [B1], [B2], [B3]... or [1], [2], [3]... at the start of each translated line.
+   - Do not drop, omit, or renumber these markers.
 8. PERSIAN WORD INTEGRITY & CONTINUOUS CURSIVE SCRIPT (MANDATORY):
    - All Persian words MUST be written with natural cursive connectivity and complete spelling.
    - NEVER separate letters inside a word (e.g. NEVER output "ک تاب", "ج دا یی", "ح روف", "خ روج", "اس ت", "مد ل", "کا در", "م طالعه", "صف حه"). Output continuous connected words: "کتاب", "جدایی", "حروف", "خروج", "است", "مدل", "کادر", "مطالعه", "صفحه".
@@ -609,13 +609,16 @@ CRITICAL INSTRUCTIONS:
       }
     }
 
-    // 5. Multi-item fallback by line or block tags
+    // 5. Multi-item fallback by line or block tags (captures full multi-line content up to next tag)
     if (chunk.length > 1) {
       for (let idx = 0; idx < chunk.length; idx++) {
         const item = chunk[idx];
-        const tags = [item.id, `\\[${idx + 1}\\]`, `${idx + 1}[\\.:\\-]`, `B${idx + 1}`];
+        const tags = [item.id, `\\[${idx + 1}\\]`, `${idx + 1}[\\.:\\-]`, `B${idx + 1}`, `\\[B${idx + 1}\\]`];
         for (const t of tags) {
-          const tagPattern = new RegExp(`(?:^|\\n)\\s*${t}\\s*[:：\\-\\s]+([^\\n]+)`, 'im');
+          const tagPattern = new RegExp(
+            `(?:^|\\n)\\s*${t}\\s*[:：\\-\\s]+([\\s\\S]*?)(?=(?:\\n\\s*(?:\\[?\\d+\\]?[\\.:\\-]|B\\d+|\\[B\\d+\\])|$))`,
+            'im'
+          );
           const match = content.match(tagPattern);
           if (match && match[1]?.trim()) {
             storeItem(item.id, match[1].trim());
@@ -670,7 +673,7 @@ CRITICAL INSTRUCTIONS:
 
     for (const endpointType of candidates) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000); // 45s per endpoint
+      const timeout = setTimeout(() => controller.abort(), 75000); // 75s per endpoint (Ollama on CPU/RAM)
 
       try {
         if (endpointType === 'v1') {

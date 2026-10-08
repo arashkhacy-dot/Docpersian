@@ -74,10 +74,8 @@ export function cleanCursiveJoining(raw: string): string {
   let s = raw.normalize('NFKC');
   s = s.replace(/[\uFEFF\u200B\u200E\u200F\u00AD\u202A-\u202E\u2066-\u2069]/g, '');
 
-  const TOKEN = '###ZWNJ###';
-  // Remove accidental ZWNJ before country/place names ending in ستان
+  // Remove accidental ZWNJ inside single indivisible stems
   s = s.replace(/(انگلس|کردس|افغانس|تاجیکس|ارمس|لرستان|گلس|بوس)\u200C+تان/g, '$1تان');
-  // Remove accidental ZWNJ in integrated Persian words
   s = s.replace(/(شناسا|پذیر|توانا|زیبا|دانشجو|دانش‌پژوه|کارآفرین|شنوا|گویا|بینا|رو|پو)\u200C+یی/g, '$1یی');
   s = s.replace(/پا\u200C+یین/g, 'پایین');
   s = s.replace(/ه\u200C+یچ/g, 'هیچ');
@@ -87,54 +85,66 @@ export function cleanCursiveJoining(raw: string): string {
   s = s.replace(/سنگ\u200C+ین/g, 'سنگین');
   s = s.replace(/ت\u200C+یزی/g, 'تیزی');
   s = s.replace(/هنگا\u200C+می/g, 'هنگامی');
-  // Keep grammatical prefixes: می / نمی
-  s = s.replace(/(^|\s)(ن?می)\u200C/g, (_m, p1, p2) => p1 + p2 + TOKEN);
-  // Keep grammatical suffixes: ها, های, تر, ترین, ام, ات, اش, مان, تان, شان, یی, ای
-  s = s.replace(/\u200C(ها|های|تر|ترین|ام|ات|اش|مان|تان|شان|یی|ای)(?=$|\s|[،.؛:!؟\-])/g, (_m, p1) => TOKEN + p1);
-  // Keep compound words
-  s = s.replace(/(مرغ|مه|دست|پشت|کمک|جعبه|کیسه)\u200C(دانی|شکن|کاری|سری|فنر|دنده|هوا)/g, (_m, p1, p2) => p1 + TOKEN + p2);
 
-  // Remove any stray accidental ZWNJ breaking letter connections inside stems
-  s = s.replace(/\u200C/g, '');
-  // Restore legitimate grammatical ZWNJs
-  s = s.split(TOKEN).join('\u200C');
+  // Collapse multiple consecutive ZWNJs into single ZWNJ
+  s = s.replace(/\u200C{2,}/g, '\u200C');
+  return s;
+}
 
+/**
+ * Reconnects letters of words that were artificially spaced out by PDF font extraction, OCR, or layout engines
+ * (e.g., 'د ف ت ر چ ه' -> 'دفترچه', 'ر ا ه ن م ا' -> 'راهنما', 'خ و د ر و' -> 'خودرو', '۱ ۴ ۰ ۲' -> '۱۴۰۲').
+ */
+export function reconnectSpacedLetters(text: string): string {
+  if (!text) return '';
+  const token = '###WB###';
+  // 1. Mark wide gaps (2 or more spaces or tabs) as word breaks
+  let s = text.replace(/[ \t]{2,}/g, token);
+
+  // 2. Reconnect sequences of single Persian characters or digits separated by single space
+  s = s.replace(/(?:^|[^\u0600-\u06FF0-9\u06F0-\u06F9])(?:[\u0600-\u06FF0-9\u06F0-\u06F9]\x20)+[\u0600-\u06FF0-9\u06F0-\u06F9](?=$|[^\u0600-\u06FF0-9\u06F0-\u06F9])/g, (chunk) => {
+    const leadMatch = chunk.match(/^([^\u0600-\u06FF0-9\u06F0-\u06F9]+)/);
+    const lead = leadMatch ? leadMatch[1] : '';
+    const trailMatch = chunk.match(/([^\u0600-\u06FF0-9\u06F0-\u06F9]+)$/);
+    const trail = trailMatch ? trailMatch[1] : '';
+    const core = chunk.slice(lead.length, trail.length > 0 ? -trail.length : undefined);
+    const letters = core.split('\x20');
+    if (letters.every((l) => l.length === 1)) {
+      return lead + letters.join('') + trail;
+    }
+    return chunk;
+  });
+
+  // 3. Restore word breaks
+  s = s.split(token).join(' ');
   return s;
 }
 
 export function healPersianSpaces(text: string): string {
   if (!text) return '';
-  let s = cleanCursiveJoining(text);
-
   // Step 1: Normalize Unicode non-breaking spaces and zero-width artifacts
-  s = s
+  let s = text
     .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ');
 
   // Step 2: Convert Arabic presentation forms (FB50-FDFF, FE70-FEFF) back to canonical Persian
-  // so the font shaper can handle them consistently
   s = s
     .replace(/\u064A/g, '\u06CC') // Arabic Yeh -> Persian Yeh
     .replace(/\u0643/g, '\u06A9') // Arabic Kaf -> Persian Keheh
     .replace(/\u06C0/g, '\u0647\u200C\u06CC'); // Heh with Yeh above
 
-  // Step 3: Collapse excessive spaces and tabs (2 or more)
+  // Step 3: Clean cursive joining while preserving legitimate grammatical & compound ZWNJs
+  s = cleanCursiveJoining(s);
+
+  // Step 4: Reconnect artificially spaced single letters (PDF / OCR font artifacts)
+  s = reconnectSpacedLetters(s);
+
+  // Step 5: Collapse excessive spaces and tabs (2 or more)
   s = s.replace(/[ \t]{2,}/g, ' ');
 
-  // Step 3.2: Reconnect spaced-out single letters resulting from OCR / font spacing
-  // e.g. 'ک ت ا ب' -> 'کتاب', 'ح ر و ف' -> 'حروف', 'ص ف ح ه' -> 'صفحه'
-  s = s.replace(
-    new RegExp(`(^|[\\s،.؛:!؟\\-\\(\\[«])([${CONNECTING_CHARS}])\\s+([${PERSIAN_CHARS}])\\s+([${PERSIAN_CHARS}])\\s+([${PERSIAN_CHARS}])(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'),
-    (_m, p1, a, b, c, d) => (a === 'و' ? _m : p1 + a + b + c + d)
-  );
-  s = s.replace(
-    new RegExp(`(^|[\\s،.؛:!؟\\-\\(\\[«])([${CONNECTING_CHARS}])\\s+([${PERSIAN_CHARS}])\\s+([${PERSIAN_CHARS}])(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'),
-    (_m, p1, a, b, c) => (a === 'و' ? _m : p1 + a + b + c)
-  );
-
-  // Step 3.5: Systematic repair of broken letter connections seen in OCR / vision models
+  // Step 6: Systematic repair of broken letter connections seen in OCR / vision models
   // 1. Repair isolated trailing 'یی' after Alef: 'جدا یی' -> 'جدایی', 'اسپانیا یی' -> 'اسپانیایی', 'زیبا یی' -> 'زیبایی'
   s = s.replace(new RegExp(`([${PERSIAN_CHARS}]+[اآ])\\s+یی(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), '$1یی');
-  // 2. Repair isolated trailing 'ی' after consonants: 'مشترک ی' -> 'مشترکی', 'قدیم ی' -> 'قدیمی', 'محلی'
+  // 2. Repair isolated trailing 'ی' after consonants: 'مشترک ی' -> 'مشترکی', 'قدیم ی' -> 'قدیمی'
   s = s.replace(new RegExp(`([${PERSIAN_CHARS}]{2,}[${CONNECTING_CHARS}])\\s+ی(?=$|[\\s،.؛:!؟\\-\\)\\]»])`, 'g'), (_m, p1) => {
     if (STANDALONE_WORDS.has(p1)) return _m;
     return p1 + 'ی';

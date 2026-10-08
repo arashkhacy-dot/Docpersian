@@ -511,7 +511,7 @@ export function renderSpatialBlocks(
   const fontReg = fontFamily.regular || fontFamily;
   const fontBold = fontFamily.bold || fontReg;
 
-  let renderedBlocksCount = 0;
+  let persianBlocksCount = 0;
 
   for (const block of blocks) {
     // 1. Fetch exact translation for this block
@@ -522,17 +522,15 @@ export function renderSpatialBlocks(
         rawFa = extractBlockTranslation(pageText, block.id, blocks.length) || undefined;
       }
     }
-    // Safety fallback: if translation is completely missing for this block, retain block text so box is NEVER blank
-    if (!rawFa || !rawFa.trim()) {
-      rawFa = block.text;
-    }
-    if (!rawFa || !rawFa.trim()) continue;
+    
+    // Only render blocks that have genuine Persian translation to prevent rendering English or blank content
+    const hasPersian = !!rawFa && /[\u0600-\u06FF]/.test(rawFa);
+    if (!hasPersian) continue;
 
-    const healed = sanitizePersianSymbols(healPersianSpaces(rawFa));
+    const healed = sanitizePersianSymbols(healPersianSpaces(rawFa!));
     if (!healed || !healed.trim()) continue;
 
     // 2. Physical Container Bounding Box
-    // Maintain the exact horizontal position and width of the original content/box
     const leftMargin = Math.max(14, block.minX);
     const rightX = Math.min(pageWidth - 14, Math.max(leftMargin + 30, block.maxX));
     const containerWidth = Math.max(30, rightX - leftMargin);
@@ -544,8 +542,7 @@ export function renderSpatialBlocks(
 
     let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
 
-    // 3. Dynamic Height Fitting:
-    // Scale font size down smoothly so Persian text fits inside container height without overflow
+    // Dynamic Height Fitting
     const availableH = Math.max(28, block.height + 12);
     while (wrappedLines.length * lineHeight > availableH && fontSize > 4.8) {
       fontSize -= 0.3;
@@ -553,7 +550,6 @@ export function renderSpatialBlocks(
       wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
     }
 
-    // 4. Vertical starting position at top of container (leaving small padding below header)
     let curY = Math.min(pageHeight - 20, block.maxY - (block.isWarning && block.height > 35 ? 4 : 2));
     const color = block.isWarning ? rgb(0.85, 0.12, 0.10) : rgb(0.10, 0.14, 0.22);
 
@@ -573,10 +569,11 @@ export function renderSpatialBlocks(
       curY -= lineHeight;
     }
 
-    renderedBlocksCount++;
+    persianBlocksCount++;
   }
 
-  return renderedBlocksCount > 0;
+  // Require at least 50% coverage of blocks with verified Persian translations
+  return persianBlocksCount >= Math.max(1, Math.floor(blocks.length * 0.5));
 }
 
 function renderInPlaceLines(
@@ -2115,29 +2112,22 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // 3. Spatial Block-Aware 1-to-1 Layout Placement:
-      // Perfectly preserves multi-column manuals, warning boxes, and section blocks
-      // by placing Persian text into the exact physical bounding box of each column/box.
-      if (!renderedInPlace && blocks.length > 0) {
-        // For two-column layouts, sort blocks in natural RTL reading order:
-        // Spanning headers/boxes first, then Right-column blocks (descending Y), then Left-column blocks (descending Y)
+      // 3. Two-Column Manual Layout (strictly for genuine 2-column documentation)
+      if (!renderedInPlace && layoutAnalysis.isTwoColumn && blocks.length >= 2) {
         const sortedBlocks = [...blocks];
-        if (layoutAnalysis.isTwoColumn) {
-          const midX = page.getWidth() * 0.50;
-          // CRITICAL INVARIANT: NEVER drop spanning blocks (wide warning boxes, tables, headers)!
-          const spanning = sortedBlocks.filter((b) => b.minX < midX - 25 && b.maxX > midX + 25);
-          const rightCol = sortedBlocks.filter((b) => b.minX >= midX - 25);
-          const leftCol = sortedBlocks.filter((b) => b.maxX <= midX + 25 && b.minX < midX - 25);
-          rightCol.sort((a, b) => b.maxY - a.maxY);
-          leftCol.sort((a, b) => b.maxY - a.maxY);
-          spanning.sort((a, b) => b.maxY - a.maxY);
+        const midX = page.getWidth() * 0.50;
+        const spanning = sortedBlocks.filter((b) => b.minX < midX - 25 && b.maxX > midX + 25);
+        const rightCol = sortedBlocks.filter((b) => b.minX >= midX - 25);
+        const leftCol = sortedBlocks.filter((b) => b.maxX <= midX + 25 && b.minX < midX - 25);
+        rightCol.sort((a, b) => b.maxY - a.maxY);
+        leftCol.sort((a, b) => b.maxY - a.maxY);
+        spanning.sort((a, b) => b.maxY - a.maxY);
 
-          const topSpanning = spanning.filter((b) => b.maxY > page.getHeight() * 0.65);
-          const bottomSpanning = spanning.filter((b) => b.maxY <= page.getHeight() * 0.65);
+        const topSpanning = spanning.filter((b) => b.maxY > page.getHeight() * 0.65);
+        const bottomSpanning = spanning.filter((b) => b.maxY <= page.getHeight() * 0.65);
 
-          sortedBlocks.length = 0;
-          sortedBlocks.push(...topSpanning, ...rightCol, ...leftCol, ...bottomSpanning);
-        }
+        sortedBlocks.length = 0;
+        sortedBlocks.push(...topSpanning, ...rightCol, ...leftCol, ...bottomSpanning);
 
         renderedSpatial = renderSpatialBlocks(
           page,
@@ -2151,8 +2141,8 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // 4. Line-level In-Place Placement fallback (for tables, schematics, or when spatial blocks had partial matches)
-      if (!renderedInPlace && !renderedSpatial && lines.length > 0) {
+      // 4. Line-level In-Place Placement (for schematic callouts / diagrams with numbered pointers)
+      if (!renderedInPlace && !renderedSpatial && layoutAnalysis.layoutType === 'schematic_diagram' && lines.length > 0) {
         const transMap = new Map<number, string>();
         const pattern = /(?:\[(?:B|BLOCK|بخش|)\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]]*\]|(?:\b|^)([\d\u06F0-\u06F9\u0660-\u0669]+)[\.:\-])\s*([^\n\r]+)/g;
         let m: RegExpExecArray | null;
@@ -2173,7 +2163,8 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // 5. Fallback for un-structured flow documents (novels, simple letters)
+      // 5. High-Fidelity Persian Typography & Layout (Primary renderer for manuals, articles, chapters, warnings, guides)
+      // Guarantees 100% of translated text is rendered with complete Persian cursive script, clear margins, and zero clipping!
       if (!renderedInPlace && !renderedSpatial && paragraphs.length > 0) {
         renderPersianTextToPage(
           page,
