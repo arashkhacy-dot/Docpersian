@@ -81,26 +81,20 @@ export function extractBlockTranslation(fullText: string, blockId: number, total
 
   // Fallback 1: Paragraph splitting by double newlines
   const doubleNewlineParas = fullText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
-  if (doubleNewlineParas.length > 1 && doubleNewlineParas[blockId - 1]) {
-    return doubleNewlineParas[blockId - 1]
+  if (blockId - 1 >= 0 && blockId - 1 < doubleNewlineParas.length) {
+    const candidate = doubleNewlineParas[blockId - 1]
       .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
       .trim();
+    if (candidate) return candidate;
   }
 
   // Fallback 2: Single newline splitting (for tables, short snippets, or tagless AI outputs)
   const singleNewlineLines = fullText.split(/\r?\n/).map((p) => p.trim()).filter(Boolean);
-  if (singleNewlineLines.length >= totalBlocks && singleNewlineLines[blockId - 1]) {
-    return singleNewlineLines[blockId - 1]
+  if (blockId - 1 >= 0 && blockId - 1 < singleNewlineLines.length) {
+    const candidate = singleNewlineLines[blockId - 1]
       .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
       .trim();
-  }
-
-  // Fallback 3: Return proportional candidate so boxes/table cells are NEVER left empty
-  if (doubleNewlineParas.length > 0) {
-    const idx = Math.min(blockId - 1, doubleNewlineParas.length - 1);
-    return doubleNewlineParas[idx]
-      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
-      .trim();
+    if (candidate) return candidate;
   }
 
   return null;
@@ -1907,10 +1901,13 @@ export class PDFProcessor implements DocumentProcessor {
     }
 
     // Vision OCR for scanned books, documents, and key schematic diagrams
+    const isLocalEngine = defaultTranslator.getEngineSettings().engine === 'local';
     const isScannedDocument = pageUnitsToTranslate.length === 0;
     const pagesToScan = isScannedDocument
       ? Array.from({ length: totalPages }, (_, i) => i + 1)
-      : diagramPagesToScan.slice(0, 25);
+      : isLocalEngine
+      ? [] // Local text models in Ollama/vLLM don't process vision schematics, prevent stall
+      : diagramPagesToScan.slice(0, 15);
 
     const inpaintedPageImagesMap = new Map<number, Buffer>();
 
@@ -2048,7 +2045,13 @@ export class PDFProcessor implements DocumentProcessor {
 
       // Strip original English text from page content streams ONLY IF we have a verified Persian translation!
       // If page was not translated (e.g. rate-limited, offline or untranslated), keep original text 100% intact!
-      let textBounds = { maxY: null, minY: null, hasTopImage: false, imageBottomY: null, imageTopY: null };
+      let textBounds: { maxY: number | null; minY: number | null; hasTopImage: boolean; imageBottomY: number | null; imageTopY: number | null } = {
+        maxY: null,
+        minY: null,
+        hasTopImage: false,
+        imageBottomY: null,
+        imageTopY: null,
+      };
       if (isActuallyTranslated) {
         textBounds = stripTextFromPageStreams(page, outputDoc);
       }

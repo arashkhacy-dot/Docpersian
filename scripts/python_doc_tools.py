@@ -7,8 +7,8 @@ Provides native, 100% layout-preserving translation for:
 
 Guarantees:
 - Original shapes, tables, smart art, geometries, positions, themes, and animations remain 100% intact
-- Clean RTL text alignment and Persian font tagging
-- No XML corruption or missing runs
+- Clean RTL text alignment and Persian font tagging (Vazirmatn)
+- Handles grouped shapes, tables, notes, headers, and footers
 """
 
 import sys
@@ -20,6 +20,35 @@ def normalize_text(text):
     if not text:
         return ""
     return " ".join(str(text).split()).strip()
+
+# ==============================================================================
+# PPTX Processing
+# ==============================================================================
+
+def _walk_pptx_shapes_for_extraction(shapes, texts, seen):
+    for shape in shapes:
+        if hasattr(shape, "shapes"):
+            _walk_pptx_shapes_for_extraction(shape.shapes, texts, seen)
+
+        if shape.has_text_frame:
+            for p in shape.text_frame.paragraphs:
+                full_p = "".join(r.text for r in p.runs).strip()
+                if not full_p and p.text:
+                    full_p = p.text.strip()
+                if full_p and full_p not in seen:
+                    seen.add(full_p)
+                    texts.append(full_p)
+
+        if shape.has_table:
+            for row in shape.table.rows:
+                for cell in row.cells:
+                    for p in cell.text_frame.paragraphs:
+                        full_p = "".join(r.text for r in p.runs).strip()
+                        if not full_p and p.text:
+                            full_p = p.text.strip()
+                        if full_p and full_p not in seen:
+                            seen.add(full_p)
+                            texts.append(full_p)
 
 def extract_pptx_texts(input_path):
     try:
@@ -33,26 +62,7 @@ def extract_pptx_texts(input_path):
     seen = set()
 
     for slide in prs.slides:
-        for shape in slide.shapes:
-            if shape.has_text_frame:
-                for p in shape.text_frame.paragraphs:
-                    full_p = "".join(r.text for r in p.runs).strip()
-                    if not full_p and p.text:
-                        full_p = p.text.strip()
-                    if full_p and full_p not in seen:
-                        seen.add(full_p)
-                        texts.append(full_p)
-
-            if shape.has_table:
-                for row in shape.table.rows:
-                    for cell in row.cells:
-                        for p in cell.text_frame.paragraphs:
-                            full_p = "".join(r.text for r in p.runs).strip()
-                            if not full_p and p.text:
-                                full_p = p.text.strip()
-                            if full_p and full_p not in seen:
-                                seen.add(full_p)
-                                texts.append(full_p)
+        _walk_pptx_shapes_for_extraction(slide.shapes, texts, seen)
 
         if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
             for p in slide.notes_slide.notes_text_frame.paragraphs:
@@ -89,7 +99,7 @@ def apply_pptx_translations(input_path, output_path, trans_map):
         full_text = "".join(r.text for r in p.runs).strip()
         if not full_text and p.text:
             full_text = p.text.strip()
-        
+
         translated = get_trans(full_text)
         if translated:
             if p.runs:
@@ -107,8 +117,8 @@ def apply_pptx_translations(input_path, output_path, trans_map):
                 p.alignment = PP_ALIGN.RIGHT
             except Exception:
                 pass
-            
-            # Deep XML RTL tagging
+
+            # Deep OpenXML RTL tagging
             try:
                 pPr = p._p.get_or_add_pPr()
                 pPr.set('rtl', '1')
@@ -116,8 +126,11 @@ def apply_pptx_translations(input_path, output_path, trans_map):
             except Exception:
                 pass
 
-    for slide in prs.slides:
-        for shape in slide.shapes:
+    def _walk_and_update(shapes):
+        for shape in shapes:
+            if hasattr(shape, "shapes"):
+                _walk_and_update(shape.shapes)
+
             if shape.has_text_frame:
                 for p in shape.text_frame.paragraphs:
                     update_paragraph(p)
@@ -128,6 +141,9 @@ def apply_pptx_translations(input_path, output_path, trans_map):
                         for p in cell.text_frame.paragraphs:
                             update_paragraph(p)
 
+    for slide in prs.slides:
+        _walk_and_update(slide.shapes)
+
         if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
             for p in slide.notes_slide.notes_text_frame.paragraphs:
                 update_paragraph(p)
@@ -135,6 +151,10 @@ def apply_pptx_translations(input_path, output_path, trans_map):
     prs.save(output_path)
     print(f"[SUCCESS] Native PPTX translated successfully: {output_path}")
     return True
+
+# ==============================================================================
+# DOCX Processing
+# ==============================================================================
 
 def extract_docx_texts(input_path):
     try:
@@ -147,20 +167,29 @@ def extract_docx_texts(input_path):
     texts = []
     seen = set()
 
+    def add_text(t):
+        t_clean = t.strip() if t else ""
+        if t_clean and t_clean not in seen:
+            seen.add(t_clean)
+            texts.append(t_clean)
+
     for p in doc.paragraphs:
-        t = p.text.strip()
-        if t and t not in seen:
-            seen.add(t)
-            texts.append(t)
+        add_text(p.text)
 
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    t = p.text.strip()
-                    if t and t not in seen:
-                        seen.add(t)
-                        texts.append(t)
+                    add_text(p.text)
+
+    # Also extract from headers and footers
+    for section in doc.sections:
+        if section.header:
+            for p in section.header.paragraphs:
+                add_text(p.text)
+        if section.footer:
+            for p in section.footer.paragraphs:
+                add_text(p.text)
 
     return texts
 
@@ -197,13 +226,17 @@ def apply_docx_translations(input_path, output_path, trans_map):
                 p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             except Exception:
                 pass
-            
-            # Apply bidi property to paragraph XML
+
+            # Apply bidi & right-justify to paragraph XML
             try:
                 pPr = p._p.get_or_add_pPr()
                 if not pPr.find(qn('w:bidi')):
                     bidi = OxmlElement('w:bidi')
                     pPr.append(bidi)
+                if not pPr.find(qn('w:jc')):
+                    jc = OxmlElement('w:jc')
+                    jc.set(qn('w:val'), 'right')
+                    pPr.append(jc)
             except Exception:
                 pass
 
@@ -216,9 +249,21 @@ def apply_docx_translations(input_path, output_path, trans_map):
                 for p in cell.paragraphs:
                     update_paragraph(p)
 
+    for section in doc.sections:
+        if section.header:
+            for p in section.header.paragraphs:
+                update_paragraph(p)
+        if section.footer:
+            for p in section.footer.paragraphs:
+                update_paragraph(p)
+
     doc.save(output_path)
     print(f"[SUCCESS] Native DOCX translated successfully: {output_path}")
     return True
+
+# ==============================================================================
+# CLI Entrypoint
+# ==============================================================================
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="DocuShift Enterprise Python Document Tools")
@@ -235,7 +280,7 @@ if __name__ == '__main__':
             texts = extract_pptx_texts(args.input)
         else:
             texts = extract_docx_texts(args.input)
-        
+
         out_dest = args.output
         if out_dest:
             with open(out_dest, 'w', encoding='utf-8') as f:

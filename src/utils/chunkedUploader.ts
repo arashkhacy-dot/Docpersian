@@ -147,7 +147,7 @@ function uploadDirectFileOnce(
     let lastTime = startTime;
     let smoothedSpeed = 0;
 
-    resetWatchdog(35000);
+    resetWatchdog(90000);
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
@@ -172,8 +172,8 @@ function uploadDirectFileOnce(
         if (isBytesDone) {
           resetWatchdog(180000);
         } else {
-          // If in progress, reset stall watchdog for another 35 seconds
-          resetWatchdog(35000);
+          // If in progress, reset stall watchdog for another 90 seconds
+          resetWatchdog(90000);
         }
 
         onProgress?.({

@@ -349,6 +349,96 @@ export class PPTXProcessor implements DocumentProcessor {
     };
   }
 
+  private async canUsePythonPptx(): Promise<boolean> {
+    try {
+      const scriptPath = path.resolve(process.cwd(), 'scripts/python_doc_tools.py');
+      if (!fs.existsSync(scriptPath)) return false;
+      const { stdout } = await execPromise(`python3 "${scriptPath}" --type pptx --help`, { timeout: 4000 });
+      return stdout.includes('DocuShift');
+    } catch {
+      return false;
+    }
+  }
+
+  private async processWithPythonPptx(
+    job: JobState,
+    onProgress: (stage: JobState['currentStage'], currentItem: number, totalItems: number, op: string) => Promise<void>,
+    checkCancelled: () => boolean
+  ): Promise<{
+    outputFilePath: string;
+    totalWords: number;
+    warnings: string[];
+  }> {
+    const warnings: string[] = [];
+    const scriptPath = path.resolve(process.cwd(), 'scripts/python_doc_tools.py');
+    const tempExtractJson = path.join(os.tmpdir(), `pptx_extract_${job.jobId}.json`);
+    const tempTransJson = path.join(os.tmpdir(), `pptx_trans_${job.jobId}.json`);
+
+    try {
+      await onProgress('extracting', 1, 1, 'استخراج نیتیو تمام متون و اشکال با ابزار python-pptx...');
+      await execPromise(`python3 "${scriptPath}" --action extract --type pptx --input "${job.inputPath}" --output "${tempExtractJson}"`, {
+        timeout: 60000,
+      });
+
+      if (!fs.existsSync(tempExtractJson)) {
+        throw new Error('فایل JSON خروجی استخراج پایتون ایجاد نشد.');
+      }
+
+      const rawJson = await fs.promises.readFile(tempExtractJson, 'utf-8');
+      const texts: string[] = JSON.parse(rawJson);
+
+      if (texts.length === 0) {
+        await fs.promises.copyFile(job.inputPath, job.outputPath);
+        return { outputFilePath: job.outputPath, totalWords: 0, warnings };
+      }
+
+      const units: TranslationUnit[] = texts.map((t, idx) => ({
+        id: `pptx_py_${idx}`,
+        text: t,
+        context: `ارائه پاورپوینت - بخش ${idx + 1} از ${texts.length}`,
+      }));
+
+      await onProgress('translating', 0, units.length, `ترجمه هوشمند متون پاورپوینت با پایتون (${units.length} بخش)...`);
+      if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
+
+      const translatedUnits = await defaultTranslator.translateBatch(units, (completedCount) => {
+        onProgress('translating', Math.min(completedCount, units.length), units.length, `ترجمه متون اسلایدها (${completedCount} از ${units.length})`);
+      });
+
+      const transMap: Record<string, string> = {};
+      let totalWords = 0;
+      for (const u of translatedUnits) {
+        const orig = units.find((x) => x.id === u.id);
+        if (orig) {
+          transMap[orig.text] = u.translatedText;
+          totalWords += u.translatedText.split(/\s+/).filter(Boolean).length;
+        }
+      }
+
+      await fs.promises.writeFile(tempTransJson, JSON.stringify(transMap, null, 2), 'utf-8');
+
+      if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
+      await onProgress('reconstructing', 1, 1, 'پیاده‌سازی نیتیو ترجمه در فایل اصلی با python-pptx با حفظ ۱۰۰٪ اشکال و چینش...');
+
+      await execPromise(`python3 "${scriptPath}" --action apply --type pptx --input "${job.inputPath}" --output "${job.outputPath}" --translations "${tempTransJson}"`, {
+        timeout: 90000,
+      });
+
+      if (!fs.existsSync(job.outputPath) || (await fs.promises.stat(job.outputPath)).size < 1000) {
+        throw new Error('فایل خروجی پاورپوینت توسط python-pptx ایجاد نشد یا ناقص است.');
+      }
+
+      return {
+        outputFilePath: job.outputPath,
+        totalWords,
+        warnings,
+      };
+    } finally {
+      await fs.promises.unlink(tempExtractJson).catch(() => {});
+      await fs.promises.unlink(tempTransJson).catch(() => {});
+    }
+  }
+
   async processDocument(
     job: JobState,
     onProgress: (stage: JobState['currentStage'], currentItem: number, totalItems: number, op: string) => Promise<void>,
@@ -359,6 +449,18 @@ export class PPTXProcessor implements DocumentProcessor {
     warnings: string[];
   }> {
     const warnings: string[] = [];
+
+    // Prioritize 100% native layout & shape preservation via python-pptx if installed
+    const canUsePy = await this.canUsePythonPptx();
+    if (canUsePy) {
+      try {
+        return await this.processWithPythonPptx(job, onProgress, checkCancelled);
+      } catch (pyErr) {
+        console.warn('[PYTHON_PPTX_FALLBACK_TO_XML]', pyErr);
+        warnings.push('پردازش پایتون با خطا مواجه شد؛ بازگشت خودکار به پردازشگر درونی XML.');
+      }
+    }
+
     const fileBytes = await fs.promises.readFile(job.inputPath);
     const zip = await JSZip.loadAsync(fileBytes);
     const slides = this.getSlideFiles(zip);

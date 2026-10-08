@@ -64,6 +64,96 @@ export class DOCXProcessor implements DocumentProcessor {
     };
   }
 
+  private async canUsePythonDocx(): Promise<boolean> {
+    try {
+      const scriptPath = path.resolve(process.cwd(), 'scripts/python_doc_tools.py');
+      if (!fs.existsSync(scriptPath)) return false;
+      const { stdout } = await execPromise(`python3 "${scriptPath}" --type docx --help`, { timeout: 4000 });
+      return stdout.includes('DocuShift');
+    } catch {
+      return false;
+    }
+  }
+
+  private async processWithPythonDocx(
+    job: JobState,
+    onProgress: (stage: JobState['currentStage'], currentItem: number, totalItems: number, op: string) => Promise<void>,
+    checkCancelled: () => boolean
+  ): Promise<{
+    outputFilePath: string;
+    totalWords: number;
+    warnings: string[];
+  }> {
+    const warnings: string[] = [];
+    const scriptPath = path.resolve(process.cwd(), 'scripts/python_doc_tools.py');
+    const tempExtractJson = path.join(os.tmpdir(), `docx_extract_${job.jobId}.json`);
+    const tempTransJson = path.join(os.tmpdir(), `docx_trans_${job.jobId}.json`);
+
+    try {
+      await onProgress('extracting', 1, 1, 'استخراج نیتیو متون و جداول ورد با ابزار python-docx...');
+      await execPromise(`python3 "${scriptPath}" --action extract --type docx --input "${job.inputPath}" --output "${tempExtractJson}"`, {
+        timeout: 60000,
+      });
+
+      if (!fs.existsSync(tempExtractJson)) {
+        throw new Error('فایل JSON خروجی استخراج پایتون ایجاد نشد.');
+      }
+
+      const rawJson = await fs.promises.readFile(tempExtractJson, 'utf-8');
+      const texts: string[] = JSON.parse(rawJson);
+
+      if (texts.length === 0) {
+        await fs.promises.copyFile(job.inputPath, job.outputPath);
+        return { outputFilePath: job.outputPath, totalWords: 0, warnings };
+      }
+
+      const units: TranslationUnit[] = texts.map((t, idx) => ({
+        id: `docx_py_${idx}`,
+        text: t,
+        context: `سند مایکروسافت ورد - بخش ${idx + 1} از ${texts.length}`,
+      }));
+
+      await onProgress('translating', 0, units.length, `ترجمه هوشمند متون سند ورد با پایتون (${units.length} بخش)...`);
+      if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
+
+      const translatedUnits = await defaultTranslator.translateBatch(units, (completedCount) => {
+        onProgress('translating', Math.min(completedCount, units.length), units.length, `ترجمه متون سند ورد (${completedCount} از ${units.length})`);
+      });
+
+      const transMap: Record<string, string> = {};
+      let totalWords = 0;
+      for (const u of translatedUnits) {
+        const orig = units.find((x) => x.id === u.id);
+        if (orig) {
+          transMap[orig.text] = u.translatedText;
+          totalWords += u.translatedText.split(/\s+/).filter(Boolean).length;
+        }
+      }
+
+      await fs.promises.writeFile(tempTransJson, JSON.stringify(transMap, null, 2), 'utf-8');
+
+      if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
+      await onProgress('reconstructing', 1, 1, 'پیاده‌سازی نیتیو ترجمه در فایل اصلی با python-docx و تنظیم راست‌به‌چپ (RTL)...');
+
+      await execPromise(`python3 "${scriptPath}" --action apply --type docx --input "${job.inputPath}" --output "${job.outputPath}" --translations "${tempTransJson}"`, {
+        timeout: 90000,
+      });
+
+      if (!fs.existsSync(job.outputPath) || (await fs.promises.stat(job.outputPath)).size < 1000) {
+        throw new Error('فایل خروجی ورد توسط python-docx ایجاد نشد یا ناقص است.');
+      }
+
+      return {
+        outputFilePath: job.outputPath,
+        totalWords,
+        warnings,
+      };
+    } finally {
+      await fs.promises.unlink(tempExtractJson).catch(() => {});
+      await fs.promises.unlink(tempTransJson).catch(() => {});
+    }
+  }
+
   async processDocument(
     job: JobState,
     onProgress: (stage: JobState['currentStage'], currentItem: number, totalItems: number, op: string) => Promise<void>,
@@ -74,6 +164,18 @@ export class DOCXProcessor implements DocumentProcessor {
     warnings: string[];
   }> {
     const warnings: string[] = [];
+
+    // Prioritize 100% native layout & style preservation via python-docx if installed
+    const canUsePy = await this.canUsePythonDocx();
+    if (canUsePy) {
+      try {
+        return await this.processWithPythonDocx(job, onProgress, checkCancelled);
+      } catch (pyErr) {
+        console.warn('[PYTHON_DOCX_FALLBACK_TO_XML]', pyErr);
+        warnings.push('پردازش پایتون با خطا مواجه شد؛ بازگشت خودکار به پردازشگر درونی XML.');
+      }
+    }
+
     const fileBytes = await fs.promises.readFile(job.inputPath);
     const zip = await JSZip.loadAsync(fileBytes);
 

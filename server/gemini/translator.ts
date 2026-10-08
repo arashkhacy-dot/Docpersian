@@ -80,6 +80,8 @@ export class GeminiTranslator {
     };
   }
 
+  private verifiedEndpointType: 'v1' | 'ollama_chat' | 'ollama_generate' | null = null;
+
   public setEngineSettings(
     engine: 'gemini' | 'local',
     localUrl?: string,
@@ -87,7 +89,10 @@ export class GeminiTranslator {
     diagramInpainting?: boolean
   ) {
     this.engine = engine;
-    if (localUrl) this.localUrl = localUrl;
+    if (localUrl && localUrl !== this.localUrl) {
+      this.localUrl = localUrl;
+      this.verifiedEndpointType = null;
+    }
     if (localModel) this.localModel = localModel;
     if (diagramInpainting !== undefined) this.diagramInpainting = diagramInpainting;
   }
@@ -113,6 +118,7 @@ export class GeminiTranslator {
       if (res && res.ok) {
         const data = await res.json();
         const models = Array.isArray(data.data) ? data.data.map((m: any) => m.id) : [];
+        this.verifiedEndpointType = 'v1';
         return {
           success: true,
           latencyMs: Date.now() - startTime,
@@ -125,6 +131,7 @@ export class GeminiTranslator {
       if (res && res.ok) {
         const data = await res.json();
         const models = Array.isArray(data.models) ? data.models.map((m: any) => m.name || m.model) : [];
+        this.verifiedEndpointType = 'ollama_chat';
         return {
           success: true,
           latencyMs: Date.now() - startTime,
@@ -451,6 +458,28 @@ CRITICAL INSTRUCTIONS:
     const parsedMap = new Map<string, string>();
     if (!content || !content.trim()) return parsedMap;
 
+    const storeItem = (rawId: string, rawText: string) => {
+      const trimmedText = (rawText || '').trim();
+      if (!trimmedText) return;
+
+      const trimmedId = (rawId || '').trim();
+      if (trimmedId) {
+        parsedMap.set(trimmedId, trimmedText);
+
+        const num1 = parseInt(trimmedId, 10);
+        if (!isNaN(num1) && num1 >= 1 && num1 <= chunk.length) {
+          parsedMap.set(chunk[num1 - 1].id, trimmedText);
+        }
+        if (!isNaN(num1) && num1 >= 0 && num1 < chunk.length) {
+          parsedMap.set(chunk[num1].id, trimmedText);
+        }
+      }
+
+      if (chunk.length === 1) {
+        parsedMap.set(chunk[0].id, trimmedText);
+      }
+    };
+
     const unwrapCodeFences = (raw: string): string => {
       const fenceMatch = raw.match(/```(?:json|text|markdown)?\s*([\s\S]*?)\s*```/i);
       if (fenceMatch && fenceMatch[1].trim()) {
@@ -495,8 +524,8 @@ CRITICAL INSTRUCTIONS:
           for (const it of parsed) {
             const rawId = it?.id !== undefined ? String(it.id).trim() : '';
             const rawText = it?.translatedText || it?.text || it?.translation || it?.persian || it?.result;
-            if (rawId && typeof rawText === 'string') {
-              parsedMap.set(rawId, rawText);
+            if (typeof rawText === 'string') {
+              storeItem(rawId, rawText);
             }
           }
           if (parsedMap.size > 0) return parsedMap;
@@ -509,17 +538,22 @@ CRITICAL INSTRUCTIONS:
             for (const it of list) {
               const rawId = it?.id !== undefined ? String(it.id).trim() : '';
               const rawText = it?.translatedText || it?.text || it?.translation || it?.persian || it?.result;
-              if (rawId && typeof rawText === 'string') {
-                parsedMap.set(rawId, rawText);
+              if (typeof rawText === 'string') {
+                storeItem(rawId, rawText);
               }
             }
             if (parsedMap.size > 0) return parsedMap;
           }
 
-          // C. Key-value dictionary: { "page_1": "...", "B1": "..." }
-          for (const item of chunk) {
-            if (parsed[item.id] && typeof parsed[item.id] === 'string') {
-              parsedMap.set(item.id, parsed[item.id]);
+          // C. Key-value dictionary: { "page_1": "...", "B1": "...", "1": "..." }
+          for (let i = 0; i < chunk.length; i++) {
+            const item = chunk[i];
+            const keysToTry = [item.id, String(i + 1), String(i), `[${i + 1}]`, `B${i + 1}`];
+            for (const k of keysToTry) {
+              if (parsed[k] && typeof parsed[k] === 'string') {
+                storeItem(item.id, parsed[k]);
+                break;
+              }
             }
           }
           if (parsedMap.size > 0) return parsedMap;
@@ -539,8 +573,8 @@ CRITICAL INSTRUCTIONS:
           for (const it of parsed) {
             const rawId = it?.id !== undefined ? String(it.id).trim() : '';
             const rawText = it?.translatedText || it?.text || it?.translation || it?.persian || it?.result;
-            if (rawId && typeof rawText === 'string') {
-              parsedMap.set(rawId, rawText);
+            if (typeof rawText === 'string') {
+              storeItem(rawId, rawText);
             }
           }
           if (parsedMap.size > 0) return parsedMap;
@@ -554,8 +588,8 @@ CRITICAL INSTRUCTIONS:
     while ((m = itemRegex.exec(content)) !== null) {
       const matchedId = (m[1] || m[2] || '').trim();
       const matchedText = (m[3] || '').replace(/\\n/g, '\n').replace(/\\"/g, '"');
-      if (matchedId && matchedText) {
-        parsedMap.set(matchedId, matchedText);
+      if (matchedText) {
+        storeItem(matchedId, matchedText);
       }
     }
     if (parsedMap.size > 0) return parsedMap;
@@ -565,51 +599,46 @@ CRITICAL INSTRUCTIONS:
       let rawText = cleanCandidate
         .replace(/^[^{\[]*?(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, '')
         .trim();
-      // Remove any lingering outer braces/brackets if invalid JSON
       if (rawText.startsWith('{') && rawText.endsWith('}')) {
         const innerTextMatch = rawText.match(/"(?:translatedText|text|translation)":\s*"([\s\S]*?)"/);
         if (innerTextMatch) rawText = innerTextMatch[1];
       }
       if (rawText.length > 2) {
-        parsedMap.set(chunk[0].id, rawText);
+        storeItem(chunk[0].id, rawText);
         return parsedMap;
       }
     }
 
     // 5. Multi-item fallback by line or block tags
     if (chunk.length > 1) {
-      for (const item of chunk) {
-        const tagPattern = new RegExp(`(?:\\[|\\b)${item.id}(?:\\]|:)\\s*([^\\n\\[]+)`, 'i');
-        const match = content.match(tagPattern);
-        if (match && match[1]?.trim()) {
-          parsedMap.set(item.id, match[1].trim());
-        }
-      }
-    }
-
-    // 6. Numbered line fallback [1], [2], 1., 2., 1-, 2-
-    if (chunk.length > 1 && parsedMap.size < chunk.length) {
       for (let idx = 0; idx < chunk.length; idx++) {
-        if (parsedMap.has(chunk[idx].id)) continue;
-        const num = idx + 1;
-        const numPattern = new RegExp(`(?:^\\[${num}\\]|^${num}[\\.\\-:]|\\n\\[${num}\\]|\\n${num}[\\.\\-:])\\s*([^\\n\\[]+)`, 'im');
-        const match = content.match(numPattern);
-        if (match && match[1]?.trim()) {
-          parsedMap.set(chunk[idx].id, match[1].trim());
+        const item = chunk[idx];
+        const tags = [item.id, `\\[${idx + 1}\\]`, `${idx + 1}[\\.:\\-]`, `B${idx + 1}`];
+        for (const t of tags) {
+          const tagPattern = new RegExp(`(?:^|\\n)\\s*${t}\\s*[:：\\-\\s]+([^\\n]+)`, 'im');
+          const match = content.match(tagPattern);
+          if (match && match[1]?.trim()) {
+            storeItem(item.id, match[1].trim());
+            break;
+          }
         }
       }
     }
 
-    // 7. Line-by-line fallback if model returned N non-empty Persian lines
+    // 6. Line-by-line fallback if model returned N non-empty Persian lines
     if (chunk.length > 1 && parsedMap.size === 0) {
       const persianLines = content
         .split(/\r?\n/)
-        .map((l) => l.trim().replace(/^(?:\d+[\\.\\-\\)]|\\[\\d+\\]|[•\\-\\*])\\s*/, '').trim())
-        .filter((l) => l.length > 1 && /[\\u0600-\\u06FF]/.test(l));
+        .map((l) => l.trim().replace(/^(?:\d+[\.\-\)]|\[\d+\]|[•\-\*])\s*/, '').trim())
+        .filter((l) => l.length > 1 && /[\u0600-\u06FF]/.test(l));
 
       if (persianLines.length >= chunk.length) {
         for (let idx = 0; idx < chunk.length; idx++) {
-          parsedMap.set(chunk[idx].id, persianLines[idx]);
+          storeItem(chunk[idx].id, persianLines[idx]);
+        }
+      } else if (persianLines.length > 0) {
+        for (let idx = 0; idx < Math.min(chunk.length, persianLines.length); idx++) {
+          storeItem(chunk[idx].id, persianLines[idx]);
         }
       }
     }
@@ -617,9 +646,121 @@ CRITICAL INSTRUCTIONS:
     return parsedMap;
   }
 
+  private async callLocalModelRaw(
+    systemInstruction: string,
+    prompt: string,
+    endpoints: ReturnType<typeof normalizeLocalEndpoints>,
+    maxTokens = 2048
+  ): Promise<string> {
+    const isStandardOllama = this.localUrl.includes('11434');
+
+    const candidates: Array<'ollama_chat' | 'ollama_generate' | 'v1'> = [];
+    if (this.verifiedEndpointType) {
+      candidates.push(this.verifiedEndpointType);
+    }
+    if (isStandardOllama) {
+      if (!candidates.includes('ollama_chat')) candidates.push('ollama_chat');
+      if (!candidates.includes('ollama_generate')) candidates.push('ollama_generate');
+      if (!candidates.includes('v1')) candidates.push('v1');
+    } else {
+      if (!candidates.includes('v1')) candidates.push('v1');
+      if (!candidates.includes('ollama_chat')) candidates.push('ollama_chat');
+      if (!candidates.includes('ollama_generate')) candidates.push('ollama_generate');
+    }
+
+    for (const endpointType of candidates) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000); // 45s per endpoint
+
+      try {
+        if (endpointType === 'v1') {
+          const res = await fetch(endpoints.v1ChatUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: this.localModel,
+              messages: [
+                { role: 'system', content: systemInstruction },
+                { role: 'user', content: prompt },
+              ],
+              temperature: 0.1,
+              stream: false,
+              max_tokens: maxTokens,
+            }),
+            signal: controller.signal,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.choices?.[0]?.message?.content?.trim() || '';
+            if (text) {
+              this.verifiedEndpointType = 'v1';
+              return text;
+            }
+          }
+        } else if (endpointType === 'ollama_chat') {
+          const res = await fetch(endpoints.ollamaChatUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: this.localModel,
+              messages: [
+                { role: 'system', content: systemInstruction },
+                { role: 'user', content: prompt },
+              ],
+              stream: false,
+              options: {
+                temperature: 0.1,
+                num_predict: maxTokens,
+                num_ctx: 4096,
+              },
+            }),
+            signal: controller.signal,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.message?.content?.trim() || '';
+            if (text) {
+              this.verifiedEndpointType = 'ollama_chat';
+              return text;
+            }
+          }
+        } else if (endpointType === 'ollama_generate') {
+          const res = await fetch(endpoints.ollamaGenerateUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: this.localModel,
+              prompt: `${systemInstruction}\n\n${prompt}`,
+              stream: false,
+              options: {
+                temperature: 0.1,
+                num_predict: maxTokens,
+              },
+            }),
+            signal: controller.signal,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.response?.trim() || '';
+            if (text) {
+              this.verifiedEndpointType = 'ollama_generate';
+              return text;
+            }
+          }
+        }
+      } catch (err) {
+        // Fall through to next candidate
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    return '';
+  }
+
   private async translateSingleTextViaLocal(
     text: string,
-    endpoints: { v1ChatUrl: string; ollamaChatUrl: string },
+    endpoints: ReturnType<typeof normalizeLocalEndpoints>,
     context?: string
   ): Promise<string> {
     if (!text || !text.trim()) return '';
@@ -636,162 +777,59 @@ CRITICAL RULES:
       ? `Document Context: ${context}\n\nContent to translate into Persian:\n${text}`
       : `Content to translate into Persian:\n${text}`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000); // 90s generous timeout
+    const content = await this.callLocalModelRaw(systemInstruction, prompt, endpoints, 2048);
 
-    try {
-      let content = '';
+    const clean = content
+      ? content
+          .replace(/^```(?:markdown|text)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .replace(/^(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, '')
+          .trim()
+      : '';
 
-      // 1. Try OpenAI-compatible /v1/chat/completions
-      try {
-        const response = await fetch(endpoints.v1ChatUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: this.localModel,
-            messages: [
-              { role: 'system', content: systemInstruction },
-              { role: 'user', content: prompt },
-            ],
-            temperature: 0.1,
-            stream: false,
-            max_tokens: 2048,
-          }),
-          signal: controller.signal,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          content = data.choices?.[0]?.message?.content?.trim() || '';
-        }
-      } catch (v1Err) {
-        // Fall through
-      }
-
-      // 2. Try Ollama native /api/chat
-      if (!content && !controller.signal.aborted) {
-        try {
-          const response = await fetch(endpoints.ollamaChatUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: this.localModel,
-              messages: [
-                { role: 'system', content: systemInstruction },
-                { role: 'user', content: prompt },
-              ],
-              stream: false,
-              options: {
-                temperature: 0.1,
-                num_predict: 2048,
-                num_ctx: 4096,
-              },
-            }),
-            signal: controller.signal,
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            content = data.message?.content?.trim() || '';
-          }
-        } catch {}
-      }
-
-      // 3. Try Ollama native /api/generate fallback (most stable endpoint across all models)
-      if (!content && !controller.signal.aborted) {
-        try {
-          const response = await fetch(endpoints.ollamaGenerateUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: this.localModel,
-              prompt: `${systemInstruction}\n\n${prompt}`,
-              stream: false,
-              options: {
-                temperature: 0.1,
-                num_predict: 2048,
-              },
-            }),
-            signal: controller.signal,
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            content = data.response?.trim() || '';
-          }
-        } catch {}
-      }
-
-      // Clean markdown code blocks if wrapped
-      const clean = content
-        ? content
-            .replace(/^```(?:markdown|text)?\s*/i, '')
-            .replace(/\s*```$/i, '')
-            .replace(/^(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, '')
-            .trim()
-        : '';
-
-      // If local translation succeeded and has Persian text, return it
-      if (clean && /[\u0600-\u06FF]/.test(clean)) {
-        return clean;
-      }
-
-      // If local model failed or returned non-Persian, fallback to Gemini if available
-      if (this.ai && this.isApiKeyValid()) {
-        try {
-          const gemRes = await this.callGeminiTranslate([{ id: 'single_fallback', text, context }]);
-          if (gemRes[0]?.translatedText && /[\u0600-\u06FF]/.test(gemRes[0].translatedText)) {
-            return gemRes[0].translatedText;
-          }
-        } catch {}
-      }
-
-      return clean || text;
-    } finally {
-      clearTimeout(timeout);
+    if (clean && /[\u0600-\u06FF]/.test(clean)) {
+      return clean;
     }
+
+    if (this.ai && this.isApiKeyValid()) {
+      try {
+        const gemRes = await this.callGeminiTranslate([{ id: 'single_fallback', text, context }]);
+        if (gemRes[0]?.translatedText && /[\u0600-\u06FF]/.test(gemRes[0].translatedText)) {
+          return gemRes[0].translatedText;
+        }
+      } catch {}
+    }
+
+    return clean || text;
   }
 
   private async callLocalTranslate(chunk: TranslationUnit[]): Promise<TranslationResult[]> {
     if (chunk.length === 0) return [];
     const endpoints = normalizeLocalEndpoints(this.localUrl);
 
-    // OPTIMIZATION: Single Document Page Translation
-    // For single pages, do NOT force JSON grammar in Ollama! It causes 5x slowdown and grammar lockups.
-    // Instead, ask directly for Persian translation preserving block tags [B1], [B2], etc.
+    // Single Document Page Translation
     if (chunk.length === 1) {
       const unit = chunk[0];
       const textToTranslate = unit.text.trim();
 
-      // If page has multiple blocks or is longer than 500 characters:
-      // Sub-divide into small fast sub-batches to prevent Ollama lockups and keep latency under 8s per sub-batch
-      const blockSegments = textToTranslate.split(/(?=\[B\d+\])/g).filter(Boolean);
-      if (blockSegments.length > 2 || textToTranslate.length > 500) {
-        const subBatches: string[] = [];
-        let currentBatch = '';
-        for (const seg of blockSegments) {
-          if (currentBatch.length + seg.length > 450 && currentBatch.length > 0) {
-            subBatches.push(currentBatch);
-            currentBatch = seg;
-          } else {
-            currentBatch += seg;
+      // If text is extraordinarily huge (> 4000 characters), split into at most 2 balanced halves
+      if (textToTranslate.length > 4000) {
+        const blockSegments = textToTranslate.split(/(?=\[B\d+\])/g).filter(Boolean);
+        if (blockSegments.length > 2) {
+          const mid = Math.ceil(blockSegments.length / 2);
+          const part1 = blockSegments.slice(0, mid).join('');
+          const part2 = blockSegments.slice(mid).join('');
+          const [res1, res2] = await Promise.all([
+            this.translateSingleTextViaLocal(part1, endpoints, unit.context),
+            this.translateSingleTextViaLocal(part2, endpoints, unit.context),
+          ]);
+          const combined = healPersianSpaces(`${res1}\n\n${res2}`.trim());
+          if (combined && /[\u0600-\u06FF]/.test(combined)) {
+            return [{ id: unit.id, translatedText: combined }];
           }
-        }
-        if (currentBatch.length > 0) subBatches.push(currentBatch);
-
-        let combinedTranslation = '';
-        for (const subText of subBatches) {
-          const subRes = await this.translateSingleTextViaLocal(subText, endpoints, unit.context);
-          combinedTranslation += (combinedTranslation ? '\n\n' : '') + subRes;
-        }
-
-        const finalText = healPersianSpaces(combinedTranslation);
-        if (finalText && /[\u0600-\u06FF]/.test(finalText)) {
-          return [{ id: unit.id, translatedText: finalText }];
         }
       }
 
-      // Standard single page translation
       const translated = await this.translateSingleTextViaLocal(textToTranslate, endpoints, unit.context);
       const finalText = healPersianSpaces(translated);
       return [{ id: unit.id, translatedText: finalText || unit.text }];
@@ -800,135 +838,56 @@ CRITICAL RULES:
     // MULTI-ITEM BATCH TRANSLATION
     const linesToTranslate = chunk.map((c, i) => `[${i + 1}] ${c.text}`).join('\n');
     const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
-Translate each item faithfully into fluent, formal Persian. Output each translated item with its matching tag [1], [2] at the start of each line, or return valid JSON: {"translations": [{"id": "...", "translatedText": "..."}]}.
+Translate each item faithfully into fluent, formal Persian. Output each translated item with its matching tag [1], [2] at the start of each line, or return valid JSON: {"translations": [{"id": 1, "translatedText": "..."}]}.
 CRITICAL RULES:
 1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words (e.g. کتاب, جدایی, حروف, خروج, است, مدل, کادر, مطالعه, صفحه).
 2. Preserve numbers, technical codes, and line breaks.`;
 
     const prompt = `Items to translate into Persian:\n\n${linesToTranslate}\n\nTranslate each item into fluent Persian:`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 75000);
+    const content = await this.callLocalModelRaw(systemInstruction, prompt, endpoints, 2500);
+    const parsedMap = this.parseLocalTranslationResponse(content, chunk);
+    const mappedResults: TranslationResult[] = [];
 
-    try {
-      let content = '';
-
-      // 1. Try OpenAI-compatible /v1/chat/completions first
-      try {
-        const response = await fetch(endpoints.v1ChatUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: this.localModel,
-            messages: [
-              { role: 'system', content: systemInstruction },
-              { role: 'user', content: prompt },
-            ],
-            temperature: 0.1,
-            stream: false,
-            max_tokens: 2500,
-          }),
-          signal: controller.signal,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          content = data.choices?.[0]?.message?.content?.trim() || '';
-        }
-      } catch (v1Err) {
-        // Fall through
+    for (let i = 0; i < chunk.length; i++) {
+      const item = chunk[i];
+      let tr = parsedMap.get(item.id);
+      if (!tr) tr = parsedMap.get(String(i + 1));
+      if (!tr) tr = parsedMap.get(String(i));
+      if (!tr) tr = parsedMap.get(`[${i + 1}]`);
+      if (!tr) tr = parsedMap.get(`B${i + 1}`);
+      if (!tr && chunk.length === 1 && parsedMap.size > 0) {
+        tr = Array.from(parsedMap.values())[0];
       }
 
-      // 2. Try Ollama native /api/chat
-      if (!content && !controller.signal.aborted) {
-        try {
-          const response = await fetch(endpoints.ollamaChatUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: this.localModel,
-              messages: [
-                { role: 'system', content: systemInstruction },
-                { role: 'user', content: prompt },
-              ],
-              stream: false,
-              options: {
-                temperature: 0.1,
-                num_predict: 2500,
-                num_ctx: 4096,
-              },
-            }),
-            signal: controller.signal,
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            content = data.message?.content?.trim() || '';
-          }
-        } catch {}
-      }
-
-      // 3. Try Ollama native /api/generate
-      if (!content && !controller.signal.aborted) {
-        try {
-          const response = await fetch(endpoints.ollamaGenerateUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: this.localModel,
-              prompt: `${systemInstruction}\n\n${prompt}`,
-              stream: false,
-              options: {
-                temperature: 0.1,
-                num_predict: 2500,
-              },
-            }),
-            signal: controller.signal,
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            content = data.response?.trim() || '';
-          }
-        } catch {}
-      }
-
-      const parsedMap = this.parseLocalTranslationResponse(content, chunk);
-      const mappedResults: TranslationResult[] = [];
-
-      for (const item of chunk) {
-        const tr = parsedMap.get(item.id);
-        const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
-        mappedResults.push({
-          id: item.id,
-          translatedText: finalText,
-        });
-      }
-
-      // Fallback to Gemini for any items that failed to translate or don't contain Persian
-      if (this.ai && this.isApiKeyValid()) {
-        const untranslated = mappedResults.filter((r) => {
-          const orig = chunk.find((c) => c.id === r.id);
-          return r.translatedText === orig?.text || !/[\u0600-\u06FF]/.test(r.translatedText);
-        });
-        if (untranslated.length > 0) {
-          const toTranslate = chunk.filter((c) => untranslated.some((u) => u.id === c.id));
-          try {
-            const gemResults = await this.callGeminiTranslate(toTranslate);
-            const gemMap = new Map(gemResults.map((g) => [g.id, g.translatedText]));
-            for (const r of mappedResults) {
-              if (gemMap.has(r.id) && gemMap.get(r.id)?.trim()) {
-                r.translatedText = gemMap.get(r.id)!;
-              }
-            }
-          } catch {}
-        }
-      }
-
-      return mappedResults;
-    } finally {
-      clearTimeout(timeout);
+      const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
+      mappedResults.push({
+        id: item.id,
+        translatedText: finalText,
+      });
     }
+
+    // Fallback to Gemini for any items that failed to translate or don't contain Persian
+    if (this.ai && this.isApiKeyValid()) {
+      const untranslated = mappedResults.filter((r) => {
+        const orig = chunk.find((c) => c.id === r.id);
+        return r.translatedText === orig?.text || !/[\u0600-\u06FF]/.test(r.translatedText);
+      });
+      if (untranslated.length > 0) {
+        const toTranslate = chunk.filter((c) => untranslated.some((u) => u.id === c.id));
+        try {
+          const gemResults = await this.callGeminiTranslate(toTranslate);
+          const gemMap = new Map(gemResults.map((g) => [g.id, g.translatedText]));
+          for (const r of mappedResults) {
+            if (gemMap.has(r.id) && gemMap.get(r.id)?.trim()) {
+              r.translatedText = gemMap.get(r.id)!;
+            }
+          }
+        } catch {}
+      }
+    }
+
+    return mappedResults;
   }
 
   private async extractAndTranslateFromImageViaLocal(
