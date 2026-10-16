@@ -17,10 +17,25 @@ export default function App() {
   const [jobsList, setJobsList] = useState<JobState[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgressInfo | null>(null);
+  const [uploadMode, setUploadMode] = useState<'unified' | 'chunked'>(() => {
+    try {
+      const saved = localStorage.getItem('docushift_upload_mode');
+      return saved === 'chunked' ? 'chunked' : 'unified';
+    } catch {
+      return 'unified';
+    }
+  });
   const [showHistory, setShowHistory] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showEngineModal, setShowEngineModal] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const handleUploadModeChange = (mode: 'unified' | 'chunked') => {
+    setUploadMode(mode);
+    try {
+      localStorage.setItem('docushift_upload_mode', mode);
+    } catch {}
+  };
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const uploadAbortRef = useRef<AbortController | null>(null);
@@ -169,7 +184,7 @@ export default function App() {
     const existingSession = await checkUploadSession(file);
     const estChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
 
-    const isDirectCandidate = file.size <= 100 * 1024 * 1024;
+    const isDirectCandidate = uploadMode === 'unified';
 
     if (!isDirectCandidate && existingSession && existingSession.completedChunks.length > 0) {
       setUploadProgress({
@@ -180,6 +195,7 @@ export default function App() {
         totalChunks: existingSession.totalChunks,
         isResuming: true,
         isDirect: false,
+        uploadMode: 'chunked',
         statusMessage: `ادامه ارسال از قطعه ${existingSession.completedChunks.length + 1} (${existingSession.percent}٪ از قبل در سرور موجود است)`,
       });
     } else {
@@ -190,7 +206,10 @@ export default function App() {
         currentChunk: 1,
         totalChunks: isDirectCandidate ? 1 : estChunks,
         isDirect: isDirectCandidate,
-        statusMessage: isDirectCandidate ? 'آغاز ارسال مستقیم و پرسرعت...' : 'آغاز ارسال قطعه‌ای هوشمند...',
+        uploadMode,
+        statusMessage: isDirectCandidate
+          ? 'آغاز ارسال یکپارچه با حداکثر سرعت (Turbo)...'
+          : 'آغاز ارسال چندبخشی قطعه‌ای...',
       });
     }
 
@@ -200,7 +219,8 @@ export default function App() {
         (info) => {
           setUploadProgress(info);
         },
-        abortController.signal
+        abortController.signal,
+        uploadMode
       );
 
       uploadAbortRef.current = null;
@@ -328,6 +348,8 @@ export default function App() {
           isUploading={isUploading}
           uploadProgress={uploadProgress}
           onCancelUpload={handleCancelUpload}
+          uploadMode={uploadMode}
+          onUploadModeChange={handleUploadModeChange}
         />
       );
     }
@@ -370,6 +392,8 @@ export default function App() {
             isUploading={isUploading}
             uploadProgress={uploadProgress}
             onCancelUpload={handleCancelUpload}
+            uploadMode={uploadMode}
+            onUploadModeChange={handleUploadModeChange}
           />
         );
     }

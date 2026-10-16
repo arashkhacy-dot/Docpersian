@@ -23,6 +23,8 @@ interface UploadZoneProps {
   isUploading: boolean;
   uploadProgress?: UploadProgressInfo | null;
   onCancelUpload?: () => void;
+  uploadMode?: 'unified' | 'chunked';
+  onUploadModeChange?: (mode: 'unified' | 'chunked') => void;
 }
 
 export const UploadZone: React.FC<UploadZoneProps> = ({
@@ -31,6 +33,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   isUploading,
   uploadProgress,
   onCancelUpload,
+  uploadMode = 'unified',
+  onUploadModeChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'device' | 'cloud'>('device');
   const [cloudUrl, setCloudUrl] = useState('');
@@ -254,7 +258,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                     فایل سند را به اینجا بکشید یا برای انتخاب کلیک کنید
                   </p>
                   <p className="text-xs text-slate-400">
-                    پشتیبانی از فایل‌های سنگین PDF، Word (DOCX) و PowerPoint (PPTX) تا ۱ گیگابایت (با سیستم ارسال قطعه‌ای هوشمند)
+                    پشتیبانی از فایل‌های سنگین PDF، Word (DOCX) و PowerPoint (PPTX) تا ۱ گیگابایت (آپلود یکپارچه حداکثر سرعت)
                   </p>
                 </div>
                 <div className="flex items-center gap-3 pt-2">
@@ -272,37 +276,104 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             )}
           </div>
 
-          {/* Live Chunked Upload Progress Card */}
+          {/* Upload Mode Selector (Turbo Unified vs Resumable Chunks) */}
+          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-medium">شیوه ارسال فایل:</span>
+              <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => onUploadModeChange?.('unified')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs transition-all ${
+                    uploadMode === 'unified'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>یکپارچه فوق‌سریع (Turbo)</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => onUploadModeChange?.('chunked')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs transition-all ${
+                    uploadMode === 'chunked'
+                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <HardDriveUpload className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>چندبخشی با قابلیت ادامه</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-400 flex items-center gap-1">
+              {uploadMode === 'unified' ? (
+                <span className="text-emerald-400 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  استریم مستقیم بدون تقطیع (حداکثر پهنای باند سرور)
+                </span>
+              ) : (
+                <span className="text-indigo-400 font-medium">
+                  قطعات ۱۰ مگابایتی مقاوم در برابر قطعی مکرر
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Live High-Speed Upload Progress Card */}
           {isUploading && uploadProgress && (
-            <div className="p-4 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-xl space-y-3 animate-in fade-in">
+            <div className="p-4 rounded-2xl bg-slate-900/95 border border-indigo-500/40 shadow-2xl space-y-3.5 animate-in fade-in">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 text-indigo-300 font-semibold">
-                  {uploadProgress.isDirect ? (
-                    <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
+                  {uploadProgress.isDirect || uploadProgress.uploadMode === 'unified' ? (
+                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-sm">
+                      <Zap className="w-3.5 h-3.5 animate-pulse" />
+                    </div>
                   ) : (
-                    <HardDriveUpload className="w-4 h-4 animate-bounce text-indigo-400" />
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-sm">
+                      <HardDriveUpload className="w-3.5 h-3.5 animate-bounce" />
+                    </div>
                   )}
-                  <span>
-                    {uploadProgress.isDirect || uploadProgress.totalChunks <= 1
-                      ? 'ارسال مستقیم و پرسرعت به سرور (Turbo Direct)'
-                      : `ارسال قطعه ${uploadProgress.currentChunk} از ${uploadProgress.totalChunks}`}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-xs">
+                      {uploadProgress.isDirect || uploadProgress.uploadMode === 'unified' || uploadProgress.totalChunks <= 1
+                        ? 'ارسال یکپارچه با حداکثر سرعت (Turbo Direct Stream)'
+                        : `ارسال قطعه ${uploadProgress.currentChunk} از ${uploadProgress.totalChunks}`}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      {uploadProgress.isDirect || uploadProgress.uploadMode === 'unified'
+                        ? 'انتقال پیوسته بدون وقفه به هسته سرور'
+                        : 'سیستم چندبخشی هوشمند با قابلیت بازیابی خودکار'}
+                    </span>
+                  </div>
                 </div>
+
                 <div className="flex items-center gap-2">
                   {uploadProgress.speedFormatted && (
-                    <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold flex items-center gap-1">
+                    <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold flex items-center gap-1.5 shadow-sm">
                       <Zap className="w-3 h-3 text-emerald-400" />
                       <span>{uploadProgress.speedFormatted}</span>
                     </span>
                   )}
-                  <span className="font-mono font-bold text-white text-sm">{uploadProgress.percent}%</span>
+                  {uploadProgress.etaFormatted && (
+                    <span className="bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded-lg text-[11px] font-medium hidden sm:inline-flex">
+                      {uploadProgress.etaFormatted}
+                    </span>
+                  )}
+                  <span className="font-mono font-black text-emerald-400 text-base bg-slate-950 px-2 py-0.5 rounded-md border border-slate-800">
+                    {uploadProgress.percent}%
+                  </span>
                 </div>
               </div>
 
               {/* Progress track */}
-              <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-700/50">
+              <div className="w-full bg-slate-950 rounded-full h-3 overflow-hidden p-0.5 border border-slate-800">
                 <div
-                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-full rounded-full transition-all duration-300 ease-out shadow-sm"
+                  className="bg-gradient-to-r from-indigo-500 via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-300 ease-out shadow-[0_0_12px_rgba(52,211,153,0.5)]"
                   style={{ width: `${uploadProgress.percent}%` }}
                 />
               </div>
@@ -311,14 +382,14 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                 <span>
                   {formatFileSize(uploadProgress.uploadedBytes)} از {formatFileSize(uploadProgress.totalBytes)} ارسال شد
                   {uploadProgress.statusMessage && (
-                    <span className="text-amber-400 font-semibold mr-2">
+                    <span className="text-amber-300 font-medium mr-2">
                       • {uploadProgress.statusMessage}
                     </span>
                   )}
                 </span>
-                <span className="text-emerald-400 flex items-center gap-1 shrink-0 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  اتصال بهینه پرسرعت
+                <span className="text-emerald-400 flex items-center gap-1.5 shrink-0 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>پهنای باند فعال</span>
                 </span>
               </div>
             </div>

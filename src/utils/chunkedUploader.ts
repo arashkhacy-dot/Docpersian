@@ -5,33 +5,50 @@ export interface UploadProgressInfo {
   currentChunk: number;
   totalChunks: number;
   speedFormatted?: string;
+  etaFormatted?: string;
   statusMessage?: string;
   isResuming?: boolean;
   isDirect?: boolean;
+  uploadMode?: 'unified' | 'chunked';
 }
 
-// Files up to 8 MB use direct single-shot turbo stream (< 1-2 seconds)
-const DIRECT_UPLOAD_THRESHOLD = 8 * 1024 * 1024;
+// 1 GB capacity: All documents use direct single-stream Turbo upload by default for maximum speed
+export const DIRECT_UPLOAD_THRESHOLD = 1024 * 1024 * 1024; // 1024 MB
 
-// 2 MB per chunk: Highly resilient for VPNs, cellular connections, and avoiding MTU packet fragmentation
-export const CHUNK_SIZE = 2 * 1024 * 1024;
+// 10 MB per chunk: 5x faster than 2MB, reducing round-trips while remaining resilient
+export const CHUNK_SIZE = 10 * 1024 * 1024;
 
 const SESSION_STORAGE_PREFIX = 'docushift_upload_session_';
+export const UPLOAD_MODE_STORAGE_KEY = 'docushift_upload_mode';
 
 export function getSessionStorageKey(file: File): string {
   return `${SESSION_STORAGE_PREFIX}${encodeURIComponent(file.name)}_${file.size}`;
 }
 
 export function formatUploadSpeed(bytesPerSec: number): string {
-  if (bytesPerSec <= 0) return '';
+  if (bytesPerSec <= 0 || !isFinite(bytesPerSec)) return '';
   if (bytesPerSec >= 1024 * 1024) {
     return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`;
   }
   return `${Math.round(bytesPerSec / 1024)} KB/s`;
 }
 
+export function formatEta(seconds: number): string {
+  if (!isFinite(seconds) || seconds <= 0) return '';
+  if (seconds < 60) {
+    return `حدود ${Math.ceil(seconds)} ثانیه`;
+  }
+  const mins = Math.floor(seconds / 60);
+  const remainingSecs = Math.ceil(seconds % 60);
+  if (mins < 60) {
+    return remainingSecs > 5 ? `حدود ${mins} دقیقه و ${remainingSecs} ثانیه` : `حدود ${mins} دقیقه`;
+  }
+  const hours = Math.floor(mins / 60);
+  return `حدود ${hours} ساعت و ${mins % 60} دقیقه`;
+}
+
 /**
- * Checks server for already uploaded chunks in the session
+ * Checks server for already uploaded chunks in a chunked session
  */
 export async function getUploadedChunksFromServer(uploadId: string): Promise<number[]> {
   try {
@@ -108,7 +125,7 @@ export function clearUploadSession(file: File): void {
 }
 
 /**
- * Direct Single-Stream Turbo Upload with Automatic Quick Retry
+ * Direct Single-Stream Turbo Upload with Maximum Speed & Live Telemetry
  */
 function uploadDirectFileOnce(
   file: File,
@@ -127,7 +144,7 @@ function uploadDirectFileOnce(
     formData.append('file', file, file.name);
 
     let watchdogTimer: any = null;
-    const resetWatchdog = (timeoutMs = 45000) => {
+    const resetWatchdog = (timeoutMs = 90000) => {
       if (watchdogTimer) clearTimeout(watchdogTimer);
       watchdogTimer = setTimeout(() => {
         xhr.abort();
@@ -158,7 +175,7 @@ function uploadDirectFileOnce(
         if (timeDiff >= 0.15) {
           const bytesDiff = e.loaded - lastLoaded;
           const instantSpeed = bytesDiff / timeDiff;
-          smoothedSpeed = smoothedSpeed > 0 ? smoothedSpeed * 0.6 + instantSpeed * 0.4 : instantSpeed;
+          smoothedSpeed = smoothedSpeed > 0 ? smoothedSpeed * 0.7 + instantSpeed * 0.3 : instantSpeed;
           lastLoaded = e.loaded;
           lastTime = now;
         } else if (smoothedSpeed === 0) {
@@ -168,11 +185,15 @@ function uploadDirectFileOnce(
         const isBytesDone = e.loaded >= e.total;
         const percent = isBytesDone ? 99 : Math.min(98, Math.round((e.loaded / e.total) * 100));
 
-        // When all bytes are uploaded, give server 180s to ingest and index document
+        let etaSeconds = 0;
+        if (smoothedSpeed > 0 && !isBytesDone) {
+          etaSeconds = Math.max(1, (e.total - e.loaded) / smoothedSpeed);
+        }
+
+        // Keep watchdog alive as long as bytes are flowing
         if (isBytesDone) {
-          resetWatchdog(180000);
+          resetWatchdog(180000); // 3 mins for server to finalize job
         } else {
-          // If in progress, reset stall watchdog for another 90 seconds
           resetWatchdog(90000);
         }
 
@@ -183,12 +204,14 @@ function uploadDirectFileOnce(
           currentChunk: 1,
           totalChunks: 1,
           speedFormatted: formatUploadSpeed(smoothedSpeed),
+          etaFormatted: etaSeconds > 0 ? formatEta(etaSeconds) : undefined,
           isDirect: true,
+          uploadMode: 'unified',
           statusMessage: isBytesDone
-            ? 'ارسال فایل کامل شد؛ در حال اعتبارسنجی در سرور...'
+            ? 'ارسال یکپارچه کامل شد؛ در حال اعتبارسنجی سند در سرور...'
             : attemptNumber > 1
-            ? `در حال ارسال مستقیم (تلاش مجدد ${attemptNumber})...`
-            : 'در حال ارسال مستقیم سند به سرور...',
+            ? `در حال ارسال یکپارچه (تلاش مجدد ${attemptNumber})...`
+            : 'در حال ارسال یکپارچه با حداکثر سرعت (Turbo Stream)...',
         });
       }
     };
@@ -208,7 +231,8 @@ function uploadDirectFileOnce(
             totalChunks: 1,
             speedFormatted: formatUploadSpeed(smoothedSpeed),
             isDirect: true,
-            statusMessage: 'فایل با موفقیت ثبت شد؛ ورود به میزکار...',
+            uploadMode: 'unified',
+            statusMessage: 'سند با موفقیت دریافت و تایید شد؛ ورود به میزکار...',
           });
           resolve(job);
         } catch {
@@ -227,22 +251,23 @@ function uploadDirectFileOnce(
     xhr.onerror = () => {
       if (watchdogTimer) clearTimeout(watchdogTimer);
       signal?.removeEventListener('abort', abortHandler);
-      reject(new Error('نوسان اتصال شبکه در ارسال مستقیم'));
+      reject(new Error('نوسان اتصال شبکه در ارسال یکپارچه'));
     };
 
     xhr.ontimeout = () => {
       if (watchdogTimer) clearTimeout(watchdogTimer);
       signal?.removeEventListener('abort', abortHandler);
-      reject(new Error('مهلت ارسال مستقیم به پایان رسید.'));
+      reject(new Error('مهلت ارسال یکپارچه به پایان رسید.'));
     };
 
-    xhr.timeout = 240000;
+    // 30 minutes generous timeout for large files
+    xhr.timeout = 30 * 60 * 1000;
     xhr.open('POST', '/api/jobs');
     xhr.send(formData);
   });
 }
 
-async function uploadDirectFile(
+export async function uploadDirectFile(
   file: File,
   onProgress?: (info: UploadProgressInfo) => void,
   signal?: AbortSignal
@@ -252,8 +277,18 @@ async function uploadDirectFile(
   } catch (err: any) {
     if (signal?.aborted) throw err;
     console.warn('[DIRECT_UPLOAD_FIRST_ATTEMPT_FAILED]', err);
-    // Auto-retry once on network hiccup before falling back
-    await new Promise((r) => setTimeout(r, 800));
+    // Auto-retry once on network hiccup before failing
+    onProgress?.({
+      percent: 0,
+      uploadedBytes: 0,
+      totalBytes: file.size,
+      currentChunk: 1,
+      totalChunks: 1,
+      isDirect: true,
+      uploadMode: 'unified',
+      statusMessage: 'نوسان لحظه‌ای شبکه؛ در حال تلاش مجدد برای ارسال یکپارچه...',
+    });
+    await new Promise((r) => setTimeout(r, 1000));
     return await uploadDirectFileOnce(file, onProgress, signal, 2);
   }
 }
@@ -281,7 +316,7 @@ function uploadSingleChunkXhr(
     formData.append('chunk', chunkBlob, `chunk_${chunkIndex}.part`);
 
     let watchdogTimer: any = null;
-    const resetWatchdog = (timeoutMs = 60000) => {
+    const resetWatchdog = (timeoutMs = 90000) => {
       if (watchdogTimer) clearTimeout(watchdogTimer);
       watchdogTimer = setTimeout(() => {
         xhr.abort();
@@ -296,16 +331,15 @@ function uploadSingleChunkXhr(
     };
     signal?.addEventListener('abort', abortHandler);
 
-    resetWatchdog(60000);
+    resetWatchdog(90000);
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         onChunkProgress(e.loaded);
         if (e.loaded >= e.total) {
-          // Chunk bytes finished transferring; wait up to 120s for server disk write
           resetWatchdog(120000);
         } else {
-          resetWatchdog(60000);
+          resetWatchdog(90000);
         }
       }
     };
@@ -346,7 +380,7 @@ function uploadSingleChunkXhr(
 /**
  * Sequential Resilient Chunked File Uploader with Genuine Persistent Resume
  */
-async function uploadFileInParallelChunks(
+export async function uploadFileInParallelChunks(
   file: File,
   onProgress?: (info: UploadProgressInfo) => void,
   signal?: AbortSignal
@@ -445,11 +479,16 @@ async function uploadFileInParallelChunks(
     if (timeDiff >= 0.15) {
       const bytesDiff = totalBytesLoaded - lastTotalUploaded;
       const instantSpeed = bytesDiff / timeDiff;
-      currentSpeed = currentSpeed > 0 ? currentSpeed * 0.6 + instantSpeed * 0.4 : instantSpeed;
+      currentSpeed = currentSpeed > 0 ? currentSpeed * 0.7 + instantSpeed * 0.3 : instantSpeed;
       lastTotalUploaded = totalBytesLoaded;
       lastCalcTime = now;
     } else if (currentSpeed === 0 && totalBytesLoaded > 0) {
       currentSpeed = totalBytesLoaded / totalElapsed;
+    }
+
+    let etaSeconds = 0;
+    if (currentSpeed > 0 && totalBytesLoaded < file.size) {
+      etaSeconds = Math.max(1, (file.size - totalBytesLoaded) / currentSpeed);
     }
 
     const percent = Math.min(99, Math.round((totalBytesLoaded / file.size) * 100));
@@ -460,9 +499,11 @@ async function uploadFileInParallelChunks(
       currentChunk: Math.min(totalChunks, completedChunksSet.size + 1),
       totalChunks,
       speedFormatted: formatUploadSpeed(currentSpeed),
+      etaFormatted: etaSeconds > 0 ? formatEta(etaSeconds) : undefined,
       statusMessage: statusMsg,
       isResuming: completedChunksSet.size > 0,
       isDirect: false,
+      uploadMode: 'chunked',
     });
   };
 
@@ -472,7 +513,7 @@ async function uploadFileInParallelChunks(
     );
   }
 
-  // 2. Sequential Upload Loop
+  // 2. Upload Pending Chunks
   const pendingIndices: number[] = [];
   for (let i = 0; i < totalChunks; i++) {
     if (!completedChunksSet.has(i)) {
@@ -501,7 +542,7 @@ async function uploadFileInParallelChunks(
             ? `تلاش مجدد برای قطعه ${chunkIndex + 1} از ${totalChunks} (نوبت ${attempt})...`
             : totalChunks > 1
             ? `در حال ارسال قطعه ${chunkIndex + 1} از ${totalChunks}...`
-            : 'در حال ارسال فایل به سرور...'
+            : 'در حال ارسال قطعه به سرور...'
         );
 
         await uploadSingleChunkXhr(
@@ -545,8 +586,6 @@ async function uploadFileInParallelChunks(
     }
 
     if (!chunkUploaded) {
-      // CRITICAL: We DO NOT remove sessionKey from localStorage here!
-      // This allows the user to click resume and continue from this exact chunk without restarting from 0!
       throw (
         lastErr ||
         new Error(
@@ -566,6 +605,7 @@ async function uploadFileInParallelChunks(
     speedFormatted: formatUploadSpeed(currentSpeed),
     statusMessage: 'ارسال پایان یافت؛ در حال یکپارچه‌سازی و اعتبارسنجی سند در سرور...',
     isDirect: false,
+    uploadMode: 'chunked',
   });
 
   const compRes = await fetch('/api/upload/complete', {
@@ -597,6 +637,7 @@ async function uploadFileInParallelChunks(
     speedFormatted: formatUploadSpeed(currentSpeed),
     statusMessage: 'سند با موفقیت تایید شد؛ ورود به میزکار...',
     isDirect: false,
+    uploadMode: 'chunked',
   });
 
   return job;
@@ -604,36 +645,44 @@ async function uploadFileInParallelChunks(
 
 /**
  * Main Entry Point: Intelligent High-Speed File Uploader
+ * Default mode is 'unified' (Turbo single-stream upload with maximum speed).
  */
 export async function uploadFileInChunks(
   file: File,
   onProgress?: (info: UploadProgressInfo) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  preferredMode: 'unified' | 'chunked' = 'unified'
 ): Promise<any> {
   const sessionKey = getSessionStorageKey(file);
 
-  // For all standard files (<= 100MB), always prioritize direct fast upload
-  // and clear any stale chunk sessions from localStorage to prevent slow chunk loops
-  if (file.size <= DIRECT_UPLOAD_THRESHOLD) {
-    try {
-      localStorage.removeItem(sessionKey);
-    } catch {}
-
-    // Try direct upload with automatic retry first
-    try {
-      return await uploadDirectFile(file, onProgress, signal);
-    } catch (err: any) {
-      if (signal?.aborted) throw err;
-      console.warn('[DIRECT_UPLOAD_FALLBACK_TO_CHUNKS]', err);
-    }
+  // If user explicitly chose chunked or has an existing chunked session
+  if (preferredMode === 'chunked') {
     return await uploadFileInParallelChunks(file, onProgress, signal);
   }
 
-  // Files > 100 MB use resumable chunked upload
-  const savedSessionRaw = localStorage.getItem(sessionKey);
-  if (savedSessionRaw) {
+  // Otherwise, default is UNIFIED MAX-SPEED DIRECT STREAM
+  try {
+    localStorage.removeItem(sessionKey);
+  } catch {}
+
+  try {
+    return await uploadDirectFile(file, onProgress, signal);
+  } catch (err: any) {
+    if (signal?.aborted) throw err;
+    console.warn('[DIRECT_UPLOAD_FALLBACK_TO_CHUNKS]', err);
+
+    // If unified stream encountered network truncation, automatically fallback to chunked upload seamlessly
+    onProgress?.({
+      percent: 0,
+      uploadedBytes: 0,
+      totalBytes: file.size,
+      currentChunk: 1,
+      totalChunks: Math.max(1, Math.ceil(file.size / CHUNK_SIZE)),
+      statusMessage: 'انتقال به حالت قطعه‌ای هوشمند جهت پایداری اتصال...',
+      uploadMode: 'chunked',
+      isDirect: false,
+    });
+
     return await uploadFileInParallelChunks(file, onProgress, signal);
   }
-
-  return await uploadFileInParallelChunks(file, onProgress, signal);
 }
