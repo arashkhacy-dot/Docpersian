@@ -18,15 +18,15 @@ fi
 
 # ۱. تشخیص کارت شبکه فیزیکی اصلی و گیت‌وی پیش‌فرض سرور (خارج از تونل‌های VPN)
 echo "--> ۱. در حال شناسایی کارت شبکه فیزیکی و گیت‌وی سرور..."
-PHYS_IFACE=$(ip -4 route show default 2>/dev/null | grep -vE 'tun|wg|warp|tap|docker|veth|br-' | awk '{print $5}' | head -n1)
+PHYS_IFACE=$(ip -4 route show default 2>/dev/null | grep -vE 'tun|wg|warp|tap|docker|veth|br-|amn|ppp|ipsec|tailscale' | awk '{print $5}' | head -n1)
 if [ -z "$PHYS_IFACE" ]; then
-  PHYS_IFACE=$(ip -4 route show 2>/dev/null | grep 'proto kernel' | grep -vE 'tun|wg|warp|tap|docker|veth|br-' | awk '{print $3}' | head -n1)
+  PHYS_IFACE=$(ip -4 route show 2>/dev/null | grep 'proto kernel' | grep -vE 'tun|wg|warp|tap|docker|veth|br-|amn|ppp|ipsec|tailscale' | awk '{print $3}' | head -n1)
 fi
 if [ -z "$PHYS_IFACE" ]; then
-  PHYS_IFACE=$(ls /sys/class/net | grep -vE 'lo|tun|wg|warp|tap|docker|veth|br-' | head -n1)
+  PHYS_IFACE=$(ls /sys/class/net | grep -vE 'lo|tun|wg|warp|tap|docker|veth|br-|amn|ppp|ipsec|tailscale' | head -n1)
 fi
 
-PHYS_GW=$(ip -4 route show default 2>/dev/null | grep -vE 'tun|wg|warp|tap|docker|veth|br-' | awk '{print $3}' | head -n1)
+PHYS_GW=$(ip -4 route show default 2>/dev/null | grep -vE 'tun|wg|warp|tap|docker|veth|br-|amn|ppp|ipsec|tailscale' | awk '{print $3}' | head -n1)
 if [ -z "$PHYS_GW" ] && [ -n "$PHYS_IFACE" ]; then
   PHYS_GW=$(ip -4 route show dev "$PHYS_IFACE" 2>/dev/null | grep -oP '(?<=via\s)\d+(\.\d+){3}' | head -n1)
 fi
@@ -49,7 +49,7 @@ if [ -n "$PHYS_IFACE" ] && [ -n "$PHYS_GW" ]; then
   fi
   ip rule del iif "$PHYS_IFACE" lookup 100 2>/dev/null || true
   ip rule add iif "$PHYS_IFACE" lookup 100 priority 1001 2>/dev/null || true
-  echo "    ✅ جدول روت ۱۰0 و قوانین ip rule با موفقیت برقرار شد."
+  echo "    ✅ جدول روت ۱۰۰ و قوانین ip rule با موفقیت برقرار شد."
 fi
 
 # ۳. حل مشکل فیلترینگ معکوس کرنل لینوکس (Reverse Path Filtering - rp_filter)
@@ -87,37 +87,41 @@ EOF
 sysctl --system >/dev/null 2>&1 || true
 echo "    ✅ تنظیمات کرنل و الگوریتم BBR جهت حداکثر سرعت اعمال شدند."
 
-# ۴. حل مشکل MTU و اعمال TCP MSS Clamping در فایروال iptables
-# تونل‌های VPN سایز MTU کمتری دارند (معمولاً ۱۲۸۰ تا ۱۴۲۰). کلمپ کردن MSS مانع گیر کردن بسته‌های بزرگ آپلود می‌شود.
+# ۴. حل قطعی مشکل MTU و اعمال TCP MSS Clamping در فایروال iptables
+# تنظیم MSS به 1240 بایت مانع مسدود شدن پکت‌های بزرگ آپلود در هر نوع تونل VPN می‌شود
 if command -v iptables >/dev/null 2>&1; then
-  echo "--> ۴. اعمال TCP MSS Clamping برای جلوگیری از قفل شدن یا قطعی پکت‌های بزرگ..."
-  iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
-  iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+  echo "--> ۴. اعمال TCP MSS Clamping به مقدار ۱۲۴۰ بایت (رفع قطعی پکت‌های آپلود در VPN)..."
+  iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240 2>/dev/null || true
+  iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240 2>/dev/null || true
 
-  iptables -t mangle -D OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
-  iptables -t mangle -A OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+  iptables -t mangle -D OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240 2>/dev/null || true
+  iptables -t mangle -A OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240 2>/dev/null || true
 
-  iptables -t mangle -D PREROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
-  iptables -t mangle -A PREROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+  iptables -t mangle -D PREROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240 2>/dev/null || true
+  iptables -t mangle -A PREROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240 2>/dev/null || true
   echo "    ✅ قوانین TCP MSS Clamping فعال شدند."
 fi
 
-# ۵. بهینه‌سازی Nginx برای استریم مستقیم پکت‌های آپلود به Node.js بدون تاخیر بافر
+# ۵. بهینه‌سازی Nginx و رفع محدودیت بافر ۱ مگابایتی
 if command -v nginx >/dev/null 2>&1; then
-  echo "--> ۵. پیکربندی پیشرفته Nginx (لغو بافر درخواست‌ها جهت انتقال بی‌درنگ قطعات آپلود)..."
+  echo "--> ۵. پیکربندی پیشرفته Nginx و دسترسی بافر دیسک (رفع مشکل گیر کردن در ۱ مگابایت)..."
+  mkdir -p /var/lib/nginx/body /var/cache/nginx/client_temp /tmp/nginx_upload
+  chmod -R 777 /var/lib/nginx /tmp/nginx_upload
+  chown -R www-data:www-data /var/lib/nginx /tmp/nginx_upload 2>/dev/null || true
+
   tee /etc/nginx/sites-available/docushift >/dev/null << 'EOF'
 server {
     listen 80;
     server_name _;
 
-    client_max_body_size 1024M;
-    client_body_buffer_size 1M;
-    client_body_timeout 300s;
-    client_header_timeout 300s;
-    send_timeout 300s;
-    keepalive_timeout 300s;
+    client_max_body_size 0;
+    client_body_buffer_size 32M;
+    client_body_temp_path /tmp/nginx_upload 1 2;
+    client_body_timeout 600s;
+    client_header_timeout 600s;
+    send_timeout 600s;
+    keepalive_timeout 600s;
 
-    # استریم مستقیم قطعات آپلود بدون بافرینگ دیسک (جلوگیری از تایم‌اوت در VPN)
     location ~* ^/api/(upload|jobs) {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -129,12 +133,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # لغو بافرینگ درخواست و پاسخ برای پایداری کامل استریم آپلود
         proxy_request_buffering off;
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
-        client_max_body_size 1024M;
+        client_max_body_size 0;
     }
 
     location / {
@@ -161,21 +164,23 @@ EOF
   echo "    ✅ Nginx مجدداً پیکربندی و بارگذاری شد."
 fi
 
-# ۶. ری‌استارت سرویس PM2 در صورت وجود
+# ۶. باز کردن پورت ۳۰۰۰ در فایروال جهت دسترسی مستقیم بدون واسطه Nginx
+if command -v ufw >/dev/null 2>&1; then
+  ufw allow 80/tcp 2>/dev/null || true
+  ufw allow 3000/tcp 2>/dev/null || true
+fi
+if command -v iptables >/dev/null 2>&1; then
+  iptables -I INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
+  iptables -I INPUT -p tcp --dport 3000 -j ACCEPT 2>/dev/null || true
+fi
+
+# ۷. ری‌استارت سرویس PM2 در صورت وجود
 if command -v pm2 >/dev/null 2>&1; then
-  echo "--> ۶. بررسی و تازه‌سازی سرویس DocuShift در PM2..."
+  echo "--> ۷. بررسی و تازه‌سازی سرویس DocuShift در PM2..."
   pm2 reload docushift --update-env 2>/dev/null || pm2 restart docushift --update-env 2>/dev/null || true
 fi
 
 echo ""
 echo "============================================================"
 echo "  ✅ کلیه تنظیمات رفع اختلال آپلود در حالت VPN با موفقیت اعمال شد!"
-echo "============================================================"
-echo "💡 نکته معماری مهم:"
-echo "اگر VPN را صرفاً برای دسترسی سرور به هوش مصنوعی Google Gemini نصب کرده‌اید:"
-echo "پیشنهاد طلایی: از حالت پروکسی داخلی (مانند warp-cli mode proxy روی پورت 40000"
-echo "یا SOCKS5 روی 127.0.0.1:10808) استفاده کنید و متغیر زیر را در فایل .env قرار دهید:"
-echo "    HTTPS_PROXY=http://127.0.0.1:40000"
-echo "در این حالت ارتباطات کاربران برای آپلود کاملاً روی شبکه پرسرعت محلی و بدون"
-echo "هیچ‌گونه وابستگی به وی‌پی‌ان پردازش شده و فقط فراخوانی جمنای از تونل پروکسی می‌گذرد."
 echo "============================================================"

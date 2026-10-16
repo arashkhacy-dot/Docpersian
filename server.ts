@@ -899,14 +899,44 @@ app.post('/api/settings/restore-checkpoint', async (_req: Request, res: Response
   }
 });
 
-// VPS Update Script Endpoint
-app.get('/api/update.sh', (_req: Request, res: Response) => {
+// Shell Script Endpoints (Ensure curl always gets raw bash, never HTML SPA)
+app.get(['/setup-vps.sh', '/setup.sh', '/api/setup.sh'], (_req: Request, res: Response) => {
+  const scriptPath = path.join(process.cwd(), 'setup-vps.sh');
+  if (fs.existsSync(scriptPath)) {
+    res.setHeader('Content-Type', 'text/x-shellscript; charset=utf-8');
+    res.sendFile(scriptPath);
+  } else {
+    res.status(404).send('#!/bin/bash\necho "Setup script not found"\n');
+  }
+});
+
+app.get(['/update_vps.sh', '/update.sh', '/api/update.sh'], (_req: Request, res: Response) => {
   const scriptPath = path.join(process.cwd(), 'update_vps.sh');
   if (fs.existsSync(scriptPath)) {
     res.setHeader('Content-Type', 'text/x-shellscript; charset=utf-8');
     res.sendFile(scriptPath);
   } else {
     res.status(404).send('#!/bin/bash\necho "Update script not found"\n');
+  }
+});
+
+app.get(['/fix_server_vpn_network.sh', '/fix.sh', '/api/fix.sh'], (_req: Request, res: Response) => {
+  const scriptPath = path.join(process.cwd(), 'fix_server_vpn_network.sh');
+  if (fs.existsSync(scriptPath)) {
+    res.setHeader('Content-Type', 'text/x-shellscript; charset=utf-8');
+    res.sendFile(scriptPath);
+  } else {
+    res.status(404).send('#!/bin/bash\necho "Fix script not found"\n');
+  }
+});
+
+app.get(['/find_and_update.sh', '/find.sh'], (_req: Request, res: Response) => {
+  const scriptPath = path.join(process.cwd(), 'find_and_update.sh');
+  if (fs.existsSync(scriptPath)) {
+    res.setHeader('Content-Type', 'text/x-shellscript; charset=utf-8');
+    res.sendFile(scriptPath);
+  } else {
+    res.status(404).send('#!/bin/bash\necho "Find script not found"\n');
   }
 });
 
