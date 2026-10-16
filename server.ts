@@ -21,6 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set('trust proxy', true); // Trust reverse proxy (Nginx) & VPN interfaces
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
@@ -966,6 +967,7 @@ async function startServer() {
 
   // Optimize timeouts for large document and presentation uploads
   server.setTimeout(30 * 60 * 1000); // 30 minutes
+  server.requestTimeout = 30 * 60 * 1000; // Node 18+ requestTimeout
   server.keepAliveTimeout = 120 * 1000;
   server.headersTimeout = 130 * 1000;
 }

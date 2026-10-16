@@ -78,17 +78,39 @@ pm2 restart docushift --update-env 2>/dev/null || NODE_ENV=production pm2 start 
 pm2 save
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 
-# ۶. تنظیم و ریلود Nginx برای پشتیبانی از آپلود اسناد تا ۱ گیگابایت و استریم بدون بافر
+# ۶. تنظیم و ریلود Nginx برای پشتیبانی از آپلود اسناد تا ۱ گیگابایت و استریم مستقیم بدون بافرینگ مزاحم
 if command -v nginx >/dev/null 2>&1; then
-  echo "--> ۶. پیکربندی Nginx برای پشتیبانی از آپلود نامحدود و استریم بدون بافر..."
+  echo "--> ۶. پیکربندی پیشرفته Nginx برای پشتیبانی از آپلود قطعه‌ای و استریم بدون بافر (سازگار با VPN)..."
   sudo tee /etc/nginx/sites-available/docushift >/dev/null << 'EOF'
 server {
     listen 80;
     server_name _;
 
     client_max_body_size 1024M;
-    client_body_timeout 600s;
-    client_header_timeout 600s;
+    client_body_buffer_size 1M;
+    client_body_timeout 300s;
+    client_header_timeout 300s;
+    send_timeout 300s;
+    keepalive_timeout 300s;
+
+    # استریم مستقیم قطعات آپلود بدون معطلی بافر دیسک در Nginx
+    location ~* ^/api/(upload|jobs) {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        client_max_body_size 1024M;
+    }
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -101,8 +123,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Enable buffering for incoming client upload to prevent mobile TCP stalls, disable response buffering for SSE
-        proxy_request_buffering on;
+        proxy_request_buffering off;
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
@@ -114,9 +135,26 @@ EOF
   sudo nginx -t >/dev/null 2>&1 && sudo systemctl reload nginx 2>/dev/null || true
 fi
 
+# ۷. اعمال بهینه‌سازی شبکه لینوکس جهت پایداری آپلود در حضور تونل‌های VPN (WireGuard, WARP, OpenVPN)
+echo "--> ۷. بهینه‌سازی شبکه سرور و جلوگیری از قطع آپلود در اثر اتصال VPN (rp_filter & MSS Clamping)..."
+sudo sysctl -w net.ipv4.conf.all.rp_filter=2 >/dev/null 2>&1 || true
+sudo sysctl -w net.ipv4.conf.default.rp_filter=2 >/dev/null 2>&1 || true
+
+if command -v iptables >/dev/null 2>&1; then
+  sudo iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+  sudo iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+  sudo iptables -t mangle -D OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+  sudo iptables -t mangle -A OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+fi
+
+# اجرای اسکریپت تخصصی رفع تداخل روتینگ VPN در صورت وجود
+if [ -f "./fix_server_vpn_network.sh" ]; then
+  sudo bash ./fix_server_vpn_network.sh 2>/dev/null || true
+fi
+
 echo ""
 echo "============================================================"
-echo "  ✅ به‌روزرسانی سرور با موفقیت کامل انجام شد!"
+echo "  ✅ به‌روزرسانی سرور و بهینه‌سازی شبکه VPN با موفقیت انجام شد!"
 echo "============================================================"
 pm2 status docushift 2>/dev/null || pm2 status || true
 systemctl is-active ollama 2>/dev/null && echo "  ✅ سرویس مدل محلی (Ollama) دائمی و فعال است." || true

@@ -10,11 +10,11 @@ export interface UploadProgressInfo {
   isDirect?: boolean;
 }
 
-// Files up to 100 MB use direct single-shot turbo stream (instantaneous, 1 request, 2-3 seconds)
-const DIRECT_UPLOAD_THRESHOLD = 100 * 1024 * 1024;
+// Files up to 8 MB use direct single-shot turbo stream (< 1-2 seconds)
+const DIRECT_UPLOAD_THRESHOLD = 8 * 1024 * 1024;
 
-// 10 MB per chunk: Strictly for very large files (> 100MB) or extreme network resilience
-export const CHUNK_SIZE = 10 * 1024 * 1024;
+// 2 MB per chunk: Highly resilient for VPNs, cellular connections, and avoiding MTU packet fragmentation
+export const CHUNK_SIZE = 2 * 1024 * 1024;
 
 const SESSION_STORAGE_PREFIX = 'docushift_upload_session_';
 

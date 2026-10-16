@@ -60,17 +60,20 @@ fi
 echo "✅ پوشه پروژه با موفقیت پیدا شد: $PROJECT_DIR"
 cd "$PROJECT_DIR"
 
-# اطمینان از دسترسی اجرایی به اسکریپت به‌روزرسانی
+# اطمینان از دسترسی به گیت و دریافت آخرین تغییرات
+echo "--> دریافت آخرین تغییرات از گیت‌هاب (Fetch & Pull)..."
+git stash --include-untracked 2>/dev/null || true
+git fetch --all --tags --prune 2>/dev/null || true
+ACTIVE_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+[ "$ACTIVE_BRANCH" = "HEAD" ] || [ -z "$ACTIVE_BRANCH" ] && ACTIVE_BRANCH="main"
+git pull origin "$ACTIVE_BRANCH" 2>/dev/null || git reset --hard "origin/$ACTIVE_BRANCH" 2>/dev/null || git pull origin main 2>/dev/null || git reset --hard origin/main 2>/dev/null || true
+
+# اجرای اسکریپت به‌روزرسانی جامع سرور
 if [ -f "update_vps.sh" ]; then
   chmod +x update_vps.sh
   ./update_vps.sh
 else
-  echo "--> دریافت آخرین تغییرات با git fetch..."
-  git stash --include-untracked 2>/dev/null || true
-  git fetch --all --tags --prune
-  ACTIVE_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-  [ "$ACTIVE_BRANCH" = "HEAD" ] && ACTIVE_BRANCH="main"
-  git pull origin "$ACTIVE_BRANCH" 2>/dev/null || git reset --hard "origin/$ACTIVE_BRANCH"
+  echo "--> نصب وابستگی‌ها و بیلد فرانت‌اند..."
   npm install --legacy-peer-deps
   npm run build
   pm2 restart docushift --update-env 2>/dev/null || pm2 restart all 2>/dev/null || pm2 start "npx tsx server.ts" --name docushift

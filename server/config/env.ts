@@ -23,6 +23,7 @@ export interface AppConfig {
   cacheEnabled: boolean;
   reconstructionRtlEnabled: boolean;
   diagramInpaintingEnabled: boolean;
+  outboundProxy: string;
   port: number;
   isDev: boolean;
 }
@@ -58,6 +59,7 @@ export const config: AppConfig = {
   cacheEnabled: parseBoolean(process.env.CACHE_ENABLED, true),
   reconstructionRtlEnabled: parseBoolean(process.env.RECONSTRUCTION_RTL_ENABLED, true),
   diagramInpaintingEnabled: parseBoolean(process.env.DIAGRAM_INPAINTING_ENABLED, true),
+  outboundProxy: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.ALL_PROXY || '',
   port: parseNumber(process.env.PORT, 3000),
   isDev: process.env.NODE_ENV !== 'production',
 };
@@ -66,6 +68,9 @@ export function validateStartupConfig(): { valid: boolean; warnings: string[] } 
   const warnings: string[] = [];
   if (!config.geminiApiKey) {
     warnings.push('GEMINI_API_KEY is not defined. Offline/Mock translation fallback will be used if set or jobs requiring online translation will be queued.');
+  }
+  if (config.outboundProxy) {
+    console.log(`[NETWORK] Outbound Proxy detected and active: ${config.outboundProxy}`);
   }
   if (config.maxFileSize <= 0) {
     throw new Error('MAX_FILE_SIZE must be greater than 0');

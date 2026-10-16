@@ -49,7 +49,7 @@ pm2 start "npx tsx server.ts" --name docushift
 pm2 save
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 
-# 7. Configure Nginx Reverse Proxy with 1GB upload support
+# 7. Configure Nginx Reverse Proxy with 1GB upload support and zero request buffering for VPN resilience
 echo "--> Configuring Nginx reverse proxy..."
 sudo tee /etc/nginx/sites-available/docushift << 'EOF'
 server {
@@ -57,8 +57,30 @@ server {
     server_name _;
 
     client_max_body_size 1024M;
+    client_body_buffer_size 1M;
     client_body_timeout 300s;
     client_header_timeout 300s;
+    send_timeout 300s;
+    keepalive_timeout 300s;
+
+    # Direct streaming for upload endpoints
+    location ~* ^/api/(upload|jobs) {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        client_max_body_size 1024M;
+    }
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -71,7 +93,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # SSE stream configuration for real-time progress updates
+        proxy_request_buffering off;
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
@@ -82,6 +104,12 @@ EOF
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -sf /etc/nginx/sites-available/docushift /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
+
+# 8. Apply Linux network & VPN routing optimization
+if [ -f "./fix_server_vpn_network.sh" ]; then
+  echo "--> Applying Linux network optimization for VPN compatibility..."
+  sudo bash ./fix_server_vpn_network.sh || true
+fi
 
 echo ""
 echo "============================================================"
