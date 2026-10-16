@@ -49,19 +49,24 @@ pm2 start "npx tsx server.ts" --name docushift
 pm2 save
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 
-# 7. Configure Nginx Reverse Proxy with 1GB upload support and zero request buffering for VPN resilience
-echo "--> Configuring Nginx reverse proxy..."
+# 7. Configure Nginx Reverse Proxy with unlimited upload, safe temp directory, and zero buffering
+echo "--> Configuring Nginx reverse proxy & upload buffer directories..."
+sudo mkdir -p /var/lib/nginx/body /var/cache/nginx/client_temp /tmp/nginx_upload
+sudo chmod -R 777 /var/lib/nginx /tmp/nginx_upload
+sudo chown -R www-data:www-data /var/lib/nginx /tmp/nginx_upload 2>/dev/null || true
+
 sudo tee /etc/nginx/sites-available/docushift << 'EOF'
 server {
     listen 80;
     server_name _;
 
-    client_max_body_size 1024M;
-    client_body_buffer_size 1M;
-    client_body_timeout 300s;
-    client_header_timeout 300s;
-    send_timeout 300s;
-    keepalive_timeout 300s;
+    client_max_body_size 0;
+    client_body_buffer_size 32M;
+    client_body_temp_path /tmp/nginx_upload 1 2;
+    client_body_timeout 600s;
+    client_header_timeout 600s;
+    send_timeout 600s;
+    keepalive_timeout 600s;
 
     # Direct streaming for upload endpoints
     location ~* ^/api/(upload|jobs) {
@@ -79,7 +84,7 @@ server {
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
-        client_max_body_size 1024M;
+        client_max_body_size 0;
     }
 
     location / {
@@ -104,6 +109,16 @@ EOF
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -sf /etc/nginx/sites-available/docushift /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
+
+# Open ports 80 and 3000 in firewall
+if command -v ufw >/dev/null 2>&1; then
+  sudo ufw allow 80/tcp 2>/dev/null || true
+  sudo ufw allow 3000/tcp 2>/dev/null || true
+fi
+if command -v iptables >/dev/null 2>&1; then
+  sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
+  sudo iptables -I INPUT -p tcp --dport 3000 -j ACCEPT 2>/dev/null || true
+fi
 
 # 8. Apply Linux network & VPN routing optimization
 if [ -f "./fix_server_vpn_network.sh" ]; then

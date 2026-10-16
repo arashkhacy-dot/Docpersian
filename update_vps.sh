@@ -78,20 +78,25 @@ pm2 restart docushift --update-env 2>/dev/null || NODE_ENV=production pm2 start 
 pm2 save
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 
-# ۶. تنظیم و ریلود Nginx برای پشتیبانی از آپلود اسناد تا ۱ گیگابایت و استریم مستقیم بدون بافرینگ مزاحم
+# ۶. تنظیم و ریلود Nginx برای پشتیبانی از آپلود اسناد بدون محدودیت حجم و رفع قفل ۱ مگابایت
 if command -v nginx >/dev/null 2>&1; then
-  echo "--> ۶. پیکربندی پیشرفته Nginx برای پشتیبانی از آپلود قطعه‌ای و استریم بدون بافر (سازگار با VPN)..."
+  echo "--> ۶. پیکربندی پیشرفته Nginx و دسترسی بافر دیسک (رفع مشکل گیر کردن آپلود در ۱ مگابایت)..."
+  sudo mkdir -p /var/lib/nginx/body /var/cache/nginx/client_temp /tmp/nginx_upload
+  sudo chmod -R 777 /var/lib/nginx /tmp/nginx_upload
+  sudo chown -R www-data:www-data /var/lib/nginx /tmp/nginx_upload 2>/dev/null || true
+
   sudo tee /etc/nginx/sites-available/docushift >/dev/null << 'EOF'
 server {
     listen 80;
     server_name _;
 
-    client_max_body_size 1024M;
-    client_body_buffer_size 1M;
-    client_body_timeout 300s;
-    client_header_timeout 300s;
-    send_timeout 300s;
-    keepalive_timeout 300s;
+    client_max_body_size 0;
+    client_body_buffer_size 32M;
+    client_body_temp_path /tmp/nginx_upload 1 2;
+    client_body_timeout 600s;
+    client_header_timeout 600s;
+    send_timeout 600s;
+    keepalive_timeout 600s;
 
     # استریم مستقیم قطعات آپلود بدون معطلی بافر دیسک در Nginx
     location ~* ^/api/(upload|jobs) {
@@ -109,7 +114,7 @@ server {
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
-        client_max_body_size 1024M;
+        client_max_body_size 0;
     }
 
     location / {
@@ -133,6 +138,16 @@ EOF
   sudo ln -sf /etc/nginx/sites-available/docushift /etc/nginx/sites-enabled/docushift 2>/dev/null || true
   sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
   sudo nginx -t >/dev/null 2>&1 && sudo systemctl reload nginx 2>/dev/null || true
+
+  # اطمینان از باز بودن پورت ۳۰۰۰ جهت اتصال مستقیم بدون واسطه Nginx در فایروال
+  if command -v ufw >/dev/null 2>&1; then
+    sudo ufw allow 80/tcp 2>/dev/null || true
+    sudo ufw allow 3000/tcp 2>/dev/null || true
+  fi
+  if command -v iptables >/dev/null 2>&1; then
+    sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
+    sudo iptables -I INPUT -p tcp --dport 3000 -j ACCEPT 2>/dev/null || true
+  fi
 fi
 
 # ۷. اعمال بهینه‌سازی شبکه لینوکس جهت پایداری آپلود در حضور تونل‌های VPN (WireGuard, WARP, OpenVPN)
