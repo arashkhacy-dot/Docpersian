@@ -353,8 +353,8 @@ export class PPTXProcessor implements DocumentProcessor {
     try {
       const scriptPath = path.resolve(process.cwd(), 'scripts/python_doc_tools.py');
       if (!fs.existsSync(scriptPath)) return false;
-      const { stdout } = await execPromise(`python3 "${scriptPath}" --type pptx --help`, { timeout: 4000 });
-      return stdout.includes('DocuShift');
+      const { stdout } = await execPromise(`python3 -c "import pptx; print('ok')"`, { timeout: 4000 });
+      return stdout.includes('ok');
     } catch {
       return false;
     }

@@ -143,7 +143,8 @@ export default function App() {
               prev.currentStage === freshJob.currentStage &&
               prev.processedItems === freshJob.processedItems &&
               prev.progress === freshJob.progress &&
-              prev.currentOperation === freshJob.currentOperation
+              prev.currentOperation === freshJob.currentOperation &&
+              (prev.debugLogs?.length || 0) === (freshJob.debugLogs?.length || 0)
             ) {
               return prev; // Identical state -> keep reference, zero re-renders!
             }

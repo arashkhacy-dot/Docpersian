@@ -44,29 +44,52 @@ export function extractBlockTranslation(fullText: string, blockId: number, total
   let capturing = false;
   const capturedLines: string[] = [];
 
-  for (const rawLine of lines) {
+  const parseLineHeaderId = (rawLine: string): { id: number; rest: string } | null => {
     const line = rawLine.trim();
+    if (!line) return null;
+    // Strip leading markdown bullets, dashes, hashes, blockquotes, asterisks
+    const cleaned = line.replace(/^(?:[\*\-\#\>\s\•\●])+/g, '').trim();
 
-    // Match all block headers: [B1], [BLOCK 1], [بخش 1], [بخش ۱ (هشدار ایمنی)], [1], [۱], B1:, بخش 1:, 1-, 1.
-    const headerMatch = line.match(
-      /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*\.\-]*[\]\):\*\.\-]+[\s:：-]*(.*)$/i
-    );
+    // Pattern 1: [B1], **[B1]**, [BLOCK 1], [بخش ۱], [قسمت ۱], [بلوک ۱], [1], [۱]
+    const p1 = /^(?:\*\*|\*|_)?\[\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]]*\](?:\*\*|\*|_)?[:：\s-]*(.*)$/i;
+    let m = cleaned.match(p1);
+    if (m) {
+      const rest = m[2].replace(/^(?:\*\*|\*|_|:|\s)+/, '').replace(/(?:\*\*|\*|_|\s)+$/, '').trim();
+      return { id: parseInt(toAsciiDigits(m[1]), 10), rest };
+    }
 
-    if (headerMatch) {
-      const num = parseInt(toAsciiDigits(headerMatch[1]), 10);
-      if (num === blockId) {
+    // Pattern 2: B1:, **B1:**, B1 -, BLOCK 1:, بخش ۱:, قسمت ۱:, بلوک ۱:
+    const p2 = /^(?:\*\*|\*|_)?(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)(?:\*\*|\*|_)?[:：\s-]+(.*)$/i;
+    m = cleaned.match(p2);
+    if (m) {
+      const rest = m[2].replace(/^(?:\*\*|\*|_|:|\s)+/, '').replace(/(?:\*\*|\*|_|\s)+$/, '').trim();
+      return { id: parseInt(toAsciiDigits(m[1]), 10), rest };
+    }
+
+    // Pattern 3: Numbered list style: 1. , 1- , 1: , (1) , ۱. , ۱-
+    const p3 = /^(?:\*\*|\*|_)?\(?([\d\u06F0-\u06F9\u0660-\u0669]+)\)?(?:\*\*|\*|_)?[\.\:\：\-][\s]*(.*)$/;
+    m = cleaned.match(p3);
+    if (m) {
+      const rest = m[2].replace(/^(?:\*\*|\*|_|:|\s)+/, '').replace(/(?:\*\*|\*|_|\s)+$/, '').trim();
+      return { id: parseInt(toAsciiDigits(m[1]), 10), rest };
+    }
+
+    return null;
+  };
+
+  for (const rawLine of lines) {
+    const header = parseLineHeaderId(rawLine);
+    if (header) {
+      if (header.id === blockId) {
         capturing = true;
-        const rest = headerMatch[2].replace(/^[\]\)\s:：-]+/, '').trim();
-        if (rest) capturedLines.push(rest);
+        if (header.rest) capturedLines.push(header.rest);
         continue;
       } else if (capturing) {
         break;
       }
-    }
-
-    if (capturing) {
-      // Check if this line is a new block marker that didn't stop in regex
-      const isNextMarker = /^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]\):\*\.\-]*[\]\):\*\.\-]+/i.test(line);
+    } else if (capturing) {
+      // Check if this line is another block marker that didn't stop in regex
+      const isNextMarker = parseLineHeaderId(rawLine);
       if (isNextMarker && capturedLines.length > 0) {
         break;
       }
@@ -83,16 +106,20 @@ export function extractBlockTranslation(fullText: string, blockId: number, total
   const doubleNewlineParas = fullText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
   if (blockId - 1 >= 0 && blockId - 1 < doubleNewlineParas.length) {
     const candidate = doubleNewlineParas[blockId - 1]
-      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
+      .replace(/^(?:[\*\-\#\>\s\•\●])+/g, '')
+      .replace(/^(?:\*\*|\*|_)?\[\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]]*\](?:\*\*|\*|_)?[:：\s-]*/i, '')
+      .replace(/^(?:\*\*|\*|_)?(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+(?:\*\*|\*|_)?[:：\s-]*/i, '')
       .trim();
     if (candidate) return candidate;
   }
 
   // Fallback 2: Single newline splitting (for tables, short snippets, or tagless AI outputs)
-  const singleNewlineLines = fullText.split(/\r?\n/).map((p) => p.trim()).filter(Boolean);
+  const singleNewlineLines = lines.map((p) => p.trim()).filter(Boolean);
   if (blockId - 1 >= 0 && blockId - 1 < singleNewlineLines.length) {
     const candidate = singleNewlineLines[blockId - 1]
-      .replace(/^(?:\[|\(|\*\*|#)?\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]\):\*]*[\]\):\*]+[:：\s-]*/i, '')
+      .replace(/^(?:[\*\-\#\>\s\•\●])+/g, '')
+      .replace(/^(?:\*\*|\*|_)?\[\s*(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)?\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+[^\]]*\](?:\*\*|\*|_)?[:：\s-]*/i, '')
+      .replace(/^(?:\*\*|\*|_)?(?:B|BLOCK|بخش|قسمت|بلوک|BOX|واحد)\s*[-_]?\s*[\d\u06F0-\u06F9\u0660-\u0669]+(?:\*\*|\*|_)?[:：\s-]*/i, '')
       .trim();
     if (candidate) return candidate;
   }
@@ -511,50 +538,92 @@ export function renderSpatialBlocks(
   const fontReg = fontFamily.regular || fontFamily;
   const fontBold = fontFamily.bold || fontReg;
 
+  const pageText = translatedResultsMap.get(`page_${pageIndex}`) || '';
+
+  // 1. Gather translations for each block
+  const blockTranslations = new Map<number, string>();
+  for (const block of blocks) {
+    let rawFa = translatedResultsMap.get(`p${pageIndex}_b${block.id}`);
+    if (!rawFa && pageText) {
+      rawFa = extractBlockTranslation(pageText, block.id, blocks.length) || undefined;
+    }
+    if (rawFa && /[\u0600-\u06FF]/.test(rawFa)) {
+      blockTranslations.set(block.id, rawFa);
+    }
+  }
+
+  // Fallback: If AI merged blocks or omitted markers, map sequential paragraphs to blocks
+  if (blockTranslations.size === 0 && pageText && /[\u0600-\u06FF]/.test(pageText)) {
+    const paras = pageText.split(/\r?\n\r?\n/).map((p) => p.trim()).filter(Boolean);
+    for (let idx = 0; idx < blocks.length; idx++) {
+      if (idx < paras.length) {
+        blockTranslations.set(blocks[idx].id, paras[idx]);
+      }
+    }
+  }
+
+  if (blockTranslations.size === 0) {
+    return false;
+  }
+
   let persianBlocksCount = 0;
 
   for (const block of blocks) {
-    // 1. Fetch exact translation for this block
-    let rawFa = translatedResultsMap.get(`p${pageIndex}_b${block.id}`);
-    if (!rawFa) {
-      const pageText = translatedResultsMap.get(`page_${pageIndex}`);
-      if (pageText) {
-        rawFa = extractBlockTranslation(pageText, block.id, blocks.length) || undefined;
-      }
-    }
-    
-    // Only render blocks that have genuine Persian translation to prevent rendering English or blank content
-    const hasPersian = !!rawFa && /[\u0600-\u06FF]/.test(rawFa);
-    if (!hasPersian) continue;
+    const rawFa = blockTranslations.get(block.id);
+    if (!rawFa) continue;
 
-    const healed = sanitizePersianSymbols(healPersianSpaces(rawFa!));
+    const healed = sanitizePersianSymbols(healPersianSpaces(rawFa));
     if (!healed || !healed.trim()) continue;
 
-    // 2. Physical Container Bounding Box
-    const leftMargin = Math.max(14, block.minX);
-    const rightX = Math.min(pageWidth - 14, Math.max(leftMargin + 30, block.maxX));
+    // Physical Container Bounding Box
+    const leftMargin = Math.max(12, block.minX);
+    const rightX = Math.min(pageWidth - 12, Math.max(leftMargin + 30, block.maxX));
     const containerWidth = Math.max(30, rightX - leftMargin);
 
+    const boxX = Math.max(6, block.minX - 3);
+    const boxY = Math.max(6, block.minY - 3);
+    const boxW = Math.min(pageWidth - boxX - 6, Math.max(containerWidth + 6, block.width + 6));
+    const boxH = Math.min(pageHeight - boxY - 6, Math.max(16, block.height + 6));
+
+    // CRITICAL: Clean erase of underlying English text and vector artifacts
+    page.drawRectangle({
+      x: boxX,
+      y: boxY,
+      width: boxW,
+      height: boxH,
+      color: block.isWarning ? rgb(1.0, 0.96, 0.95) : rgb(1, 1, 1),
+      opacity: 0.98,
+    });
+
+    if (block.isWarning) {
+      page.drawLine({
+        start: { x: rightX + 2, y: boxY },
+        end: { x: rightX + 2, y: boxY + boxH },
+        thickness: 2.5,
+        color: rgb(0.85, 0.20, 0.15),
+      });
+    }
+
     // Initial font metrics
-    let fontSize = Math.min(10.0, Math.max(6.5, block.fontSize || 9.0));
+    let fontSize = Math.min(10.5, Math.max(6.5, block.fontSize || 9.0));
     let lineHeight = Math.round(fontSize * 1.30 * 10) / 10;
     const fontToUse = block.isWarning ? fontBold : fontReg;
 
     let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
 
     // Dynamic Height Fitting
-    const availableH = Math.max(28, block.height + 12);
+    const availableH = Math.max(22, block.height + 8);
     while (wrappedLines.length * lineHeight > availableH && fontSize > 4.8) {
       fontSize -= 0.3;
-      lineHeight = Math.round(fontSize * 1.28 * 10) / 10;
+      lineHeight = Math.round(fontSize * 1.25 * 10) / 10;
       wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
     }
 
-    let curY = Math.min(pageHeight - 20, block.maxY - (block.isWarning && block.height > 35 ? 4 : 2));
+    let curY = Math.min(pageHeight - 16, block.maxY - fontSize * 0.85);
     const color = block.isWarning ? rgb(0.85, 0.12, 0.10) : rgb(0.10, 0.14, 0.22);
 
     for (const line of wrappedLines) {
-      if (curY < 12) break;
+      if (curY < 8) break;
       drawSegmentedRtlLine(
         page,
         line,
@@ -572,8 +641,7 @@ export function renderSpatialBlocks(
     persianBlocksCount++;
   }
 
-  // Require at least 50% coverage of blocks with verified Persian translations
-  return persianBlocksCount >= Math.max(1, Math.floor(blocks.length * 0.5));
+  return persianBlocksCount > 0;
 }
 
 function renderInPlaceLines(
@@ -814,26 +882,47 @@ function wrapPersianText(text: string, font: any, fontSize: number, maxWidth: nu
 }
 
 function getStreamObjects(page: any, doc: any): any[] {
+  const list: any[] = [];
   try {
     const contents = page.node.Contents();
-    if (!contents) return [];
-    const resolved = doc.context.lookup(contents);
-    if (!resolved) return [];
-
-    if (resolved.constructor.name === 'PDFArray' || typeof (resolved as any).size === 'function') {
-      const list: any[] = [];
-      const size = typeof (resolved as any).size === 'function' ? (resolved as any).size() : (resolved as any).array?.length || 0;
-      for (let i = 0; i < size; i++) {
-        const ref = (resolved as any).get ? (resolved as any).get(i) : (resolved as any).array[i];
-        const s = doc.context.lookup(ref);
-        if (s) list.push(s);
+    if (contents) {
+      const resolved = doc.context.lookup(contents);
+      if (resolved) {
+        if (resolved.constructor.name === 'PDFArray' || typeof (resolved as any).size === 'function') {
+          const size = typeof (resolved as any).size === 'function' ? (resolved as any).size() : (resolved as any).array?.length || 0;
+          for (let i = 0; i < size; i++) {
+            const ref = (resolved as any).get ? (resolved as any).get(i) : (resolved as any).array[i];
+            const s = doc.context.lookup(ref);
+            if (s) list.push(s);
+          }
+        } else {
+          list.push(resolved);
+        }
       }
-      return list;
     }
-    return [resolved];
-  } catch {
-    return [];
-  }
+
+    // Also scan Form XObjects in /Resources which often hold vector text
+    const resources = page.node.Resources ? page.node.Resources() : null;
+    if (resources) {
+      const resObj = doc.context.lookup(resources);
+      const xObj = resObj?.get ? resObj.get(PDFName.of('XObject')) : null;
+      if (xObj) {
+        const xObjResolved = doc.context.lookup(xObj);
+        if (xObjResolved && xObjResolved.dict) {
+          for (const [, ref] of xObjResolved.dict.entries()) {
+            const obj = doc.context.lookup(ref);
+            if (obj && (typeof (obj as any).getContents === 'function' || (obj as any).contents)) {
+              const subtype = obj.dict?.get(PDFName.of('Subtype'))?.toString();
+              if (subtype === '/Form' || subtype === 'Form') {
+                list.push(obj);
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+  return list;
 }
 
 function stripTextFromPageStreams(
@@ -865,19 +954,30 @@ function stripTextFromPageStreams(
 
       if (!rawBytes || rawBytes.length === 0) continue;
 
-      let decompressed: Buffer;
-      let isCompressed = false;
+      let decompressed: Buffer | null = null;
+      let compressionType: 'inflate' | 'inflateRaw' | 'none' = 'none';
+
       try {
         decompressed = zlib.inflateSync(Buffer.from(rawBytes));
-        isCompressed = true;
+        compressionType = 'inflate';
       } catch {
-        decompressed = Buffer.from(rawBytes);
+        try {
+          decompressed = zlib.inflateRawSync(Buffer.from(rawBytes));
+          compressionType = 'inflateRaw';
+        } catch {
+          try {
+            decompressed = zlib.unzipSync(Buffer.from(rawBytes));
+            compressionType = 'inflate';
+          } catch {
+            decompressed = Buffer.from(rawBytes);
+            compressionType = 'none';
+          }
+        }
       }
 
       const streamText = decompressed.toString('latin1');
 
       // 1. Detect images and their vertical positions
-      // cm transformation matrix: a b c d e f cm ... /Name Do
       const cmDoRegex = /([-+]?\d*\.?\d+)\s+[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+cm\s*(?:[^\n\r]*?)?\/([^\s\/]+)\s+Do/g;
       let imgM: RegExpExecArray | null;
       while ((imgM = cmDoRegex.exec(streamText)) !== null) {
@@ -896,7 +996,6 @@ function stripTextFromPageStreams(
       }
 
       // 2. Detect text vertical positions before stripping
-      // Match 6-param Tm: a b c d e f Tm (f is y-position)
       const tm6Regex = /[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+[-+]?\d*\.?\d+\s+([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s+Tm/g;
       let m: RegExpExecArray | null;
       while ((m = tm6Regex.exec(streamText)) !== null) {
@@ -906,7 +1005,6 @@ function stripTextFromPageStreams(
         }
       }
 
-      // Match 2-param Td or TD: tx ty Td
       const tdRegex = /[-+]?\d*\.?\d+\s+([-+]?\d*\.?\d+)\s+(?:Td|TD)/g;
       while ((m = tdRegex.exec(streamText)) !== null) {
         const y = parseFloat(m[1]);
@@ -918,10 +1016,20 @@ function stripTextFromPageStreams(
       // 3. Strip all BT ... ET text blocks
       const stripped = streamText.replace(/BT[\s\S]*?ET/g, '');
 
-      // Recompress and update stream
-      const newBytes = isCompressed
-        ? zlib.deflateSync(Buffer.from(stripped, 'latin1'))
-        : Buffer.from(stripped, 'latin1');
+      // Recompress with correct algorithm
+      let newBytes: Buffer;
+      if (compressionType === 'inflate') {
+        newBytes = zlib.deflateSync(Buffer.from(stripped, 'latin1'));
+      } else if (compressionType === 'inflateRaw') {
+        newBytes = zlib.deflateRawSync(Buffer.from(stripped, 'latin1'));
+      } else {
+        const hasFlate = streamObj.dict?.get?.(PDFName.of('Filter'))?.toString()?.includes('Flate');
+        if (hasFlate) {
+          newBytes = zlib.deflateSync(Buffer.from(stripped, 'latin1'));
+        } else {
+          newBytes = Buffer.from(stripped, 'latin1');
+        }
+      }
 
       (streamObj as any).contents = new Uint8Array(newBytes);
       if ((streamObj as any).dict) {
@@ -1340,10 +1448,33 @@ function renderPersianTextToPage(
       return total;
     };
 
-    while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 6.8) {
-      fontSize -= 0.25;
-      lineHeight = Math.round(fontSize * 1.35 * 10) / 10;
-      paragraphGap = Math.max(2.0, paragraphGap - 0.25);
+    while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 5.0) {
+      fontSize -= 0.20;
+      lineHeight = Math.round(fontSize * 1.25 * 10) / 10;
+      paragraphGap = Math.max(1.5, paragraphGap - 0.30);
+    }
+
+    // Clean erase of underlying text area to prevent old English from showing through
+    if (sourceLines && sourceLines.length > 0) {
+      for (const line of sourceLines) {
+        page.drawRectangle({
+          x: Math.max(marginX - 2, line.x - 2),
+          y: Math.max(16, line.y - 2),
+          width: Math.min(contentWidth + 4, line.width + 4),
+          height: Math.max(12, line.height + 4),
+          color: rgb(1, 1, 1),
+          opacity: 0.98,
+        });
+      }
+    } else if (textBounds.maxY !== null && textBounds.minY !== null) {
+      page.drawRectangle({
+        x: marginX - 2,
+        y: Math.max(bottomMargin - 2, textBounds.minY - 4),
+        width: contentWidth + 4,
+        height: Math.min(height - bottomMargin, textBounds.maxY - textBounds.minY + 12),
+        color: rgb(1, 1, 1),
+        opacity: 0.98,
+      });
     }
 
     for (let uIdx = 0; uIdx < listParas.length; uIdx++) {
@@ -1391,19 +1522,9 @@ function renderPersianTextToPage(
         color = rgb(0.10, 0.35, 0.65);
       }
 
-      // Draw professional warning/danger/notice box with subtle background and crisp border
-      // Only when there is substantive warning text to prevent drawing empty placeholder boxes
-      const warningBody = p.replace(/^(?:هشدار|خطر|نکته|توجه|احتیاط|WARNING|CAUTION|NOTE)\s*[\:：]?/i, '').trim();
-      const hasSubstantiveWarning = warningBody.length >= 3;
-
-      if (isNoticeWarning && lines.length > 0 && hasSubstantiveWarning) {
-        // Do not draw opaque background boxes that obliterate existing vector boxes/diagrams
-        // Warning text will be rendered in prominent bold warning color
-      }
-
       for (let lIdx = 0; lIdx < lines.length; lIdx++) {
         const line = lines[lIdx];
-        if (curY < 24) break;
+        if (curY < 12) break;
         // Refined book paragraph indentation (12 points) on first line of narrative paragraphs
         const isNarrativeBody = !isHeading && !isNoticeWarning && !isPoemLine && !p.startsWith('-') && !p.startsWith('•') && !/^\d+[\.\-]/.test(p);
         const lineRightX = (isNarrativeBody && lIdx === 0 && lines.length > 1) ? effectiveRightX - 12 : effectiveRightX;
@@ -1413,7 +1534,7 @@ function renderPersianTextToPage(
       }
 
       curY -= isHeading ? paragraphGap + 3 : isPoemLine ? paragraphGap - 1 : paragraphGap;
-      if (curY < 24) break;
+      if (curY < 12) break;
     }
   }
 
@@ -1665,12 +1786,10 @@ export class PDFProcessor implements DocumentProcessor {
   }> {
     const fileBytes = await fs.promises.readFile(inputFilePath);
     let pageCount = 1;
-    let pageTexts: string[] = [];
 
     try {
       const pdfDoc = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
       pageCount = Math.max(1, pdfDoc.getPageCount());
-      pageTexts = await this.fastExtractAllPageTexts(inputFilePath, pdfDoc);
     } catch {
       // Robust fallback to PDFParse if pdf-lib encountered any parsing nuance
       try {
@@ -1678,34 +1797,28 @@ export class PDFProcessor implements DocumentProcessor {
         const parsed = await parser.getText();
         if (parsed && Array.isArray(parsed.pages) && parsed.pages.length > 0) {
           pageCount = parsed.pages.length;
-          pageTexts = parsed.pages.map((p: any) => (p.text || '').trim());
         }
       } catch {
         pageCount = 1;
-        pageTexts = [''];
       }
     }
 
     const initialManifest: PageManifestItem[] = [];
-    let totalWords = 0;
+    const estimatedWordsPerPage = 120;
 
     for (let i = 0; i < pageCount; i++) {
-      const pageText = pageTexts[i] || '';
-      const words = pageText.split(/\s+/).filter(Boolean).length;
-      totalWords += words;
-
       initialManifest.push({
         index: i + 1,
         status: 'pending',
         hasTranslatableText: true,
-        wordCount: words,
+        wordCount: estimatedWordsPerPage,
         retryAttempts: 0,
       });
     }
 
     return {
       itemCount: pageCount,
-      totalWords,
+      totalWords: pageCount * estimatedWordsPerPage,
       initialManifest,
       detectedType: 'pdf',
     };
@@ -2112,22 +2225,23 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // 3. Two-Column Manual Layout (strictly for genuine 2-column documentation)
-      if (!renderedInPlace && layoutAnalysis.isTwoColumn && blocks.length >= 2) {
-        const sortedBlocks = [...blocks];
-        const midX = page.getWidth() * 0.50;
-        const spanning = sortedBlocks.filter((b) => b.minX < midX - 25 && b.maxX > midX + 25);
-        const rightCol = sortedBlocks.filter((b) => b.minX >= midX - 25);
-        const leftCol = sortedBlocks.filter((b) => b.maxX <= midX + 25 && b.minX < midX - 25);
-        rightCol.sort((a, b) => b.maxY - a.maxY);
-        leftCol.sort((a, b) => b.maxY - a.maxY);
-        spanning.sort((a, b) => b.maxY - a.maxY);
+      // 3. High-Fidelity Spatial Blocks Placement (Primary layout engine for manuals, reports, forms, and structured documents)
+      if (!renderedInPlace && blocks.length > 0) {
+        let sortedBlocks = [...blocks];
+        if (layoutAnalysis.isTwoColumn && blocks.length >= 2) {
+          const midX = page.getWidth() * 0.50;
+          const spanning = sortedBlocks.filter((b) => b.minX < midX - 25 && b.maxX > midX + 25);
+          const rightCol = sortedBlocks.filter((b) => b.minX >= midX - 25);
+          const leftCol = sortedBlocks.filter((b) => b.maxX <= midX + 25 && b.minX < midX - 25);
+          rightCol.sort((a, b) => b.maxY - a.maxY);
+          leftCol.sort((a, b) => b.maxY - a.maxY);
+          spanning.sort((a, b) => b.maxY - a.maxY);
 
-        const topSpanning = spanning.filter((b) => b.maxY > page.getHeight() * 0.65);
-        const bottomSpanning = spanning.filter((b) => b.maxY <= page.getHeight() * 0.65);
+          const topSpanning = spanning.filter((b) => b.maxY > page.getHeight() * 0.65);
+          const bottomSpanning = spanning.filter((b) => b.maxY <= page.getHeight() * 0.65);
 
-        sortedBlocks.length = 0;
-        sortedBlocks.push(...topSpanning, ...rightCol, ...leftCol, ...bottomSpanning);
+          sortedBlocks = [...topSpanning, ...rightCol, ...leftCol, ...bottomSpanning];
+        }
 
         renderedSpatial = renderSpatialBlocks(
           page,
