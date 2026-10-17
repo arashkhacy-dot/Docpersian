@@ -1448,33 +1448,37 @@ function renderPersianTextToPage(
       return total;
     };
 
-    while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 5.0) {
-      fontSize -= 0.20;
-      lineHeight = Math.round(fontSize * 1.25 * 10) / 10;
-      paragraphGap = Math.max(1.5, paragraphGap - 0.30);
+    while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 4.2) {
+      fontSize -= 0.15;
+      lineHeight = Math.max(5.4, Math.round(fontSize * 1.20 * 10) / 10);
+      paragraphGap = Math.max(0.8, paragraphGap - 0.25);
     }
 
     // Clean erase of underlying text area to prevent old English from showing through
+    const eraseTopY = Math.min(height - 24, startY + 6);
+    const eraseBottomY = Math.max(bottomMargin - 4, 18);
+    const eraseHeight = Math.max(20, eraseTopY - eraseBottomY);
+
+    page.drawRectangle({
+      x: Math.max(8, marginX - 4),
+      y: eraseBottomY,
+      width: Math.min(width - 16, contentWidth + 8),
+      height: eraseHeight,
+      color: rgb(1, 1, 1),
+      opacity: 0.98,
+    });
+
     if (sourceLines && sourceLines.length > 0) {
       for (const line of sourceLines) {
         page.drawRectangle({
-          x: Math.max(marginX - 2, line.x - 2),
-          y: Math.max(16, line.y - 2),
-          width: Math.min(contentWidth + 4, line.width + 4),
-          height: Math.max(12, line.height + 4),
+          x: Math.max(marginX - 4, line.x - 3),
+          y: Math.max(12, line.y - 3),
+          width: Math.min(contentWidth + 8, line.width + 6),
+          height: Math.max(14, line.height + 6),
           color: rgb(1, 1, 1),
-          opacity: 0.98,
+          opacity: 1.0,
         });
       }
-    } else if (textBounds.maxY !== null && textBounds.minY !== null) {
-      page.drawRectangle({
-        x: marginX - 2,
-        y: Math.max(bottomMargin - 2, textBounds.minY - 4),
-        width: contentWidth + 4,
-        height: Math.min(height - bottomMargin, textBounds.maxY - textBounds.minY + 12),
-        color: rgb(1, 1, 1),
-        opacity: 0.98,
-      });
     }
 
     for (let uIdx = 0; uIdx < listParas.length; uIdx++) {
@@ -2170,8 +2174,8 @@ export class PDFProcessor implements DocumentProcessor {
       const blocks = pageBlocksMap.get(pageIndex) || [];
       let renderedInPlace = !isActuallyTranslated; // If not translated, original layout is already pristine!
 
-      // 1. Check if this page has an inpainted diagram image with directly embedded Persian labels
-      if (inpaintedPageImagesMap.has(pageIndex)) {
+      // 1. Check if this page has an inpainted diagram image with directly embedded Persian labels (ONLY for purely scanned documents without vector text)
+      if (isScannedDocument && inpaintedPageImagesMap.has(pageIndex)) {
         try {
           const inpaintBuf = inpaintedPageImagesMap.get(pageIndex)!;
           const embeddedImg = await outputDoc.embedJpg(inpaintBuf);
