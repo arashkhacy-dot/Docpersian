@@ -38,9 +38,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Initialize storage and ensure high-fidelity Persian font
-await defaultStorage.init();
-await ensurePersianFont().catch((err) => console.warn('[FONT_INIT_WARNING]', err));
+// Startup configuration validation
 const startupCheck = validateStartupConfig();
 if (startupCheck.warnings.length > 0) {
   console.warn('[CONFIG_WARNINGS]', startupCheck.warnings);
@@ -464,16 +462,25 @@ app.post('/api/jobs/import-url', async (req: Request, res: Response) => {
   }
 });
 
-// 2. List Recent Jobs
+// Helper to serialize job summary for list view (prevents multi-megabyte JSON payloads)
+function serializeJobSummaryForList(job: JobState) {
+  const { pageTranslations, translatedText, ...rest } = job;
+  return {
+    ...rest,
+    debugLogs: (job.debugLogs || []).slice(-10),
+  };
+}
+
+// 2. List Recent Jobs (Optimized lightweight list)
 app.get('/api/jobs', async (_req: Request, res: Response) => {
   const jobs = await defaultJobQueue.listRecentJobs();
-  res.json(jobs);
+  res.json(jobs.map(serializeJobSummaryForList));
 });
 
 // 2.1 Alias for recent jobs
 app.get('/api/jobs/recent', async (_req: Request, res: Response) => {
   const jobs = await defaultJobQueue.listRecentJobs();
-  res.json(jobs);
+  res.json(jobs.map(serializeJobSummaryForList));
 });
 
 // Helper to serialize job state cleanly for client UI (omits text dumps during in-flight processing, includes on completion)
@@ -855,11 +862,11 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // Engine Settings endpoints (Gemini vs Local Private Server)
-app.get('/api/settings/engine', (_req: Request, res: Response) => {
+app.get(['/api/settings/engine', '/api/engine/settings'], (_req: Request, res: Response) => {
   res.json(defaultTranslator.getEngineSettings());
 });
 
-app.post('/api/settings/engine', (req: Request, res: Response) => {
+app.post(['/api/settings/engine', '/api/engine/settings'], (req: Request, res: Response) => {
   const { engine, localUrl, localModel, diagramInpainting } = req.body;
   if (engine !== 'gemini' && engine !== 'local') {
     res.status(400).json({ error: 'موتور باید gemini یا local باشد.' });
@@ -874,9 +881,14 @@ app.post('/api/settings/engine', (req: Request, res: Response) => {
   res.json({ success: true, settings: defaultTranslator.getEngineSettings() });
 });
 
-app.post('/api/settings/test-local', async (req: Request, res: Response) => {
+app.post(['/api/settings/test-local', '/api/engine/test-local'], async (req: Request, res: Response) => {
   const { localUrl, localModel } = req.body;
   const result = await defaultTranslator.testLocalConnection(localUrl, localModel);
+  res.json(result);
+});
+
+app.post(['/api/settings/test-gemini', '/api/engine/test-gemini'], async (_req: Request, res: Response) => {
+  const result = await defaultTranslator.testGeminiConnection();
   res.json(result);
 });
 
@@ -910,11 +922,14 @@ app.get(['/setup-vps.sh', '/setup.sh', '/api/setup.sh'], (_req: Request, res: Re
   }
 });
 
-app.get(['/update_vps.sh', '/update.sh', '/api/update.sh'], (_req: Request, res: Response) => {
-  const scriptPath = path.join(process.cwd(), 'update_vps.sh');
-  if (fs.existsSync(scriptPath)) {
+app.get(['/update_vps.sh', '/update.sh', '/api/update.sh', '/update_direct.sh', '/patch.sh', '/patch_docushift.sh'], (_req: Request, res: Response) => {
+  const patchPath = path.join(process.cwd(), 'patch_docushift.sh');
+  const directPath = path.join(process.cwd(), 'update_direct.sh');
+  const fallbackPath = path.join(process.cwd(), 'update_vps.sh');
+  const target = fs.existsSync(patchPath) ? patchPath : (fs.existsSync(directPath) ? directPath : fallbackPath);
+  if (fs.existsSync(target)) {
     res.setHeader('Content-Type', 'text/x-shellscript; charset=utf-8');
-    res.sendFile(scriptPath);
+    res.sendFile(target);
   } else {
     res.status(404).send('#!/bin/bash\necho "Update script not found"\n');
   }
@@ -937,6 +952,17 @@ app.get(['/find_and_update.sh', '/find.sh'], (_req: Request, res: Response) => {
     res.sendFile(scriptPath);
   } else {
     res.status(404).send('#!/bin/bash\necho "Find script not found"\n');
+  }
+});
+
+app.get(['/bundle.tar.gz', '/api/sync/bundle.tar.gz', '/latest.tar.gz'], (_req: Request, res: Response) => {
+  const bundlePath = path.join(process.cwd(), 'public', 'bundle.tar.gz');
+  if (fs.existsSync(bundlePath)) {
+    res.setHeader('Content-Type', 'application/gzip');
+    res.setHeader('Content-Disposition', 'attachment; filename="docpersian-latest.tar.gz"');
+    res.sendFile(bundlePath);
+  } else {
+    res.status(404).send('Bundle not found');
   }
 });
 
@@ -967,6 +993,9 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 // ================= FRONTEND / VITE SERVING =================
 async function startServer() {
+  await defaultStorage.init();
+  await ensurePersianFont().catch((err) => console.warn('[FONT_INIT_WARNING]', err));
+
   const distPath = path.resolve(__dirname, 'dist');
   const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
 

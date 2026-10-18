@@ -114,6 +114,19 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
     }
   };
 
+  const handleRemoveFile = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setSelectedFile(null);
+    setExistingSession(null);
+    setError(null);
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (e.target.files && e.target.files[0]) {
@@ -214,23 +227,25 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            className={`relative block border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 select-none ${
+            className={`relative block border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all duration-200 select-none ${
               dragActive
                 ? 'border-indigo-500 bg-indigo-500/10 scale-[1.01]'
                 : selectedFile
                 ? 'border-emerald-500/50 bg-emerald-500/5'
-                : 'border-slate-700 bg-slate-900/50 hover:border-slate-500 hover:bg-slate-800/40'
+                : 'border-slate-700 bg-slate-900/50 hover:border-slate-500 hover:bg-slate-800/40 cursor-pointer'
             }`}
           >
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".pdf,.docx,.pptx,application/pdf"
-              onChange={handleChange}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              disabled={isUploading}
-            />
+            {/* Native file input overlay is active ONLY when no file is selected */}
+            {!selectedFile && (
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf,.docx,.pptx,application/pdf"
+                onChange={handleChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                disabled={isUploading}
+              />
+            )}
 
             {selectedFile ? (
               <div className="flex flex-col items-center space-y-4">
@@ -243,10 +258,19 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                   </h3>
                   <p className="text-xs text-slate-400 font-medium">{formatFileSize(selectedFile.size)}</p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  فایل آماده پردازش است (کلیک برای تغییر)
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    فایل انتخاب شده و آماده ارسال است
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="relative z-20 text-xs text-rose-400 hover:text-rose-300 hover:underline px-2 py-0.5 cursor-pointer"
+                  >
+                    حذف یا انتخاب فایل دیگر
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center space-y-4">

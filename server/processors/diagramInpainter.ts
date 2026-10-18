@@ -138,17 +138,17 @@ export class DiagramInpainter {
         const fontSize = Math.max(10, Math.min(36, Math.round(boxH * 0.72)));
         const visualText = formatPersianVisualText(lbl.translatedText);
 
-        // A. Inpaint / wipe original English text with background patch
+        // A. Inpaint / wipe original text with background patch
         imArgs.push(`-fill ${escapeShellArg(bgColor)} -draw ${escapeShellArg(`rectangle ${inpaintX0},${inpaintY0} ${inpaintX1},${inpaintY1}`)}`);
 
-        // B. Draw high-contrast Persian text
+        // B. Draw high-contrast Persian text directly inside bounding box
         const midY = Math.round(y0 + fontSize * 0.95);
+        const safeText = visualText.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'");
         imArgs.push(
           `-font ${escapeShellArg(fontPath)}`,
           `-pointsize ${fontSize}`,
           `-fill ${escapeShellArg(textColor)}`,
-          `-gravity northwest`,
-          `-annotate +${x0}+${midY} ${escapeShellArg(visualText)}`
+          `-draw ${escapeShellArg(`text ${x0 + 2},${midY} '${safeText}'`)}`
         );
 
         validLabelCount++;

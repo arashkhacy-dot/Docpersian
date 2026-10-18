@@ -155,6 +155,33 @@ export class GeminiTranslator {
     }
   }
 
+  public async testGeminiConnection(): Promise<{ success: boolean; model: string; response?: string; error?: string }> {
+    if (!this.ai || !this.isApiKeyValid()) {
+      return {
+        success: false,
+        model: this.model,
+        error: 'کلید GEMINI_API_KEY در فایل .env تنظیم نشده است یا نامعتبر است (مقدار خالی یا MY_... دارد).',
+      };
+    }
+    try {
+      const response = await this.ai.models.generateContent({
+        model: this.model,
+        contents: 'Translate to Persian: "Document translation engine test."',
+      });
+      return {
+        success: true,
+        model: this.model,
+        response: response.text?.trim() || '',
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        model: this.model,
+        error: err?.message || String(err),
+      };
+    }
+  }
+
   private computeCacheKey(text: string, context?: string): string {
     const raw = `${this.model}::${context || ''}::${text.trim()}`;
     return crypto.createHash('sha256').update(raw).digest('hex');
@@ -290,12 +317,14 @@ export class GeminiTranslator {
       }
     }
 
-    const modelsToTry = [
-      this.model,
-      'gemini-flash-latest',
-      this.model === 'gemini-3.1-flash-lite' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite',
-      'gemini-3.1-pro-preview',
-    ];
+    const modelsToTry = Array.from(
+      new Set([
+        this.model,
+        'gemini-3.8-flash',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-latest',
+      ])
+    );
 
     for (const modelCandidate of modelsToTry) {
       try {
@@ -328,8 +357,21 @@ export class GeminiTranslator {
       return this.translateChunkWithRetry(chunk, attempt + 1);
     }
 
-    // If online Gemini translation fails or API key is absent, use faithful transliteration/fallback without throwing
-    return this.fallbackTranslate(chunk);
+    // If online Gemini translation retries fail, attempt local Ollama fallback before giving up
+    try {
+      console.info('[GEMINI_RETRY_EXHAUSTED] Attempting local Ollama model fallback...');
+      return await this.callLocalTranslate(chunk);
+    } catch (localErr) {
+      console.warn('[LOCAL_FALLBACK_FAILED]', localErr);
+    }
+
+    // Safe Text Preservation: Never corrupt document with fake dictionary replacements!
+    // Return original text so isGenuinelyTranslatedPersian safely leaves the original page layout intact.
+    console.warn(`[SAFE_PRESERVATION] Online Gemini and local models failed for ${chunk.map(c => c.id).join(', ')}. Preserving original document text.`);
+    return chunk.map((c) => ({
+      id: c.id,
+      translatedText: c.text,
+    }));
   }
 
   private isApiKeyValid(): boolean {
@@ -343,7 +385,12 @@ export class GeminiTranslator {
 
   private async callGeminiTranslate(chunk: TranslationUnit[], overrideModel?: string): Promise<TranslationResult[]> {
     if (!this.ai || !this.isApiKeyValid()) {
-      return this.fallbackTranslate(chunk);
+      try {
+        console.info('[NO_GEMINI_KEY] Attempting local Ollama model...');
+        return await this.callLocalTranslate(chunk);
+      } catch {
+        throw new Error('کلید GEMINI_API_KEY در فایل .env سرور خالی یا نامعتبر است. لطفاً کلید معتبر را در فایل .env قرار دهید یا مدل محلی Ollama را انتخاب نمایید.');
+      }
     }
 
     const modelToUse = overrideModel || this.model;
@@ -378,8 +425,8 @@ CRITICAL INSTRUCTIONS:
     const candidateModels = Array.from(
       new Set(
         overrideModel
-          ? [overrideModel, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
-          : [this.model, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
+          ? [overrideModel, 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
+          : [this.model, 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
       )
     );
 
@@ -409,12 +456,35 @@ CRITICAL INSTRUCTIONS:
           });
 
           const responseText = response.text?.trim() || '[]';
-          const parsed = JSON.parse(responseText) as Array<{ id: string; translatedText: string }>;
+          let parsed: Array<{ id: string; translatedText: string }> = [];
+          try {
+            const cleanJson = responseText
+              .replace(/^```(?:json)?\s*/i, '')
+              .replace(/\s*```$/i, '')
+              .trim();
+            parsed = JSON.parse(cleanJson);
+          } catch {
+            const arrMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (arrMatch) {
+              parsed = JSON.parse(arrMatch[0]);
+            } else {
+              throw new Error(`Invalid JSON format: ${responseText.slice(0, 80)}`);
+            }
+          }
+
           const mappedResults: TranslationResult[] = [];
           const parsedMap = new Map(parsed.map((p) => [p.id, p.translatedText]));
 
-          for (const item of chunk) {
-            const tr = parsedMap.get(item.id);
+          for (let cIdx = 0; cIdx < chunk.length; cIdx++) {
+            const item = chunk[cIdx];
+            let tr = parsedMap.get(item.id);
+            if (!tr) {
+              const stripped = item.id.replace(/^page_/, '');
+              tr = parsedMap.get(stripped) || parsedMap.get(String(cIdx + 1)) || parsedMap.get(String(cIdx));
+            }
+            if (!tr && parsed.length === chunk.length) {
+              tr = parsed[cIdx]?.translatedText;
+            }
             const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
             mappedResults.push({
               id: item.id,
@@ -451,7 +521,19 @@ CRITICAL INSTRUCTIONS:
       }
     }
 
-    return this.fallbackTranslate(chunk);
+    try {
+      console.info('[CALL_GEMINI_EXHAUSTED] Trying local Ollama model fallback...');
+      return await this.callLocalTranslate(chunk);
+    } catch (localErr) {
+      console.warn('[LOCAL_FALLBACK_FAILED]', localErr);
+    }
+
+    // Safety fallback: preserve source text instead of failing the pipeline
+    console.warn(`[SAFE_PRESERVATION] Online models unavailable for ${chunk.map(c => c.id).join(', ')}. Preserving original document text.`);
+    return chunk.map((c) => ({
+      id: c.id,
+      translatedText: c.text,
+    }));
   }
 
   private parseLocalTranslationResponse(content: string, chunk: TranslationUnit[]): Map<string, string> {
@@ -1211,13 +1293,13 @@ RULES:
     ];
 
     const prompt = `You are an expert technical diagram, flowchart, schematic, and visual document translator into Persian (فارسی).
-Carefully inspect this diagram/image for English text labels, titles, component descriptions, callouts, arrows, and flowchart node texts.
+Carefully inspect this diagram/image for all text labels, titles, component descriptions, callouts, arrows, and flowchart node texts (in Spanish, English, or any language).
 ${context ? `Context: ${context}` : ''}
 
 For each text label found:
 1. Provide exact originalText.
 2. Provide translatedText: accurate, fluent, professional Persian (فارسی) translation.
-   MANDATORY: Connect all Persian letters properly into natural continuous script (e.g. کتاب, ورودی, خروجی, سیستم, پمپ, دیاگرام). NEVER split letters with spaces!
+   MANDATORY: Connect all Persian letters properly into natural continuous script (e.g. کتاب, ورودی, خروجی, سیستم, پمپ, دیاگرام, کاپوت موتور, چراغ جلو). NEVER split letters with spaces!
 3. Provide box_2d: [ymin, xmin, ymax, xmax] coordinates normalized to 0..1000 scale.
 4. Provide bgColor: background hex color behind this label (e.g. "#ffffff" or "#2563eb").
 5. Provide textColor: contrast text color for the Persian label (e.g. "#000000" or "#ffffff").
@@ -1232,7 +1314,7 @@ Return ONLY a valid JSON array of objects adhering strictly to:
     "textColor": "#000000"
   }
 ]
-If the image has no readable English text labels or is a photo without diagrams, return [].`;
+If the image has no readable text labels or is a photo without diagrams, return [].`;
 
     for (const model of modelsToTry) {
       try {

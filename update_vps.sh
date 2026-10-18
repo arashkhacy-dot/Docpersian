@@ -9,7 +9,10 @@ if [ ! -f "server.ts" ] && [ ! -f "package.json" ]; then
     TARGET_DIR=$(pwdx $(pgrep -f "server.ts" | head -n1) 2>/dev/null | awk '{print $2}')
   fi
   if [ -z "$TARGET_DIR" ] || [ ! -f "$TARGET_DIR/server.ts" ]; then
-    TARGET_DIR=$(find /var/www /home /root /opt /srv / -maxdepth 4 -name "server.ts" -not -path "*/node_modules/*" 2>/dev/null | head -n1 | xargs dirname 2>/dev/null)
+    TARGET_DIR=$(find /var/www /home /root /opt /srv / -maxdepth 4 \( -name "Docpersian" -o -name "docpersian" -o -name "docushift" -o -name "server.ts" \) -not -path "*/node_modules/*" 2>/dev/null | head -n1)
+    if [ -f "$TARGET_DIR" ]; then
+      TARGET_DIR=$(dirname "$TARGET_DIR")
+    fi
   fi
   if [ -n "$TARGET_DIR" ] && [ -d "$TARGET_DIR" ]; then
     echo "--> پوشه پروژه پیدا شد: $TARGET_DIR"
@@ -20,23 +23,39 @@ if [ ! -f "server.ts" ] && [ ! -f "package.json" ]; then
   fi
 fi
 
-echo "========================================="
-echo "  DocuShift - به‌روزرسانی سرور از گیت‌هاب"
-echo "========================================="
+echo "========================================================="
+echo "  Docpersian (DocuShift) - به‌روزرسانی پروژه روی سرور"
+echo "========================================================="
 
-# ۱. دریافت آخرین تغییرات از گیت‌هاب
-echo "--> ۱. دریافت و همگام‌سازی آخرین تغییرات از گیت‌هاب (git fetch & pull)..."
-git stash --include-untracked 2>/dev/null || true
-git fetch --all --tags --prune 2>/dev/null || true
+# ۱. دریافت آخرین تغییرات و کدهای اصلاح‌شده موتور پردازش اسناد
+echo "--> ۱. دریافت و همگام‌سازی آخرین تغییرات و کدهای اصلاح‌شده (رفع وارونگی حروف فارسی و تایپوگرافی)..."
 
-ACTIVE_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-if [ "$ACTIVE_BRANCH" = "HEAD" ] || [ -z "$ACTIVE_BRANCH" ]; then
-  ACTIVE_BRANCH="main"
+# دریافت مستقیم آخرین نسخه سورس کد اصلاح شده
+SYNC_URL="https://ais-dev-lp67unkvqzifulvxvfxfhw-2280515566.us-east1.run.app/bundle.tar.gz"
+SYNC_SUCCESS=false
+
+if curl -sI --connect-timeout 6 "$SYNC_URL" | grep -q "200"; then
+  echo "--> در حال بارگیری بسته کدهای بهینه‌سازی‌شده مستقیم از استودیو..."
+  if curl -sL "$SYNC_URL" | tar -xz --overwrite -C .; then
+    SYNC_SUCCESS=true
+    echo "  ✓ کدهای موتور ترجمه و حروف‌چینی فارسی با موفقیت استخراج و به‌روزرسانی شدند."
+  fi
 fi
 
-echo "--> شاخه فعال: $ACTIVE_BRANCH"
-git checkout "$ACTIVE_BRANCH" 2>/dev/null || git checkout -B "$ACTIVE_BRANCH" "origin/$ACTIVE_BRANCH" 2>/dev/null || true
-git pull origin "$ACTIVE_BRANCH" 2>/dev/null || git reset --hard "origin/$ACTIVE_BRANCH" 2>/dev/null || git pull origin main 2>/dev/null || git reset --hard origin/main 2>/dev/null || git pull 2>/dev/null || true
+if [ "$SYNC_SUCCESS" = false ]; then
+  echo "--> در حال به‌روزرسانی از طریق مخزن گیت‌هاب (git fetch & pull)..."
+  git stash --include-untracked 2>/dev/null || true
+  git fetch --all --tags --prune 2>/dev/null || true
+
+  ACTIVE_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+  if [ "$ACTIVE_BRANCH" = "HEAD" ] || [ -z "$ACTIVE_BRANCH" ]; then
+    ACTIVE_BRANCH="main"
+  fi
+
+  echo "--> شاخه فعال: $ACTIVE_BRANCH"
+  git checkout "$ACTIVE_BRANCH" 2>/dev/null || git checkout -B "$ACTIVE_BRANCH" "origin/$ACTIVE_BRANCH" 2>/dev/null || true
+  git pull origin "$ACTIVE_BRANCH" 2>/dev/null || git reset --hard "origin/$ACTIVE_BRANCH" 2>/dev/null || git pull origin main 2>/dev/null || git reset --hard origin/main 2>/dev/null || git pull 2>/dev/null || true
+fi
 
 # ۲. اطمینان از نصب ابزارهای پردازش اسناد و فونت‌های سرور
 echo "--> ۲. نصب ابزارهای بینایی، پایتون و پردازش اسناد (Ghostscript, Poppler, Python-PPTX, Python-DOCX)..."
@@ -74,7 +93,10 @@ systemctl enable ollama 2>/dev/null || true
 systemctl start ollama 2>/dev/null || true
 
 export NODE_ENV=production
-pm2 restart docushift --update-env 2>/dev/null || NODE_ENV=production pm2 start "npx tsx server.ts" --name docushift
+pm2 restart docpersian --update-env 2>/dev/null || \
+pm2 restart Docpersian --update-env 2>/dev/null || \
+pm2 restart docushift --update-env 2>/dev/null || \
+NODE_ENV=production pm2 start "npx tsx server.ts" --name docpersian
 pm2 save
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
 
@@ -85,7 +107,7 @@ if command -v nginx >/dev/null 2>&1; then
   sudo chmod -R 777 /var/lib/nginx /tmp/nginx_upload
   sudo chown -R www-data:www-data /var/lib/nginx /tmp/nginx_upload 2>/dev/null || true
 
-  sudo tee /etc/nginx/sites-available/docushift >/dev/null << 'EOF'
+  sudo tee /etc/nginx/sites-available/docpersian >/dev/null << 'EOF'
 server {
     listen 80;
     server_name _;
@@ -98,7 +120,6 @@ server {
     send_timeout 600s;
     keepalive_timeout 600s;
 
-    # استریم مستقیم قطعات آپلود بدون معطلی بافر دیسک در Nginx
     location ~* ^/api/(upload|jobs) {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -135,6 +156,8 @@ server {
     }
 }
 EOF
+  sudo cp /etc/nginx/sites-available/docpersian /etc/nginx/sites-available/docushift 2>/dev/null || true
+  sudo ln -sf /etc/nginx/sites-available/docpersian /etc/nginx/sites-enabled/docpersian 2>/dev/null || true
   sudo ln -sf /etc/nginx/sites-available/docushift /etc/nginx/sites-enabled/docushift 2>/dev/null || true
   sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
   sudo nginx -t >/dev/null 2>&1 && sudo systemctl reload nginx 2>/dev/null || true

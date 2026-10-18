@@ -37,6 +37,33 @@ export function toAsciiDigits(s: string): string {
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
 }
 
+/**
+ * Validates whether translated text represents a genuine, substantial Persian translation,
+ * as opposed to raw source text with a few isolated dictionary substitutions.
+ * Prevents wiping source page text if translation did not genuinely take place.
+ */
+export function isGenuinelyTranslatedPersian(text?: string | null): boolean {
+  if (!text || !text.trim()) return false;
+  // Strip block markers like [B1], [1]
+  const clean = text.replace(/\[(?:B|BLOCK|بخش|BOX|قسمت|\d+)[^\]]*\][:：\s-]*/gim, '').trim();
+  if (!clean) return false;
+
+  const persianMatches = clean.match(/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/g);
+  const totalPersian = persianMatches ? persianMatches.length : 0;
+  const latinMatches = clean.match(/[a-zA-Z]/g);
+  const totalLatin = latinMatches ? latinMatches.length : 0;
+
+  // Need at least 4 Persian characters
+  if (totalPersian < 4) return false;
+
+  // If there is significant Latin text, Persian must not be just a few isolated dictionary words (< 35% of letters)
+  if (totalLatin > 0 && totalPersian < totalLatin * 0.35) {
+    return false;
+  }
+
+  return true;
+}
+
 export function extractBlockTranslation(fullText: string, blockId: number, totalBlocks = 1): string | null {
   if (!fullText || !fullText.trim()) return null;
 
@@ -1454,27 +1481,14 @@ function renderPersianTextToPage(
       paragraphGap = Math.max(0.8, paragraphGap - 0.25);
     }
 
-    // Clean erase of underlying text area to prevent old English from showing through
-    const eraseTopY = Math.min(height - 24, startY + 6);
-    const eraseBottomY = Math.max(bottomMargin - 4, 18);
-    const eraseHeight = Math.max(20, eraseTopY - eraseBottomY);
-
-    page.drawRectangle({
-      x: Math.max(8, marginX - 4),
-      y: eraseBottomY,
-      width: Math.min(width - 16, contentWidth + 8),
-      height: eraseHeight,
-      color: rgb(1, 1, 1),
-      opacity: 0.98,
-    });
-
+    // Erase underlying text lines precisely without creating giant blank voids over diagrams/tables
     if (sourceLines && sourceLines.length > 0) {
       for (const line of sourceLines) {
         page.drawRectangle({
           x: Math.max(marginX - 4, line.x - 3),
-          y: Math.max(12, line.y - 3),
+          y: Math.max(12, line.y - 2),
           width: Math.min(contentWidth + 8, line.width + 6),
-          height: Math.max(14, line.height + 6),
+          height: Math.max(10, line.height + 4),
           color: rgb(1, 1, 1),
           opacity: 1.0,
         });
@@ -2119,7 +2133,7 @@ export class PDFProcessor implements DocumentProcessor {
       const manifestItem = job.manifest?.items?.find((it) => it.index === pageIndex);
 
       const translatedFa = translatedResultsMap.get(`page_${pageIndex}`);
-      const isActuallyTranslated = !!translatedFa && /[\u0600-\u06FF]/.test(translatedFa);
+      const isActuallyTranslated = isGenuinelyTranslatedPersian(translatedFa);
       const fullFaText = isActuallyTranslated ? translatedFa! : rawPageText;
 
       if (!fullFaText || !fullFaText.trim()) {
@@ -2157,8 +2171,8 @@ export class PDFProcessor implements DocumentProcessor {
         .map((p) => p.trim())
         .filter((p) => p.length > 0);
 
-      // Strip original English text from page content streams ONLY IF we have a verified Persian translation!
-      // If page was not translated (e.g. rate-limited, offline or untranslated), keep original text 100% intact!
+      // Strip original text from page content streams ONLY IF we have a verified, genuine Persian translation!
+      // If page was not genuinely translated (e.g. rate-limited, offline, or fallback), keep original text 100% intact!
       let textBounds: { maxY: number | null; minY: number | null; hasTopImage: boolean; imageBottomY: number | null; imageTopY: number | null } = {
         maxY: null,
         minY: null,
@@ -2168,6 +2182,11 @@ export class PDFProcessor implements DocumentProcessor {
       };
       if (isActuallyTranslated) {
         textBounds = stripTextFromPageStreams(page, outputDoc);
+      } else {
+        warnings.push(`صفحه ${pageIndex}: ترجمه هوشمند فارسی دریافت نشد؛ متن و قالب اصلی صفحه بدون تغییر حفظ شد تا از خالی ماندن صفحه جلوگیری شود.`);
+        if (manifestItem) {
+          manifestItem.warning = 'متن اصلی بدون تغییر حفظ شد (ترجمه هوشمند فارسی در دسترس نبود).';
+        }
       }
 
       const lines = pageLinesMap.get(pageIndex) || [];

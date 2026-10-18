@@ -41,10 +41,10 @@ function parseBoolean(val: string | undefined, defaultVal: boolean): boolean {
 
 export const config: AppConfig = {
   geminiApiKey: process.env.GEMINI_API_KEY || '',
-  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   translationEngine: (process.env.TRANSLATION_ENGINE as 'gemini' | 'local') || 'gemini',
   localModelUrl: process.env.LOCAL_MODEL_URL || 'http://localhost:11434/v1',
-  localModelName: process.env.LOCAL_MODEL_NAME || 'qwen2.5-vl:3b',
+  localModelName: process.env.LOCAL_MODEL_NAME || 'qwen2.5:3b',
   storagePath: path.resolve(process.cwd(), process.env.STORAGE_PATH || './jobs_storage'),
   maxFileSize: parseNumber(process.env.MAX_FILE_SIZE, 1024 * 1024 * 1024), // 1GB (1024MB) Maximum Capacity
   maxConcurrentJobs: parseNumber(process.env.MAX_CONCURRENT_JOBS, 4), // 4 concurrent high-speed jobs
