@@ -755,7 +755,7 @@ CRITICAL INSTRUCTIONS:
 
     for (const endpointType of candidates) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000); // 45s hard timeout per candidate on CPU
+      const timeout = setTimeout(() => controller.abort(), 35000); // 35s hard timeout per candidate on CPU
 
       try {
         if (endpointType === 'v1') {
@@ -770,7 +770,7 @@ CRITICAL INSTRUCTIONS:
               ],
               temperature: 0.1,
               stream: false,
-              max_tokens: maxTokens,
+              max_tokens: Math.min(maxTokens, 800),
             }),
             signal: controller.signal,
           });
@@ -795,8 +795,8 @@ CRITICAL INSTRUCTIONS:
               stream: false,
               options: {
                 temperature: 0.1,
-                num_predict: maxTokens,
-                num_ctx: 4096,
+                num_predict: Math.min(maxTokens, 800),
+                num_ctx: 2048,
               },
             }),
             signal: controller.signal,
@@ -928,7 +928,7 @@ CRITICAL RULES:
 
     const prompt = `Items to translate into Persian:\n\n${linesToTranslate}\n\nTranslate each item into fluent Persian:`;
 
-    const content = await this.callLocalModelRaw(systemInstruction, prompt, endpoints, 2500);
+    const content = await this.callLocalModelRaw(systemInstruction, prompt, endpoints, 800);
     const parsedMap = this.parseLocalTranslationResponse(content, chunk);
     const mappedResults: TranslationResult[] = [];
 
