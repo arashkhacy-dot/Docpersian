@@ -755,7 +755,7 @@ CRITICAL INSTRUCTIONS:
 
     for (const endpointType of candidates) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 75000); // 75s per endpoint (Ollama on CPU/RAM)
+      const timeout = setTimeout(() => controller.abort(), 45000); // 45s hard timeout per candidate on CPU
 
       try {
         if (endpointType === 'v1') {
@@ -904,10 +904,8 @@ CRITICAL RULES:
           const mid = Math.ceil(blockSegments.length / 2);
           const part1 = blockSegments.slice(0, mid).join('');
           const part2 = blockSegments.slice(mid).join('');
-          const [res1, res2] = await Promise.all([
-            this.translateSingleTextViaLocal(part1, endpoints, unit.context),
-            this.translateSingleTextViaLocal(part2, endpoints, unit.context),
-          ]);
+          const res1 = await this.translateSingleTextViaLocal(part1, endpoints, unit.context);
+          const res2 = await this.translateSingleTextViaLocal(part2, endpoints, unit.context);
           const combined = healPersianSpaces(`${res1}\n\n${res2}`.trim());
           if (combined && /[\u0600-\u06FF]/.test(combined)) {
             return [{ id: unit.id, translatedText: combined }];

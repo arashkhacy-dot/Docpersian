@@ -64,6 +64,17 @@ export const config: AppConfig = {
   isDev: process.env.NODE_ENV !== 'production',
 };
 
+// Automatically bind ProxyAgent to global Node fetch if outbound proxy is defined
+if (config.outboundProxy) {
+  try {
+    const { ProxyAgent, setGlobalDispatcher } = await import('undici');
+    setGlobalDispatcher(new ProxyAgent(config.outboundProxy));
+    console.log(`[NETWORK] Outbound Proxy successfully connected to global fetch: ${config.outboundProxy}`);
+  } catch (proxyErr) {
+    console.warn(`[NETWORK] Could not bind ProxyAgent for ${config.outboundProxy}:`, proxyErr);
+  }
+}
+
 export function validateStartupConfig(): { valid: boolean; warnings: string[] } {
   const warnings: string[] = [];
   if (!config.geminiApiKey) {

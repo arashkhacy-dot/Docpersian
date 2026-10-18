@@ -3,6 +3,7 @@ const { execSync } = require('child_process');
 
 const files = [
   'server.ts',
+  'server/config/env.ts',
   'server/gemini/translator.ts',
   'server/processors/pdfProcessor.ts',
   'src/components/UploadZone.tsx'
