@@ -60,7 +60,7 @@ export const config: AppConfig = {
   reconstructionRtlEnabled: parseBoolean(process.env.RECONSTRUCTION_RTL_ENABLED, true),
   diagramInpaintingEnabled: parseBoolean(process.env.DIAGRAM_INPAINTING_ENABLED, true),
   outboundProxy: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.ALL_PROXY || '',
-  port: parseNumber(process.env.PORT, 3000),
+  port: 3000,
   isDev: process.env.NODE_ENV !== 'production',
 };
 

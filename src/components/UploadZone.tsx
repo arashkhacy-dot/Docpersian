@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   UploadCloud,
   FileText,
@@ -14,6 +14,7 @@ import {
   Sparkles,
   ExternalLink,
   Zap,
+  Cpu,
 } from 'lucide-react';
 import { checkUploadSession, UploadProgressInfo } from '../utils/chunkedUploader';
 
@@ -46,7 +47,30 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
     totalChunks: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedEngine, setSelectedEngine] = useState<'gemini' | 'local'>('gemini');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/settings/engine')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.engine === 'gemini' || data?.engine === 'local') {
+          setSelectedEngine(data.engine);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleEngineChange = async (newEngine: 'gemini' | 'local') => {
+    setSelectedEngine(newEngine);
+    try {
+      await fetch('/api/settings/engine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ engine: newEngine }),
+      });
+    } catch {}
+  };
 
   const allowedExtensions = ['.pdf', '.docx', '.pptx'];
   const maxSizeBytes = 1024 * 1024 * 1024; // 1GB (1024MB) Maximum Capacity
@@ -298,6 +322,55 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* AI Engine Selector (Gemini vs Local Ollama) */}
+          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-medium">موتور هوش مصنوعی:</span>
+              <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => handleEngineChange('gemini')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer ${
+                    selectedEngine === 'gemini'
+                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Google Gemini ابری (سریع)</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => handleEngineChange('local')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer ${
+                    selectedEngine === 'local'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>مدل محلی سرور (Ollama)</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-400">
+              {selectedEngine === 'gemini' ? (
+                <span className="text-indigo-400 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                  ترجمه ابری همزمان (سریع‌ترین حالت)
+                </span>
+              ) : (
+                <span className="text-emerald-400 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  پردازش ۱۰۰٪ محلی روی سرور شما
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Upload Mode Selector (Turbo Unified vs Resumable Chunks) */}

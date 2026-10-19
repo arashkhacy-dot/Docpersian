@@ -612,17 +612,16 @@ export function renderSpatialBlocks(
     const boxW = Math.min(pageWidth - boxX - 6, Math.max(containerWidth + 6, block.width + 6));
     const boxH = Math.min(pageHeight - boxY - 6, Math.max(16, block.height + 6));
 
-    // CRITICAL: Clean erase of underlying English text and vector artifacts
-    page.drawRectangle({
-      x: boxX,
-      y: boxY,
-      width: boxW,
-      height: boxH,
-      color: block.isWarning ? rgb(1.0, 0.96, 0.95) : rgb(1, 1, 1),
-      opacity: 0.98,
-    });
-
+    // Only draw tinted background for warning callouts to prevent painting white patches over diagrams
     if (block.isWarning) {
+      page.drawRectangle({
+        x: boxX,
+        y: boxY,
+        width: boxW,
+        height: boxH,
+        color: rgb(1.0, 0.96, 0.95),
+        opacity: 0.95,
+      });
       page.drawLine({
         start: { x: rightX + 2, y: boxY },
         end: { x: rightX + 2, y: boxY + boxH },
@@ -632,15 +631,15 @@ export function renderSpatialBlocks(
     }
 
     // Initial font metrics
-    let fontSize = Math.min(10.5, Math.max(6.5, block.fontSize || 9.0));
+    let fontSize = Math.min(10.5, Math.max(7.5, block.fontSize || 9.0));
     let lineHeight = Math.round(fontSize * 1.30 * 10) / 10;
     const fontToUse = block.isWarning ? fontBold : fontReg;
 
     let wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
 
-    // Dynamic Height Fitting
+    // Dynamic Height Fitting (ensures text remains readable and never shrinks below 7.0pt)
     const availableH = Math.max(22, block.height + 8);
-    while (wrappedLines.length * lineHeight > availableH && fontSize > 4.8) {
+    while (wrappedLines.length * lineHeight > availableH && fontSize > 7.0) {
       fontSize -= 0.3;
       lineHeight = Math.round(fontSize * 1.25 * 10) / 10;
       wrappedLines = wrapPersianText(healed, fontToUse, fontSize, containerWidth);
@@ -1475,24 +1474,10 @@ function renderPersianTextToPage(
       return total;
     };
 
-    while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 4.2) {
+    while (calcFullH(fontSize, lineHeight, paragraphGap) > availableHeight && fontSize > 7.5) {
       fontSize -= 0.15;
-      lineHeight = Math.max(5.4, Math.round(fontSize * 1.20 * 10) / 10);
-      paragraphGap = Math.max(0.8, paragraphGap - 0.25);
-    }
-
-    // Erase underlying text lines precisely without creating giant blank voids over diagrams/tables
-    if (sourceLines && sourceLines.length > 0) {
-      for (const line of sourceLines) {
-        page.drawRectangle({
-          x: Math.max(marginX - 4, line.x - 3),
-          y: Math.max(12, line.y - 2),
-          width: Math.min(contentWidth + 8, line.width + 6),
-          height: Math.max(10, line.height + 4),
-          color: rgb(1, 1, 1),
-          opacity: 1.0,
-        });
-      }
+      lineHeight = Math.max(9.5, Math.round(fontSize * 1.25 * 10) / 10);
+      paragraphGap = Math.max(1.5, paragraphGap - 0.25);
     }
 
     for (let uIdx = 0; uIdx < listParas.length; uIdx++) {

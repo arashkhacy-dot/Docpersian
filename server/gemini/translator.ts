@@ -237,10 +237,10 @@ export class GeminiTranslator {
 
     // 2. Adaptive chunk sizing based on engine and text length:
     // For local engine: 1 page per request if long text (>250 chars), or 4 items per request if short PPTX/table snippets.
-    // For Gemini: 2-3 pages per request if long document pages, or 12-15 if short snippet items.
+    // For Gemini: 4 pages per request (balances prompt tokens with API rate limits), or 15 if short snippets.
     const isDocPage = uncachedItems.some((it) => it.text.length > 250);
-    const chunkSize = this.engine === 'local' ? (isDocPage ? 1 : 4) : isDocPage ? 2 : 12;
-    const maxConcurrency = this.engine === 'local' ? 1 : 3;
+    const chunkSize = this.engine === 'local' ? (isDocPage ? 1 : 4) : isDocPage ? 4 : 15;
+    const maxConcurrency = this.engine === 'local' ? 1 : 2;
 
     const chunks: TranslationUnit[][] = [];
     for (let i = 0; i < uncachedItems.length; i += chunkSize) {
@@ -273,9 +273,10 @@ export class GeminiTranslator {
 
       await Promise.all(batchPromises);
 
-      // Add gentle pacing between batches to prevent API rate bursts
+      // Add gentle pacing between batches to prevent API rate bursts and 429 quota exhaustion
       if (i + maxConcurrency < chunks.length) {
-        await new Promise((r) => setTimeout(r, 250));
+        const pacingMs = this.engine === 'local' ? 100 : 1500;
+        await new Promise((r) => setTimeout(r, pacingMs));
       }
     }
 
