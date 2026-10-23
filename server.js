@@ -9,7 +9,6 @@ import { fileURLToPath } from "url";
 // server/config/env.ts
 import dotenv from "dotenv";
 import path from "path";
-import { ProxyAgent, setGlobalDispatcher } from "undici";
 dotenv.config();
 function parseNumber(val, defaultVal) {
   if (!val) return defaultVal;
@@ -55,12 +54,16 @@ var config = {
   isDev: process.env.NODE_ENV !== "production"
 };
 if (config.outboundProxy) {
-  try {
-    setGlobalDispatcher(new ProxyAgent(config.outboundProxy));
-    console.log(`[NETWORK] Outbound Proxy successfully connected to global fetch: ${config.outboundProxy}`);
-  } catch (proxyErr) {
-    console.warn(`[NETWORK] Could not bind ProxyAgent for ${config.outboundProxy}:`, proxyErr);
-  }
+  import("undici").then(({ ProxyAgent, setGlobalDispatcher }) => {
+    try {
+      setGlobalDispatcher(new ProxyAgent(config.outboundProxy));
+      console.log(`[NETWORK] Outbound Proxy successfully connected: ${config.outboundProxy}`);
+    } catch (err) {
+      console.warn(`[NETWORK] Could not bind ProxyAgent:`, err?.message);
+    }
+  }).catch(() => {
+    console.warn("[NETWORK] undici package not found. Skipping proxy dispatcher setup.");
+  });
 }
 function validateStartupConfig() {
   const warnings = [];

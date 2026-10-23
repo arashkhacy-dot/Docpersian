@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { ProxyAgent, setGlobalDispatcher } from 'undici';
 
 dotenv.config();
 
@@ -65,14 +64,20 @@ export const config: AppConfig = {
   isDev: process.env.NODE_ENV !== 'production',
 };
 
-// Automatically bind ProxyAgent to global Node fetch if outbound proxy is defined
+// Safely bind ProxyAgent to global fetch if outbound proxy is defined and undici is present
 if (config.outboundProxy) {
-  try {
-    setGlobalDispatcher(new ProxyAgent(config.outboundProxy));
-    console.log(`[NETWORK] Outbound Proxy successfully connected to global fetch: ${config.outboundProxy}`);
-  } catch (proxyErr) {
-    console.warn(`[NETWORK] Could not bind ProxyAgent for ${config.outboundProxy}:`, proxyErr);
-  }
+  import('undici')
+    .then(({ ProxyAgent, setGlobalDispatcher }) => {
+      try {
+        setGlobalDispatcher(new ProxyAgent(config.outboundProxy));
+        console.log(`[NETWORK] Outbound Proxy successfully connected: ${config.outboundProxy}`);
+      } catch (err: any) {
+        console.warn(`[NETWORK] Could not bind ProxyAgent:`, err?.message);
+      }
+    })
+    .catch(() => {
+      console.warn('[NETWORK] undici package not found. Skipping proxy dispatcher setup.');
+    });
 }
 
 export function validateStartupConfig(): { valid: boolean; warnings: string[] } {
