@@ -21,7 +21,7 @@ function parseBoolean(val, defaultVal) {
 }
 var config = {
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  geminiModel: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+  geminiModel: process.env.GEMINI_MODEL && !process.env.GEMINI_MODEL.includes("3.8") ? process.env.GEMINI_MODEL : "gemini-2.5-flash",
   translationEngine: process.env.TRANSLATION_ENGINE || "gemini",
   localModelUrl: process.env.LOCAL_MODEL_URL || "http://localhost:11434/v1",
   localModelName: process.env.LOCAL_MODEL_NAME || "qwen2.5:3b",
@@ -1152,7 +1152,7 @@ var GeminiTranslator = class {
       onProgress(cachedCount);
     }
     const isDocPage = uncachedItems.some((it) => it.text.length > 250);
-    const chunkSize = this.engine === "local" ? isDocPage ? 1 : 4 : isDocPage ? 4 : 15;
+    const chunkSize = this.engine === "local" ? 1 : isDocPage ? 2 : 8;
     const maxConcurrency = this.engine === "local" ? 1 : 2;
     const chunks = [];
     for (let i = 0; i < uncachedItems.length; i += chunkSize) {
@@ -1220,11 +1220,11 @@ var GeminiTranslator = class {
     const modelsToTry = Array.from(
       /* @__PURE__ */ new Set([
         this.model,
-        "gemini-3.8-flash",
-        "gemini-3.1-flash-lite",
-        "gemini-flash-latest"
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.5-pro"
       ])
-    );
+    ).filter((m) => m && !m.includes("3.8") && !m.includes("3.1") && !m.includes("latest"));
     for (const modelCandidate of modelsToTry) {
       try {
         return await this.callGeminiTranslate(chunk, modelCandidate);
@@ -1298,9 +1298,9 @@ CRITICAL INSTRUCTIONS:
     }));
     const candidateModels = Array.from(
       new Set(
-        overrideModel ? [overrideModel, "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"] : [this.model, "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"]
+        overrideModel ? [overrideModel, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"] : [this.model, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]
       )
-    );
+    ).filter((m) => m && !m.includes("3.8") && !m.includes("3.1") && !m.includes("latest"));
     for (let attempt = 1; attempt <= 4; attempt++) {
       for (const modelCandidate of candidateModels) {
         try {
@@ -1570,7 +1570,7 @@ CRITICAL INSTRUCTIONS:
     }
     for (const endpointType of candidates) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12e4);
+      const timeout = setTimeout(() => controller.abort(), 45e3);
       try {
         if (endpointType === "v1") {
           const res = await fetch(endpoints.v1ChatUrl, {
@@ -1650,6 +1650,10 @@ ${prompt}`,
           }
         }
       } catch (err) {
+        if (err?.cause?.code === "ECONNREFUSED" || String(err?.message || "").includes("ECONNREFUSED")) {
+          console.warn(`[LOCAL_MODEL] Local server at ${this.localUrl} is not running (ECONNREFUSED).`);
+          break;
+        }
       } finally {
         clearTimeout(timeout);
       }
@@ -1674,15 +1678,6 @@ ${text}`;
     const clean = content ? content.replace(/^```(?:markdown|text)?\s*/i, "").replace(/\s*```$/i, "").replace(/^(?:Here is the translation|ترجمه|Translation)[:：\s]*/i, "").trim() : "";
     if (clean && /[\u0600-\u06FF]/.test(clean)) {
       return clean;
-    }
-    if (this.ai && this.isApiKeyValid()) {
-      try {
-        const gemRes = await this.callGeminiTranslate([{ id: "single_fallback", text, context }]);
-        if (gemRes[0]?.translatedText && /[\u0600-\u06FF]/.test(gemRes[0].translatedText)) {
-          return gemRes[0].translatedText;
-        }
-      } catch {
-      }
     }
     return clean || text;
   }
@@ -1711,6 +1706,7 @@ ${text}`;
         });
       }
     }
+    return mappedResults;
   }
   async extractAndTranslateFromImageViaLocal(base64Image, pageContext, mimeType = "image/jpeg") {
     const isVehicleDiagram = pageContext?.includes("\u062E\u0648\u062F\u0631\u0648") || pageContext?.includes("\u062F\u06CC\u0627\u06AF\u0631\u0627\u0645 \u062E\u0648\u062F\u0631\u0648");

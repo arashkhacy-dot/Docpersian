@@ -251,7 +251,7 @@ export class GeminiTranslator {
     // For local engine: 1 page per request if long text (>250 chars), or 4 items per request if short PPTX/table snippets.
     // For Gemini: 4 pages per request (balances prompt tokens with API rate limits), or 15 if short snippets.
     const isDocPage = uncachedItems.some((it) => it.text.length > 250);
-    const chunkSize = this.engine === 'local' ? (isDocPage ? 1 : 4) : isDocPage ? 4 : 15;
+    const chunkSize = this.engine === 'local' ? 1 : (isDocPage ? 2 : 8);
     const maxConcurrency = this.engine === 'local' ? 1 : 2;
 
     const chunks: TranslationUnit[][] = [];
@@ -338,11 +338,11 @@ export class GeminiTranslator {
     const modelsToTry = Array.from(
       new Set([
         this.model,
-        'gemini-3.8-flash',
-        'gemini-3.1-flash-lite',
-        'gemini-flash-latest',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-2.5-pro',
       ])
-    );
+    ).filter((m) => m && !m.includes('3.8') && !m.includes('3.1') && !m.includes('latest'));
 
     for (const modelCandidate of modelsToTry) {
       try {
@@ -448,10 +448,10 @@ CRITICAL INSTRUCTIONS:
     const candidateModels = Array.from(
       new Set(
         overrideModel
-          ? [overrideModel, 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
-          : [this.model, 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
+          ? [overrideModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
+          : [this.model, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
       )
-    );
+    ).filter((m) => m && !m.includes('3.8') && !m.includes('3.1') && !m.includes('latest'));
 
     // Exponential backoff retry loop for quota (429) and high-demand (503) protection
     for (let attempt = 1; attempt <= 4; attempt++) {
@@ -789,7 +789,7 @@ CRITICAL INSTRUCTIONS:
 
     for (const endpointType of candidates) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120000); // 120s timeout per candidate on CPU
+      const timeout = setTimeout(() => controller.abort(), 45000); // 45s timeout per candidate on CPU
 
       try {
         if (endpointType === 'v1') {
@@ -867,8 +867,11 @@ CRITICAL INSTRUCTIONS:
             }
           }
         }
-      } catch (err) {
-        // Fall through to next candidate
+      } catch (err: any) {
+        if (err?.cause?.code === 'ECONNREFUSED' || String(err?.message || '').includes('ECONNREFUSED')) {
+          console.warn(`[LOCAL_MODEL] Local server at ${this.localUrl} is not running (ECONNREFUSED).`);
+          break;
+        }
       } finally {
         clearTimeout(timeout);
       }
@@ -910,15 +913,6 @@ CRITICAL RULES:
       return clean;
     }
 
-    if (this.ai && this.isApiKeyValid()) {
-      try {
-        const gemRes = await this.callGeminiTranslate([{ id: 'single_fallback', text, context }]);
-        if (gemRes[0]?.translatedText && /[\u0600-\u06FF]/.test(gemRes[0].translatedText)) {
-          return gemRes[0].translatedText;
-        }
-      } catch {}
-    }
-
     return clean || text;
   }
 
@@ -950,6 +944,7 @@ CRITICAL RULES:
       }
     }
 
+    return mappedResults;
   }
 
   private async extractAndTranslateFromImageViaLocal(

@@ -41,7 +41,7 @@ function parseBoolean(val: string | undefined, defaultVal: boolean): boolean {
 
 export const config: AppConfig = {
   geminiApiKey: process.env.GEMINI_API_KEY || '',
-  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+  geminiModel: (process.env.GEMINI_MODEL && !process.env.GEMINI_MODEL.includes('3.8')) ? process.env.GEMINI_MODEL : 'gemini-2.5-flash',
   translationEngine: (process.env.TRANSLATION_ENGINE as 'gemini' | 'local') || 'gemini',
   localModelUrl: process.env.LOCAL_MODEL_URL || 'http://localhost:11434/v1',
   localModelName: process.env.LOCAL_MODEL_NAME || 'qwen2.5:3b',
