@@ -50,18 +50,17 @@ export function isGenuinelyTranslatedPersian(text?: string | null): boolean {
 
   const persianMatches = clean.match(/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/g);
   const totalPersian = persianMatches ? persianMatches.length : 0;
+  if (totalPersian < 3) return false;
+
+  // If there are genuine Persian words (>= 2 letters), it is translated
+  const persianWords = clean.match(/[\u0600-\u06FF]{2,}/g) || [];
+  if (persianWords.length >= 2) return true;
+
   const latinMatches = clean.match(/[a-zA-Z]/g);
   const totalLatin = latinMatches ? latinMatches.length : 0;
+  if (totalLatin === 0) return true;
 
-  // Need at least 4 Persian characters
-  if (totalPersian < 4) return false;
-
-  // If there is significant Latin text, Persian must not be just a few isolated dictionary words (< 35% of letters)
-  if (totalLatin > 0 && totalPersian < totalLatin * 0.35) {
-    return false;
-  }
-
-  return true;
+  return totalPersian >= Math.min(5, totalLatin * 0.12);
 }
 
 export function extractBlockTranslation(fullText: string, blockId: number, totalBlocks = 1): string | null {
@@ -1918,39 +1917,36 @@ export class PDFProcessor implements DocumentProcessor {
       }
 
       let rawPageText = '';
-      if (blocks.length > 0) {
-        pageBlocksMap.set(pageIndex, blocks);
+      if (lines.length > 0) {
         pageLinesMap.set(pageIndex, lines);
-
-        // Build structured text for the entire page with clear, unambiguous block markers
-        rawPageText = blocks.map((b) => `[B${b.id}]: ${b.text}`).join('\n\n');
-        pageRawTexts[i] = rawPageText;
-
-        // Register page as a single cohesive translation unit (keeps total count matching pages, not 500+ items!)
-        pageUnitsToTranslate.push({
-          id: `page_${pageIndex}`,
-          text: rawPageText,
-          context: `صفحه ${pageIndex} از ${totalPages} سند ${job.originalFileName} (شامل بخش‌های تفکیکی متن، کادرهای هشدار و دیاگرام). برچسب‌های [B1]، [B2] را در ابتدای هر بخش ترجمه‌شده عیناً حفظ کنید.`,
-        });
-      } else if (lines.length > 0) {
-        pageLinesMap.set(pageIndex, lines);
-        rawPageText = lines.map((l, idx) => `[${idx + 1}] ${l.text}`).join('\n');
-        pageRawTexts[i] = rawPageText;
-        pageUnitsToTranslate.push({
-          id: `page_${pageIndex}`,
-          text: rawPageText,
-          context: `صفحه ${pageIndex} از ${totalPages} سند ${job.originalFileName} (برچسب‌های دیاگرام و متن با مختصات مکانی)`,
-        });
+        const paras: string[] = [];
+        let cur = '';
+        let lastY = -1;
+        for (const l of lines) {
+          if (lastY !== -1 && Math.abs(l.y - lastY) > 16 && cur) {
+            paras.push(cur.trim());
+            cur = l.text;
+          } else {
+            cur = cur ? `${cur} ${l.text}` : l.text;
+          }
+          lastY = l.y;
+        }
+        if (cur) paras.push(cur.trim());
+        rawPageText = paras.filter(Boolean).join('\n\n');
+        if (!rawPageText.trim()) {
+          rawPageText = (fastPageTexts[i] || '').trim();
+        }
       } else {
         rawPageText = (fastPageTexts[i] || '').trim();
-        pageRawTexts[i] = rawPageText;
-        if (rawPageText.length > 0) {
-          pageUnitsToTranslate.push({
-            id: `page_${pageIndex}`,
-            text: rawPageText,
-            context: `صفحه ${pageIndex} از ${totalPages} سند ${job.originalFileName}`,
-          });
-        }
+      }
+
+      pageRawTexts[i] = rawPageText;
+      if (rawPageText.length > 0) {
+        pageUnitsToTranslate.push({
+          id: `page_${pageIndex}`,
+          text: rawPageText,
+          context: `صفحه ${pageIndex} از ${totalPages} سند ${job.originalFileName}`,
+        });
       }
 
       if (rawPageText.length <= 15) {
@@ -2233,61 +2229,9 @@ export class PDFProcessor implements DocumentProcessor {
         }
       }
 
-      // 3. High-Fidelity Spatial Blocks Placement (Primary layout engine for manuals, reports, forms, and structured documents)
-      if (!renderedInPlace && blocks.length > 0) {
-        let sortedBlocks = [...blocks];
-        if (layoutAnalysis.isTwoColumn && blocks.length >= 2) {
-          const midX = page.getWidth() * 0.50;
-          const spanning = sortedBlocks.filter((b) => b.minX < midX - 25 && b.maxX > midX + 25);
-          const rightCol = sortedBlocks.filter((b) => b.minX >= midX - 25);
-          const leftCol = sortedBlocks.filter((b) => b.maxX <= midX + 25 && b.minX < midX - 25);
-          rightCol.sort((a, b) => b.maxY - a.maxY);
-          leftCol.sort((a, b) => b.maxY - a.maxY);
-          spanning.sort((a, b) => b.maxY - a.maxY);
-
-          const topSpanning = spanning.filter((b) => b.maxY > page.getHeight() * 0.65);
-          const bottomSpanning = spanning.filter((b) => b.maxY <= page.getHeight() * 0.65);
-
-          sortedBlocks = [...topSpanning, ...rightCol, ...leftCol, ...bottomSpanning];
-        }
-
-        renderedSpatial = renderSpatialBlocks(
-          page,
-          sortedBlocks,
-          translatedResultsMap,
-          pageIndex,
-          fontFamily
-        );
-        if (renderedSpatial) {
-          renderedBlocksMap.set(pageIndex, sortedBlocks.length);
-        }
-      }
-
-      // 4. Line-level In-Place Placement (for schematic callouts / diagrams with numbered pointers)
-      if (!renderedInPlace && !renderedSpatial && layoutAnalysis.layoutType === 'schematic_diagram' && lines.length > 0) {
-        const transMap = new Map<number, string>();
-        const pattern = /(?:\[(?:B|BLOCK|بخش|)\s*[-_]?\s*([\d\u06F0-\u06F9\u0660-\u0669]+)[^\]]*\]|(?:\b|^)([\d\u06F0-\u06F9\u0660-\u0669]+)[\.:\-])\s*([^\n\r]+)/g;
-        let m: RegExpExecArray | null;
-        while ((m = pattern.exec(fullFaText)) !== null) {
-          const num = parseInt(toAsciiDigits(m[1] || m[2]), 10);
-          if (num > 0) transMap.set(num, m[3].trim());
-        }
-
-        renderedInPlace = renderInPlaceLines(
-          page,
-          lines,
-          transMap,
-          fullFaText,
-          fontFamily
-        );
-        if (renderedInPlace) {
-          renderedBlocksMap.set(pageIndex, lines.length);
-        }
-      }
-
-      // 5. High-Fidelity Persian Typography & Layout (Primary renderer for manuals, articles, chapters, warnings, guides)
-      // Guarantees 100% of translated text is rendered with complete Persian cursive script, clear margins, and zero clipping!
-      if (!renderedInPlace && !renderedSpatial && paragraphs.length > 0) {
+      // Primary High-Fidelity Persian Typography & Layout
+      // Guarantees 100% of translated text is rendered with complete Persian cursive script, clear RTL margins, and zero clipping or misplaced text!
+      if (!renderedInPlace && paragraphs.length > 0) {
         renderPersianTextToPage(
           page,
           paragraphs,

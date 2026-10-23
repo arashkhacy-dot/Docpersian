@@ -49,12 +49,13 @@ export class GeminiTranslator {
   private localUrl: string;
   private localModel: string;
   private diagramInpainting: boolean;
+  private geminiLocationBlocked = false;
 
   constructor() {
     this.model = config.geminiModel || 'gemini-3.8-flash';
     this.engine = config.translationEngine || 'gemini';
     this.localUrl = config.localModelUrl || 'http://localhost:11434/v1';
-    this.localModel = config.localModelName || 'qwen2.5-vl:3b';
+    this.localModel = config.localModelName || 'qwen2.5:3b';
     this.diagramInpainting = config.diagramInpaintingEnabled !== false;
 
     if (config.geminiApiKey) {
@@ -76,6 +77,7 @@ export class GeminiTranslator {
       localModel: this.localModel,
       geminiModel: this.model,
       geminiAvailable: this.isApiKeyValid(),
+      geminiLocationBlocked: this.geminiLocationBlocked,
       diagramInpainting: this.diagramInpainting,
     };
   }
@@ -168,16 +170,26 @@ export class GeminiTranslator {
         model: this.model,
         contents: 'Translate to Persian: "Document translation engine test."',
       });
+      this.geminiLocationBlocked = false;
       return {
         success: true,
         model: this.model,
         response: response.text?.trim() || '',
       };
     } catch (err: any) {
+      const errMsg = err?.message || String(err);
+      if (errMsg.includes('location is not supported') || errMsg.includes('FAILED_PRECONDITION')) {
+        this.geminiLocationBlocked = true;
+        return {
+          success: false,
+          model: this.model,
+          error: 'تحریم موقعیت مکانی گوگل (User location is not supported). برای رفع این مشکل و اتصال مستقیم به جِمنای، دستور نصب و اتصال Cloudflare WARP را در سرور اجرا فرمایید یا از مدل محلی استفاده کنید.',
+        };
+      }
       return {
         success: false,
         model: this.model,
-        error: err?.message || String(err),
+        error: errMsg,
       };
     }
   }
@@ -318,6 +330,11 @@ export class GeminiTranslator {
       }
     }
 
+    if (this.geminiLocationBlocked) {
+      console.info('[GEMINI_GEO_BLOCKED] Server IP is geo-blocked by Google. Routing directly to local model...');
+      return await this.callLocalTranslate(chunk);
+    }
+
     const modelsToTry = Array.from(
       new Set([
         this.model,
@@ -385,6 +402,11 @@ export class GeminiTranslator {
   }
 
   private async callGeminiTranslate(chunk: TranslationUnit[], overrideModel?: string): Promise<TranslationResult[]> {
+    if (this.geminiLocationBlocked) {
+      console.info('[GEMINI_GEO_BLOCKED] Google geo-block active on server IP. Translating with local model...');
+      return await this.callLocalTranslate(chunk);
+    }
+
     if (!this.ai || !this.isApiKeyValid()) {
       try {
         console.info('[NO_GEMINI_KEY] Attempting local Ollama model...');
@@ -495,6 +517,17 @@ CRITICAL INSTRUCTIONS:
           return mappedResults;
         } catch (err: any) {
           const errMsg = String(err?.message || err || '');
+          const isLocationBlocked =
+            errMsg.includes('User location is not supported') ||
+            errMsg.includes('FAILED_PRECONDITION') ||
+            errMsg.includes('location is not supported');
+
+          if (isLocationBlocked) {
+            console.warn('[GEMINI_GEO_BLOCK_DETECTED] Google blocked this server IP (User location is not supported). Instantly routing to local model to prevent 20-minute stall...');
+            this.geminiLocationBlocked = true;
+            return await this.callLocalTranslate(chunk);
+          }
+
           const isBusyOrQuota =
             err?.status === 503 ||
             err?.status === 429 ||
@@ -756,7 +789,7 @@ CRITICAL INSTRUCTIONS:
 
     for (const endpointType of candidates) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 35000); // 35s hard timeout per candidate on CPU
+      const timeout = setTimeout(() => controller.abort(), 120000); // 120s timeout per candidate on CPU
 
       try {
         if (endpointType === 'v1') {
@@ -771,7 +804,7 @@ CRITICAL INSTRUCTIONS:
               ],
               temperature: 0.1,
               stream: false,
-              max_tokens: Math.min(maxTokens, 800),
+              max_tokens: Math.min(maxTokens, 1500),
             }),
             signal: controller.signal,
           });
@@ -796,7 +829,7 @@ CRITICAL INSTRUCTIONS:
               stream: false,
               options: {
                 temperature: 0.1,
-                num_predict: Math.min(maxTokens, 800),
+                num_predict: Math.min(maxTokens, 1500),
                 num_ctx: 2048,
               },
             }),
@@ -893,85 +926,30 @@ CRITICAL RULES:
     if (chunk.length === 0) return [];
     const endpoints = normalizeLocalEndpoints(this.localUrl);
 
-    // Single Document Page Translation
-    if (chunk.length === 1) {
-      const unit = chunk[0];
-      const textToTranslate = unit.text.trim();
-
-      // If text is extraordinarily huge (> 4000 characters), split into at most 2 balanced halves
-      if (textToTranslate.length > 4000) {
-        const blockSegments = textToTranslate.split(/(?=\[B\d+\])/g).filter(Boolean);
-        if (blockSegments.length > 2) {
-          const mid = Math.ceil(blockSegments.length / 2);
-          const part1 = blockSegments.slice(0, mid).join('');
-          const part2 = blockSegments.slice(mid).join('');
-          const res1 = await this.translateSingleTextViaLocal(part1, endpoints, unit.context);
-          const res2 = await this.translateSingleTextViaLocal(part2, endpoints, unit.context);
-          const combined = healPersianSpaces(`${res1}\n\n${res2}`.trim());
-          if (combined && /[\u0600-\u06FF]/.test(combined)) {
-            return [{ id: unit.id, translatedText: combined }];
-          }
-        }
-      }
-
-      const translated = await this.translateSingleTextViaLocal(textToTranslate, endpoints, unit.context);
-      const finalText = healPersianSpaces(translated);
-      return [{ id: unit.id, translatedText: finalText || unit.text }];
-    }
-
-    // MULTI-ITEM BATCH TRANSLATION
-    const linesToTranslate = chunk.map((c, i) => `[${i + 1}] ${c.text}`).join('\n');
-    const systemInstruction = `You are a professional enterprise document translator specializing in translating diverse technical, engineering, automotive, academic, and business documents into Persian (فارسی).
-Translate each item faithfully into fluent, formal Persian. Output each translated item with its matching tag [1], [2] at the start of each line, or return valid JSON: {"translations": [{"id": 1, "translatedText": "..."}]}.
-CRITICAL RULES:
-1. All Persian words MUST be written with natural cursive connectivity and complete spelling. NEVER separate letters inside words (e.g. کتاب, جدایی, حروف, خروج, است, مدل, کادر, مطالعه, صفحه).
-2. Preserve numbers, technical codes, and line breaks.`;
-
-    const prompt = `Items to translate into Persian:\n\n${linesToTranslate}\n\nTranslate each item into fluent Persian:`;
-
-    const content = await this.callLocalModelRaw(systemInstruction, prompt, endpoints, 800);
-    const parsedMap = this.parseLocalTranslationResponse(content, chunk);
     const mappedResults: TranslationResult[] = [];
-
-    for (let i = 0; i < chunk.length; i++) {
-      const item = chunk[i];
-      let tr = parsedMap.get(item.id);
-      if (!tr) tr = parsedMap.get(String(i + 1));
-      if (!tr) tr = parsedMap.get(String(i));
-      if (!tr) tr = parsedMap.get(`[${i + 1}]`);
-      if (!tr) tr = parsedMap.get(`B${i + 1}`);
-      if (!tr && chunk.length === 1 && parsedMap.size > 0) {
-        tr = Array.from(parsedMap.values())[0];
+    for (const unit of chunk) {
+      const textToTranslate = unit.text.trim();
+      if (!textToTranslate) {
+        mappedResults.push({ id: unit.id, translatedText: unit.text });
+        continue;
       }
 
-      const finalText = tr !== undefined && tr !== null && tr.trim() !== '' ? healPersianSpaces(tr) : item.text;
-      mappedResults.push({
-        id: item.id,
-        translatedText: finalText,
-      });
-    }
-
-    // Fallback to Gemini for any items that failed to translate or don't contain Persian
-    if (this.ai && this.isApiKeyValid()) {
-      const untranslated = mappedResults.filter((r) => {
-        const orig = chunk.find((c) => c.id === r.id);
-        return r.translatedText === orig?.text || !/[\u0600-\u06FF]/.test(r.translatedText);
-      });
-      if (untranslated.length > 0) {
-        const toTranslate = chunk.filter((c) => untranslated.some((u) => u.id === c.id));
-        try {
-          const gemResults = await this.callGeminiTranslate(toTranslate);
-          const gemMap = new Map(gemResults.map((g) => [g.id, g.translatedText]));
-          for (const r of mappedResults) {
-            if (gemMap.has(r.id) && gemMap.get(r.id)?.trim()) {
-              r.translatedText = gemMap.get(r.id)!;
-            }
-          }
-        } catch {}
+      try {
+        const translated = await this.translateSingleTextViaLocal(textToTranslate, endpoints, unit.context);
+        const finalText = translated && /[\u0600-\u06FF]/.test(translated) ? healPersianSpaces(translated) : (translated || unit.text);
+        mappedResults.push({
+          id: unit.id,
+          translatedText: finalText,
+        });
+      } catch (err) {
+        console.warn(`[LOCAL_PAGE_WARN] Single item translation failed for ${unit.id}:`, err);
+        mappedResults.push({
+          id: unit.id,
+          translatedText: unit.text,
+        });
       }
     }
 
-    return mappedResults;
   }
 
   private async extractAndTranslateFromImageViaLocal(

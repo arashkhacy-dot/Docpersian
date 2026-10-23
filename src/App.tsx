@@ -105,13 +105,10 @@ export default function App() {
         .then((res) => (res.ok ? res.json() : null))
         .then((job: JobState | null) => {
           if (job) {
+            setCurrentJob(job);
             const isTerminal = ['completed', 'completed_with_warnings', 'failed', 'cancelled'].includes(job.status);
             if (!isTerminal) {
-              setCurrentJob(job);
               subscribeToJobEvents(job.jobId);
-            } else {
-              // Completed or past terminal jobs should not hijack the upload screen
-              localStorage.removeItem(ACTIVE_JOB_KEY);
             }
           } else {
             localStorage.removeItem(ACTIVE_JOB_KEY);

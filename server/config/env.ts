@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import { ProxyAgent, setGlobalDispatcher } from 'undici';
 
 dotenv.config();
 
@@ -67,7 +68,6 @@ export const config: AppConfig = {
 // Automatically bind ProxyAgent to global Node fetch if outbound proxy is defined
 if (config.outboundProxy) {
   try {
-    const { ProxyAgent, setGlobalDispatcher } = await import('undici');
     setGlobalDispatcher(new ProxyAgent(config.outboundProxy));
     console.log(`[NETWORK] Outbound Proxy successfully connected to global fetch: ${config.outboundProxy}`);
   } catch (proxyErr) {

@@ -945,6 +945,16 @@ app.get(['/fix_server_vpn_network.sh', '/fix.sh', '/api/fix.sh'], (_req: Request
   }
 });
 
+app.get(['/setup_warp.sh', '/warp.sh', '/api/warp.sh'], (_req: Request, res: Response) => {
+  const scriptPath = path.join(process.cwd(), 'setup_warp.sh');
+  if (fs.existsSync(scriptPath)) {
+    res.setHeader('Content-Type', 'text/x-shellscript; charset=utf-8');
+    res.sendFile(scriptPath);
+  } else {
+    res.status(404).send('#!/bin/bash\necho "WARP script not found"\n');
+  }
+});
+
 app.get(['/find_and_update.sh', '/find.sh'], (_req: Request, res: Response) => {
   const scriptPath = path.join(process.cwd(), 'find_and_update.sh');
   if (fs.existsSync(scriptPath)) {

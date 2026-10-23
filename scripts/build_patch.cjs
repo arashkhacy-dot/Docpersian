@@ -6,7 +6,9 @@ const files = [
   'server/config/env.ts',
   'server/gemini/translator.ts',
   'server/processors/pdfProcessor.ts',
-  'src/components/UploadZone.tsx'
+  'src/App.tsx',
+  'src/components/UploadZone.tsx',
+  'setup_warp.sh'
 ];
 
 execSync('tar -czf /tmp/patch_files.tar.gz ' + files.join(' '));
