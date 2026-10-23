@@ -847,7 +847,7 @@ app.get('/api/jobs/:id/report', async (req: Request, res: Response) => {
 });
 
 // 9. System Health & Config Info
-app.get('/api/health', (_req: Request, res: Response) => {
+app.get(['/health', '/api/health'], (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     model: config.geminiModel,
@@ -1004,17 +1004,16 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // ================= FRONTEND / VITE SERVING =================
 async function startServer() {
   await defaultStorage.init();
-  await ensurePersianFont().catch((err) => console.warn('[FONT_INIT_WARNING]', err));
 
   const distPath = path.resolve(__dirname, 'dist');
   const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
 
-  if (hasDist && (!config.isDev || process.env.NODE_ENV === 'production' || process.env.SERVE_DIST === 'true')) {
+  if (hasDist) {
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
-    console.log('[FRONTEND] Serving optimized production build from dist (Zero reload glitches)');
+    console.log('[FRONTEND] Serving optimized production build from dist');
   } else if (config.isDev) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -1022,16 +1021,11 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
-    console.log('[FRONTEND] Serving Vite middleware (HMR disabled to prevent mobile reload glitches)');
-  } else if (hasDist) {
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    console.log('[FRONTEND] Serving Vite dev middleware (HMR disabled)');
   }
 
   const server = app.listen(config.port, '0.0.0.0', () => {
-    console.log(`DocuShift server running on port ${config.port} (mode: ${config.isDev ? 'dev' : 'prod'})`);
+    console.log(`DocuShift server running on 0.0.0.0:${config.port} (mode: ${hasDist ? 'production' : 'development'})`);
   });
 
   // Optimize timeouts for large document and presentation uploads
@@ -1039,6 +1033,26 @@ async function startServer() {
   server.requestTimeout = 30 * 60 * 1000; // Node 18+ requestTimeout
   server.keepAliveTimeout = 120 * 1000;
   server.headersTimeout = 130 * 1000;
+
+  // Gracefully handle TLS handshakes or malformed HTTP requests without dropping sockets abruptly
+  server.on('clientError', (err: any, socket: any) => {
+    if (socket.writable) {
+      socket.end(
+        'HTTP/1.1 400 Bad Request\r\n' +
+        'Content-Type: text/html; charset=utf-8\r\n' +
+        'Connection: close\r\n\r\n' +
+        '<!DOCTYPE html><html><body style="font-family:sans-serif;text-align:center;padding:50px;">' +
+        '<h2>لطفاً با http:// وارد شوید (نه https://)</h2>' +
+        '<p>Please access this server via <b>http://</b> (not https://) or standard port 80.</p>' +
+        '</body></html>'
+      );
+    } else {
+      socket.destroy();
+    }
+  });
+
+  // Background initialization of fonts without blocking the HTTP listener
+  ensurePersianFont().catch((err) => console.warn('[FONT_INIT_WARNING]', err));
 }
 
 startServer().catch((err) => {
