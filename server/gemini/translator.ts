@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 import { GoogleGenAI, Type } from '@google/genai';
-import { config } from '../config/env.js';
-import { defaultStorage } from '../storage/localStorageProvider.js';
-import { healPersianSpaces } from '../processors/persianTypographyEngine.js';
+import { config } from '../config/env.ts';
+import { defaultStorage } from '../storage/localStorageProvider.ts';
+import { healPersianSpaces } from '../processors/persianTypographyEngine.ts';
 
 export interface TranslationUnit {
   id: string;
@@ -52,11 +52,11 @@ export class GeminiTranslator {
   private geminiLocationBlocked = false;
 
   constructor() {
-    this.model = config.geminiModel || 'gemini-3.8-flash';
+    this.model = config.geminiModel || 'gemini-3.5-flash';
     this.engine = config.translationEngine || 'gemini';
     this.localUrl = config.localModelUrl || 'http://localhost:11434/v1';
     this.localModel = config.localModelName || 'qwen2.5:3b';
-    this.diagramInpainting = config.diagramInpaintingEnabled !== false;
+    this.diagramInpainting = config.diagramInpaintingEnabled === true;
 
     if (config.geminiApiKey) {
       this.ai = new GoogleGenAI({
@@ -165,33 +165,38 @@ export class GeminiTranslator {
         error: 'کلید GEMINI_API_KEY در فایل .env تنظیم نشده است یا نامعتبر است (مقدار خالی یا MY_... دارد).',
       };
     }
-    try {
-      const response = await this.ai.models.generateContent({
-        model: this.model,
-        contents: 'Translate to Persian: "Document translation engine test."',
-      });
-      this.geminiLocationBlocked = false;
-      return {
-        success: true,
-        model: this.model,
-        response: response.text?.trim() || '',
-      };
-    } catch (err: any) {
-      const errMsg = err?.message || String(err);
-      if (errMsg.includes('location is not supported') || errMsg.includes('FAILED_PRECONDITION')) {
-        this.geminiLocationBlocked = true;
+    const testCandidates = Array.from(new Set([this.model, 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'])).filter(Boolean);
+    let lastErr = '';
+    for (const modelName of testCandidates) {
+      try {
+        const response = await this.ai.models.generateContent({
+          model: modelName,
+          contents: 'Translate to Persian: "Document translation engine test."',
+        });
+        this.geminiLocationBlocked = false;
+        this.model = modelName;
         return {
-          success: false,
-          model: this.model,
-          error: 'تحریم موقعیت مکانی گوگل (User location is not supported). برای رفع این مشکل و اتصال مستقیم به جِمنای، دستور نصب و اتصال Cloudflare WARP را در سرور اجرا فرمایید یا از مدل محلی استفاده کنید.',
+          success: true,
+          model: modelName,
+          response: response.text?.trim() || '',
         };
+      } catch (err: any) {
+        lastErr = err?.message || String(err);
+        if (lastErr.includes('location is not supported') || lastErr.includes('FAILED_PRECONDITION')) {
+          this.geminiLocationBlocked = true;
+          return {
+            success: false,
+            model: modelName,
+            error: 'تحریم موقعیت مکانی گوگل (User location is not supported). برای رفع این مشکل و اتصال مستقیم به جِمنای، دستور نصب و اتصال Cloudflare WARP را در سرور اجرا فرمایید یا از مدل محلی استفاده کنید.',
+          };
+        }
       }
-      return {
-        success: false,
-        model: this.model,
-        error: errMsg,
-      };
     }
+    return {
+      success: false,
+      model: this.model,
+      error: lastErr || 'خطا در برقراری ارتباط با مدل ابری',
+    };
   }
 
   private computeCacheKey(text: string, context?: string): string {
@@ -337,12 +342,13 @@ export class GeminiTranslator {
 
     const modelsToTry = Array.from(
       new Set([
+        'gemini-3.5-flash-lite',
         this.model,
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-2.5-pro',
+        'gemini-3.5-flash',
+        'gemini-3.8-flash',
+        'gemini-3.7-flash',
       ])
-    ).filter((m) => m && !m.includes('3.8') && !m.includes('3.1') && !m.includes('latest'));
+    ).filter(Boolean);
 
     for (const modelCandidate of modelsToTry) {
       try {
@@ -448,10 +454,10 @@ CRITICAL INSTRUCTIONS:
     const candidateModels = Array.from(
       new Set(
         overrideModel
-          ? [overrideModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
-          : [this.model, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro']
+          ? [overrideModel, 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash']
+          : ['gemini-3.5-flash-lite', this.model, 'gemini-3.5-flash', 'gemini-3.8-flash']
       )
-    ).filter((m) => m && !m.includes('3.8') && !m.includes('3.1') && !m.includes('latest'));
+    ).filter(Boolean);
 
     // Exponential backoff retry loop for quota (429) and high-demand (503) protection
     for (let attempt = 1; attempt <= 4; attempt++) {

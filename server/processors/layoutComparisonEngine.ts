@@ -1,5 +1,5 @@
 import { PDFDocument, PDFPage, rgb, degrees } from 'pdf-lib';
-import { ExtractedLine, SpatialBlock } from './pdfProcessor.js';
+import type { ExtractedLine, SpatialBlock } from './pdfProcessor.ts';
 
 export type PageLayoutType =
   | 'two_column'

@@ -5,7 +5,8 @@ import crypto from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import arabicPersianReshaper from 'arabic-persian-reshaper';
-import { defaultTranslator, DiagramTextLabel } from '../gemini/translator.js';
+import { defaultTranslator } from '../gemini/translator.ts';
+import type { DiagramTextLabel } from '../gemini/translator.ts';
 
 const execPromise = promisify(exec);
 
@@ -23,7 +24,7 @@ function escapeShellArg(arg: string): string {
   return `'${arg.replace(/'/g, `'\\''`)}'`;
 }
 
-import { shapePersianForPdf } from './persianTypographyEngine.js';
+import { shapePersianForPdf } from './persianTypographyEngine.ts';
 
 function formatPersianVisualText(rawPersian: string): string {
   try {

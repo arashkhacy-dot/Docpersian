@@ -3,7 +3,7 @@ import {
   healPersianSpaces,
   normalizeTableCellContent,
   sanitizePersianSymbols,
-} from './persianTypographyEngine';
+} from './persianTypographyEngine.ts';
 
 export { shapePersianForPdf, healPersianSpaces, normalizeTableCellContent, sanitizePersianSymbols };
 

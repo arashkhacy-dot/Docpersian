@@ -6,11 +6,12 @@ import util from 'util';
 import JSZip from 'jszip';
 
 const execPromise = util.promisify(exec);
-import { DocumentProcessor } from './documentProcessor.js';
-import { JobState, PageManifestItem } from '../jobs/jobState.js';
-import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
-import { healPersianSpaces } from './persianTypographyEngine.js';
-import { defaultDiagramInpainter } from './diagramInpainter.js';
+import type { DocumentProcessor } from './documentProcessor.ts';
+import type { JobState, PageManifestItem } from '../jobs/jobState.ts';
+import { defaultTranslator } from '../gemini/translator.ts';
+import type { TranslationUnit } from '../gemini/translator.ts';
+import { healPersianSpaces } from './persianTypographyEngine.ts';
+import { defaultDiagramInpainter } from './diagramInpainter.ts';
 
 export class DOCXProcessor implements DocumentProcessor {
   async analyzeDocument(inputFilePath: string): Promise<{

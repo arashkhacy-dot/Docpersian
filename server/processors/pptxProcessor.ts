@@ -7,12 +7,13 @@ import JSZip from 'jszip';
 import { XMLValidator } from 'fast-xml-parser';
 
 const execPromise = util.promisify(exec);
-import { DocumentProcessor } from './documentProcessor.js';
-import { JobState, PageManifestItem } from '../jobs/jobState.js';
-import { defaultTranslator, TranslationUnit } from '../gemini/translator.js';
-import { createDocxFile } from './docxHelper.js';
-import { healPersianSpaces } from './persianTypographyEngine.js';
-import { defaultDiagramInpainter } from './diagramInpainter.js';
+import type { DocumentProcessor } from './documentProcessor.ts';
+import type { JobState, PageManifestItem } from '../jobs/jobState.ts';
+import { defaultTranslator } from '../gemini/translator.ts';
+import type { TranslationUnit } from '../gemini/translator.ts';
+import { createDocxFile } from './docxHelper.ts';
+import { healPersianSpaces } from './persianTypographyEngine.ts';
+import { defaultDiagramInpainter } from './diagramInpainter.ts';
 
 function escapeXml(unsafe: string): string {
   return unsafe
@@ -690,17 +691,18 @@ export class PPTXProcessor implements DocumentProcessor {
         }
       });
 
-      if (mediaFiles.length > 0) {
+      const candidateImages = mediaFiles.slice(0, 6);
+      if (candidateImages.length > 0) {
         await onProgress(
           'translating',
           totalSlides,
           totalSlides,
-          `بررسی و ترجمه هوشمند برچسب‌های متنی در ${mediaFiles.length} دیاگرام و تصویر ارائه...`
+          `بررسی و ترجمه هوشمند برچسب‌های متنی در ${candidateImages.length} دیاگرام و تصویر ارائه...`
         );
 
-        for (let mIdx = 0; mIdx < mediaFiles.length; mIdx++) {
+        for (let mIdx = 0; mIdx < candidateImages.length; mIdx++) {
           if (checkCancelled()) throw new Error('OPERATION_CANCELLED');
-          const mediaPath = mediaFiles[mIdx];
+          const mediaPath = candidateImages[mIdx];
           const fileEntry = zip.file(mediaPath);
           if (!fileEntry) continue;
 

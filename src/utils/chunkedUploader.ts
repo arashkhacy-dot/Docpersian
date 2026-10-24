@@ -12,11 +12,11 @@ export interface UploadProgressInfo {
   uploadMode?: 'unified' | 'chunked';
 }
 
-// 1 GB capacity: All documents use direct single-stream Turbo upload by default for maximum speed
-export const DIRECT_UPLOAD_THRESHOLD = 1024 * 1024 * 1024; // 1024 MB
+// 15 MB threshold: Files under 15MB use direct Turbo stream; larger files automatically use chunked streaming to prevent proxy timeouts
+export const DIRECT_UPLOAD_THRESHOLD = 15 * 1024 * 1024; // 15 MB
 
-// 10 MB per chunk: 5x faster than 2MB, reducing round-trips while remaining resilient
-export const CHUNK_SIZE = 10 * 1024 * 1024;
+// 4 MB per chunk: Ideal packet size for high-speed chunked uploads over all network conditions
+export const CHUNK_SIZE = 4 * 1024 * 1024; // 4 MB
 
 const SESSION_STORAGE_PREFIX = 'docushift_upload_session_';
 export const UPLOAD_MODE_STORAGE_KEY = 'docushift_upload_mode';
@@ -272,25 +272,9 @@ export async function uploadDirectFile(
   onProgress?: (info: UploadProgressInfo) => void,
   signal?: AbortSignal
 ): Promise<any> {
-  try {
-    return await uploadDirectFileOnce(file, onProgress, signal, 1);
-  } catch (err: any) {
-    if (signal?.aborted) throw err;
-    console.warn('[DIRECT_UPLOAD_FIRST_ATTEMPT_FAILED]', err);
-    // Auto-retry once on network hiccup before failing
-    onProgress?.({
-      percent: 0,
-      uploadedBytes: 0,
-      totalBytes: file.size,
-      currentChunk: 1,
-      totalChunks: 1,
-      isDirect: true,
-      uploadMode: 'unified',
-      statusMessage: 'نوسان لحظه‌ای شبکه؛ در حال تلاش مجدد برای ارسال یکپارچه...',
-    });
-    await new Promise((r) => setTimeout(r, 1000));
-    return await uploadDirectFileOnce(file, onProgress, signal, 2);
-  }
+  // Directly stream single upload. If it encounters proxy size limits or network abort,
+  // pass error up immediately so it can seamlessly fallback to chunked upload without restarting from 0% twice.
+  return await uploadDirectFileOnce(file, onProgress, signal, 1);
 }
 
 /**
@@ -355,7 +339,9 @@ function uploadSingleChunkXhr(
           const res = JSON.parse(xhr.responseText);
           if (res.error) errMsg = res.error;
         } catch {}
-        reject(new Error(errMsg));
+        const errObj: any = new Error(errMsg);
+        errObj.status = xhr.status;
+        reject(errObj);
       }
     };
 
@@ -569,6 +555,11 @@ export async function uploadFileInParallelChunks(
         lastErr = err;
         activeChunkProgress.delete(chunkIndex);
 
+        if ((err as any)?.status === 404 || err?.message?.includes('منقضی') || err?.message?.includes('یافت نشد')) {
+          clearUploadSession(file);
+          throw new Error('جلسه آپلود قبلی بر روی سرور منقضی شده بود؛ حافظه نوسازی شد. لطفاً مجدداً دکمه ارسال را بزنید.');
+        }
+
         // Check if server actually accepted the chunk despite network blip
         const serverChunks = await getUploadedChunksFromServer(uploadId!);
         if (serverChunks.includes(chunkIndex)) {
@@ -655,12 +646,15 @@ export async function uploadFileInChunks(
 ): Promise<any> {
   const sessionKey = getSessionStorageKey(file);
 
-  // If user explicitly chose chunked or has an existing chunked session
-  if (preferredMode === 'chunked') {
+  // If user explicitly chose chunked OR file is larger than DIRECT_UPLOAD_THRESHOLD (15MB):
+  // Automatically use chunked upload to prevent cloud proxy body limits and 99% stalls!
+  const shouldUseChunked = preferredMode === 'chunked' || file.size > DIRECT_UPLOAD_THRESHOLD;
+
+  if (shouldUseChunked) {
     return await uploadFileInParallelChunks(file, onProgress, signal);
   }
 
-  // Otherwise, default is UNIFIED MAX-SPEED DIRECT STREAM
+  // Otherwise (file <= 15MB), direct unified stream is ultra fast
   try {
     localStorage.removeItem(sessionKey);
   } catch {}
@@ -678,7 +672,7 @@ export async function uploadFileInChunks(
       totalBytes: file.size,
       currentChunk: 1,
       totalChunks: Math.max(1, Math.ceil(file.size / CHUNK_SIZE)),
-      statusMessage: 'انتقال به حالت قطعه‌ای هوشمند جهت پایداری اتصال...',
+      statusMessage: 'انتقال خودکار به سیستم چندبخشی هوشمند جهت تضمین دریافت...',
       uploadMode: 'chunked',
       isDirect: false,
     });

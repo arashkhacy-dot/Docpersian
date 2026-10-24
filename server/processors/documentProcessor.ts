@@ -1,4 +1,4 @@
-import { JobState, PageManifestItem } from '../jobs/jobState.js';
+import type { JobState, PageManifestItem } from '../jobs/jobState.ts';
 
 export interface ProcessPageResult {
   index: number;

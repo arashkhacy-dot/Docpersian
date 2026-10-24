@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import JSZip from 'jszip';
-import { config } from '../config/env.js';
+import { config } from '../config/env.ts';
 
 export interface DownloadedFileInfo {
   tempFilePath: string;

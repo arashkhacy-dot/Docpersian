@@ -8,7 +8,7 @@ import { JobHistory } from './components/JobHistory';
 import { QualityReportModal } from './components/QualityReportModal';
 import { EngineSettingsModal } from './components/EngineSettingsModal';
 import { JobState } from './types/job';
-import { uploadFileInChunks, checkUploadSession, CHUNK_SIZE, UploadProgressInfo } from './utils/chunkedUploader';
+import { uploadFileInChunks, checkUploadSession, CHUNK_SIZE, DIRECT_UPLOAD_THRESHOLD, UploadProgressInfo } from './utils/chunkedUploader';
 
 const ACTIVE_JOB_KEY = 'docushift_active_job_id';
 
@@ -186,8 +186,7 @@ export default function App() {
     // Check if an existing session exists for this file
     const existingSession = await checkUploadSession(file);
     const estChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
-
-    const isDirectCandidate = uploadMode === 'unified';
+    const isDirectCandidate = uploadMode === 'unified' && file.size <= DIRECT_UPLOAD_THRESHOLD;
 
     if (!isDirectCandidate && existingSession && existingSession.completedChunks.length > 0) {
       setUploadProgress({
@@ -209,10 +208,10 @@ export default function App() {
         currentChunk: 1,
         totalChunks: isDirectCandidate ? 1 : estChunks,
         isDirect: isDirectCandidate,
-        uploadMode,
+        uploadMode: isDirectCandidate ? 'unified' : 'chunked',
         statusMessage: isDirectCandidate
           ? 'آغاز ارسال یکپارچه با حداکثر سرعت (Turbo)...'
-          : 'آغاز ارسال چندبخشی قطعه‌ای...',
+          : `آغاز ارسال قطعه‌ای هوشمند (${estChunks} قطعه ضد قطعی)...`,
       });
     }
 

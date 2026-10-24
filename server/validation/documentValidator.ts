@@ -1,8 +1,8 @@
 import fs from 'fs';
 import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
-import { JobState, QualityReport } from '../jobs/jobState.js';
-import { config } from '../config/env.js';
+import type { JobState, QualityReport } from '../jobs/jobState.ts';
+import { config } from '../config/env.ts';
 
 export interface ValidationResult {
   valid: boolean;

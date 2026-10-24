@@ -7,22 +7,23 @@ import zlib from 'zlib';
 import { PDFDocument, rgb, PDFName, PDFNumber, degrees } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFParse } from 'pdf-parse';
-import { DocumentProcessor } from './documentProcessor';
-import { JobState, PageManifestItem } from '../jobs/jobState';
-import { defaultTranslator, TranslationUnit } from '../gemini/translator';
-import { prepareRtlText, sanitizePersianSymbols } from './persianShaper';
+import type { DocumentProcessor } from './documentProcessor.ts';
+import type { JobState, PageManifestItem } from '../jobs/jobState.ts';
+import { defaultTranslator, type TranslationUnit } from '../gemini/translator.ts';
+import { prepareRtlText, sanitizePersianSymbols } from './persianShaper.ts';
 import {
   healPersianSpaces,
   parseTocLine,
   parseRunOnTocEntries,
   normalizeTableCellContent,
   loadPersianFontFamily,
-  PersianFontFamily,
-} from './persianTypographyEngine';
-import { config } from '../config/env';
-import { createDocxFile } from './docxHelper.js';
-import { defaultDiagramInpainter } from './diagramInpainter.js';
-import { defaultLayoutEngine, PageLayoutAnalysis } from './layoutComparisonEngine.js';
+  type PersianFontFamily,
+} from './persianTypographyEngine.ts';
+import { config } from '../config/env.ts';
+import { createDocxFile } from './docxHelper.ts';
+import { defaultDiagramInpainter } from './diagramInpainter.ts';
+import { defaultLayoutEngine } from './layoutComparisonEngine.ts';
+import type { PageLayoutAnalysis } from './layoutComparisonEngine.ts';
 
 const execPromise = util.promisify(exec);
 

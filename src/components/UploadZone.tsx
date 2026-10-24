@@ -411,11 +411,11 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
               {uploadMode === 'unified' ? (
                 <span className="text-emerald-400 font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  استریم مستقیم بدون تقطیع (حداکثر پهنای باند سرور)
+                  ارسال مستقیم برای فایل‌های سبک و متوسط (تا ۱۵ مگابایت)
                 </span>
               ) : (
                 <span className="text-indigo-400 font-medium">
-                  قطعات ۱۰ مگابایتی مقاوم در برابر قطعی مکرر
+                  قطعات ۴ مگابایتی ضد قطعی با قابلیت بازیابی هوشمند
                 </span>
               )}
             </div>

@@ -1,4 +1,4 @@
-import { JobState } from '../jobs/jobState.js';
+import type { JobState } from '../jobs/jobState.ts';
 
 export interface StorageProvider {
   init(): Promise<void>;

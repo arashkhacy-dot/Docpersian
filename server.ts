@@ -1,20 +1,22 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import { config, validateStartupConfig } from './server/config/env.js';
-import { defaultStorage } from './server/storage/localStorageProvider.js';
-import { defaultJobQueue } from './server/jobs/jobQueue.js';
-import { defaultWorker } from './server/jobs/jobWorker.js';
-import { JobState, isTerminalStatus } from './server/jobs/jobState.js';
-import { PDFProcessor, ensurePersianFont } from './server/processors/pdfProcessor.js';
-import { DOCXProcessor } from './server/processors/docxProcessor.js';
-import { PPTXProcessor } from './server/processors/pptxProcessor.js';
-import { defaultTranslator } from './server/gemini/translator.js';
-import { downloadFileFromUrl } from './server/utils/urlDownloader.js';
-import { createDocxFile } from './server/processors/docxHelper.js';
+import { config, validateStartupConfig } from './server/config/env.ts';
+import { defaultStorage } from './server/storage/localStorageProvider.ts';
+import { defaultJobQueue } from './server/jobs/jobQueue.ts';
+import { defaultWorker } from './server/jobs/jobWorker.ts';
+import type { JobState } from './server/jobs/jobState.ts';
+import { isTerminalStatus } from './server/jobs/jobState.ts';
+import { PDFProcessor, ensurePersianFont } from './server/processors/pdfProcessor.ts';
+import { DOCXProcessor } from './server/processors/docxProcessor.ts';
+import { PPTXProcessor } from './server/processors/pptxProcessor.ts';
+import { defaultTranslator } from './server/gemini/translator.ts';
+import { downloadFileFromUrl } from './server/utils/urlDownloader.ts';
+import { createDocxFile } from './server/processors/docxHelper.ts';
 import JSZip from 'jszip';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1017,7 +1019,23 @@ async function startServer() {
   } else if (config.isDev) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: false },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+        watch: {
+          ignored: [
+            '**/jobs_storage/**',
+            '**/uploads_temp/**',
+            '**/temp/**',
+            '**/public/**',
+            '**/.git/**',
+            '**/dist/**',
+            '**/node_modules/**',
+            '**/*.log',
+            '**/*.tmp*',
+          ],
+        },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);

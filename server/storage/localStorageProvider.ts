@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { StorageProvider } from './storageProvider.js';
-import { JobState } from '../jobs/jobState.js';
-import { config } from '../config/env.js';
+import type { StorageProvider } from './storageProvider.ts';
+import type { JobState } from '../jobs/jobState.ts';
+import { config } from '../config/env.ts';
 
 export class LocalStorageProvider implements StorageProvider {
   private baseDir: string;

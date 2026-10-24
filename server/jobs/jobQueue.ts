@@ -1,7 +1,8 @@
-import { JobState, isTerminalStatus } from './jobState.js';
-import { defaultWorker } from './jobWorker.js';
-import { defaultStorage } from '../storage/localStorageProvider.js';
-import { config } from '../config/env.js';
+import type { JobState } from './jobState.ts';
+import { isTerminalStatus } from './jobState.ts';
+import { defaultWorker } from './jobWorker.ts';
+import { defaultStorage } from '../storage/localStorageProvider.ts';
+import { config } from '../config/env.ts';
 
 export class JobQueue {
   private queue: string[] = [];

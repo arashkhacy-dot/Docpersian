@@ -41,7 +41,7 @@ function parseBoolean(val: string | undefined, defaultVal: boolean): boolean {
 
 export const config: AppConfig = {
   geminiApiKey: process.env.GEMINI_API_KEY || '',
-  geminiModel: (process.env.GEMINI_MODEL && !process.env.GEMINI_MODEL.includes('3.8')) ? process.env.GEMINI_MODEL : 'gemini-2.5-flash',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
   translationEngine: (process.env.TRANSLATION_ENGINE as 'gemini' | 'local') || 'gemini',
   localModelUrl: process.env.LOCAL_MODEL_URL || 'http://localhost:11434/v1',
   localModelName: process.env.LOCAL_MODEL_NAME || 'qwen2.5:3b',
@@ -58,7 +58,7 @@ export const config: AppConfig = {
   retryCount: parseNumber(process.env.RETRY_COUNT, 5), // 5 maximum retries
   cacheEnabled: parseBoolean(process.env.CACHE_ENABLED, true),
   reconstructionRtlEnabled: parseBoolean(process.env.RECONSTRUCTION_RTL_ENABLED, true),
-  diagramInpaintingEnabled: parseBoolean(process.env.DIAGRAM_INPAINTING_ENABLED, true),
+  diagramInpaintingEnabled: parseBoolean(process.env.DIAGRAM_INPAINTING_ENABLED, false),
   outboundProxy: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.ALL_PROXY || '',
   port: parseNumber(process.env.PORT, 3000),
   isDev: process.env.NODE_ENV !== 'production',

@@ -1,12 +1,13 @@
 import EventEmitter from 'events';
-import { JobState, JobStatus, isTerminalStatus, DebugLogEntry } from './jobState';
-import { defaultStorage } from '../storage/localStorageProvider';
-import { config } from '../config/env';
-import { defaultPDFProcessor } from '../processors/pdfProcessor';
-import { defaultDOCXProcessor } from '../processors/docxProcessor';
-import { defaultPPTXProcessor } from '../processors/pptxProcessor';
-import { defaultValidator } from '../validation/documentValidator';
-import { DocumentProcessor } from '../processors/documentProcessor';
+import type { JobState, JobStatus, DebugLogEntry } from './jobState.ts';
+import { isTerminalStatus } from './jobState.ts';
+import { defaultStorage } from '../storage/localStorageProvider.ts';
+import { config } from '../config/env.ts';
+import { defaultPDFProcessor } from '../processors/pdfProcessor.ts';
+import { defaultDOCXProcessor } from '../processors/docxProcessor.ts';
+import { defaultPPTXProcessor } from '../processors/pptxProcessor.ts';
+import { defaultValidator } from '../validation/documentValidator.ts';
+import type { DocumentProcessor } from '../processors/documentProcessor.ts';
 
 interface ActiveJobHandle {
   job: JobState;
