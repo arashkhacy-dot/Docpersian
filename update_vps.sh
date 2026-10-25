@@ -1,198 +1,197 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# DocuShift - اسکریپت به‌روزرسانی جامع و مستقیم از گیت‌هاب روی VPS
+# ==============================================================================
 set -e
 
-# Auto-detect project directory if not currently inside it
-if [ ! -f "server.ts" ] && [ ! -f "package.json" ]; then
-  echo "--> در حال پیدا کردن خودکار پوشه پروژه روی سرور..."
-  TARGET_DIR=$(pm2 jlist 2>/dev/null | grep -o '"pm_cwd":"[^"]*"' | head -n1 | cut -d'"' -f4)
-  if [ -z "$TARGET_DIR" ] || [ ! -f "$TARGET_DIR/server.ts" ]; then
-    TARGET_DIR=$(pwdx $(pgrep -f "server.ts" | head -n1) 2>/dev/null | awk '{print $2}')
+echo "=========================================================="
+echo "🔍 گام ۱: مکان‌یابی پوشه فعال پروژه در سرور..."
+echo "=========================================================="
+
+TARGET_DIR=""
+
+# ۱. استعلام از PM2 (دقیق‌ترین روش برای یافتن پوشه زنده سرور)
+if command -v pm2 >/dev/null 2>&1; then
+  PM2_DIR=$(pm2 jlist 2>/dev/null | grep -o '"pm_cwd":"[^"]*"' | head -n1 | cut -d'"' -f4)
+  if [ -n "$PM2_DIR" ] && [ -f "$PM2_DIR/server.ts" ]; then
+    TARGET_DIR="$PM2_DIR"
+    echo "  ✓ پوشه فعال از طریق PM2 شناسایی شد: $TARGET_DIR"
   fi
-  if [ -z "$TARGET_DIR" ] || [ ! -f "$TARGET_DIR/server.ts" ]; then
-    TARGET_DIR=$(find /var/www /home /root /opt /srv / -maxdepth 4 \( -name "Docpersian" -o -name "docpersian" -o -name "docushift" -o -name "server.ts" \) -not -path "*/node_modules/*" 2>/dev/null | head -n1)
-    if [ -f "$TARGET_DIR" ]; then
-      TARGET_DIR=$(dirname "$TARGET_DIR")
+fi
+
+# ۲. استعلام از پروسه نود در حال اجرا
+if [ -z "$TARGET_DIR" ]; then
+  NODE_PID=$(pgrep -f "server.ts" 2>/dev/null | head -n1)
+  if [ -n "$NODE_PID" ]; then
+    PWDX_DIR=$(pwdx "$NODE_PID" 2>/dev/null | awk '{print $2}')
+    if [ -n "$PWDX_DIR" ] && [ -f "$PWDX_DIR/server.ts" ]; then
+      TARGET_DIR="$PWDX_DIR"
+      echo "  ✓ پوشه فعال از طریق PID پروسه نود شناسایی شد: $TARGET_DIR"
     fi
   fi
-  if [ -n "$TARGET_DIR" ] && [ -d "$TARGET_DIR" ]; then
-    echo "--> پوشه پروژه پیدا شد: $TARGET_DIR"
-    cd "$TARGET_DIR"
-  else
-    echo "خطا: پوشه پروژه پیدا نشد! لطفا با دستور cd وارد مسیر پروژه شوید."
-    exit 1
+fi
+
+# ۳. بررسی مسیرهای استاندارد سرور
+if [ -z "$TARGET_DIR" ]; then
+  COMMON_DIRS=(
+    "/var/www/docushift"
+    "/var/www/Docpersian"
+    "/var/www/docpersian"
+    "/root/docushift"
+    "/root/Docpersian"
+    "/root/docpersian"
+    "$HOME/docushift"
+    "$HOME/Docpersian"
+    "/opt/docushift"
+    "/opt/Docpersian"
+  )
+  for dir in "${COMMON_DIRS[@]}"; do
+    if [ -f "$dir/server.ts" ] && [ -f "$dir/package.json" ]; then
+      TARGET_DIR="$dir"
+      echo "  ✓ پوشه در مسیر استاندارد پیدا شد: $TARGET_DIR"
+      break
+    fi
+  done
+fi
+
+# ۴. جستجوی عمیق
+if [ -z "$TARGET_DIR" ]; then
+  SEARCH_RES=$(find /var/www /home /root /opt /srv -maxdepth 4 -name "server.ts" -not -path "*/node_modules/*" 2>/dev/null | head -n1)
+  if [ -n "$SEARCH_RES" ]; then
+    TARGET_DIR=$(dirname "$SEARCH_RES")
+    echo "  ✓ پوشه با جستجوی دیسک پیدا شد: $TARGET_DIR"
   fi
 fi
 
-echo "========================================================="
-echo "  Docpersian (DocuShift) - به‌روزرسانی پروژه روی سرور"
-echo "========================================================="
-
-# ۱. دریافت آخرین تغییرات و کدهای اصلاح‌شده موتور پردازش اسناد
-echo "--> ۱. دریافت و همگام‌سازی آخرین تغییرات و کدهای اصلاح‌شده (رفع وارونگی حروف فارسی و تایپوگرافی)..."
-
-# دریافت مستقیم آخرین نسخه سورس کد اصلاح شده
-SYNC_URL="https://ais-dev-lp67unkvqzifulvxvfxfhw-2280515566.us-east1.run.app/bundle.tar.gz"
-SYNC_SUCCESS=false
-
-if curl -sI --connect-timeout 6 "$SYNC_URL" | grep -q "200"; then
-  echo "--> در حال بارگیری بسته کدهای بهینه‌سازی‌شده مستقیم از استودیو..."
-  if curl -sL "$SYNC_URL" | tar -xz --overwrite -C .; then
-    SYNC_SUCCESS=true
-    echo "  ✓ کدهای موتور ترجمه و حروف‌چینی فارسی با موفقیت استخراج و به‌روزرسانی شدند."
-  fi
+if [ -z "$TARGET_DIR" ] || [ ! -d "$TARGET_DIR" ]; then
+  echo "❌ خطا: پوشه پروژه حاوی server.ts پیدا نشد!"
+  echo "لطفاً ابتدا با دستور cd وارد مسیر پروژه خود شوید و مجدداً اسکریپت را اجرا کنید."
+  exit 1
 fi
 
-if [ "$SYNC_SUCCESS" = false ]; then
-  echo "--> در حال به‌روزرسانی از طریق مخزن گیت‌هاب (git fetch & pull)..."
+cd "$TARGET_DIR"
+echo "📂 پوشه کاری: $(pwd)"
+echo ""
+
+echo "=========================================================="
+echo "🔄 گام ۲: دریافت آخرین کدهای گیت‌هاب (Git Fetch & Reset)..."
+echo "=========================================================="
+
+if [ -d ".git" ]; then
+  echo "  • آدرس مخزن گیت‌هاب سرور شما:"
+  git remote -v || true
+  
+  # ذخیره موقت و پاکسازی تغییرات محلی که مانع pull می‌شوند
   git stash --include-untracked 2>/dev/null || true
-  git fetch --all --tags --prune 2>/dev/null || true
-
-  ACTIVE_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-  if [ "$ACTIVE_BRANCH" = "HEAD" ] || [ -z "$ACTIVE_BRANCH" ]; then
-    ACTIVE_BRANCH="main"
-  fi
-
-  echo "--> شاخه فعال: $ACTIVE_BRANCH"
-  git checkout "$ACTIVE_BRANCH" 2>/dev/null || git checkout -B "$ACTIVE_BRANCH" "origin/$ACTIVE_BRANCH" 2>/dev/null || true
-  git pull origin "$ACTIVE_BRANCH" 2>/dev/null || git reset --hard "origin/$ACTIVE_BRANCH" 2>/dev/null || git pull origin main 2>/dev/null || git reset --hard origin/main 2>/dev/null || git pull 2>/dev/null || true
-fi
-
-# ۲. اطمینان از نصب ابزارهای پردازش اسناد و فونت‌های سرور
-echo "--> ۲. نصب ابزارهای بینایی، پایتون و پردازش اسناد (Ghostscript, Poppler, Python-PPTX, Python-DOCX)..."
-sudo apt-get update -qq 2>/dev/null || true
-sudo apt-get install -y -qq ghostscript poppler-utils imagemagick fonts-noto-core fonts-noto-extra fonts-sil-scheherazade python3-pip python3-docx python3-setuptools 2>/dev/null || true
-pip3 install --quiet --break-system-packages python-pptx python-docx 2>/dev/null || pip3 install --quiet python-pptx python-docx 2>/dev/null || true
-
-# بررسی و دانلود فونت‌های منظم و برجسته وزیرمتن در صورت نیاز
-mkdir -p server/assets/fonts
-if [ ! -s "server/assets/fonts/persian-font.ttf" ] || [ $(wc -c < "server/assets/fonts/persian-font.ttf" 2>/dev/null || echo 0) -lt 20000 ]; then
-  echo "--> دانلود فونت وزیرمتن عادی (Regular)..."
-  curl -sL --connect-timeout 8 "https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || \
-  curl -sL --connect-timeout 8 "https://cdnjs.cloudflare.com/ajax/libs/vazirmatn/33.0.3/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || \
-  curl -sL --connect-timeout 8 "https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Regular.ttf" -o server/assets/fonts/persian-font.ttf 2>/dev/null || true
-fi
-
-if [ ! -s "server/assets/fonts/persian-font-bold.ttf" ] || [ $(wc -c < "server/assets/fonts/persian-font-bold.ttf" 2>/dev/null || echo 0) -lt 20000 ]; then
-  echo "--> دانلود فونت وزیرمتن ضخیم (Bold)..."
-  curl -sL --connect-timeout 8 "https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@master/fonts/ttf/Vazirmatn-Bold.ttf" -o server/assets/fonts/persian-font-bold.ttf 2>/dev/null || \
-  curl -sL --connect-timeout 8 "https://cdnjs.cloudflare.com/ajax/libs/vazirmatn/33.0.3/Vazirmatn-Bold.ttf" -o server/assets/fonts/persian-font-bold.ttf 2>/dev/null || \
-  curl -sL --connect-timeout 8 "https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Bold.ttf" -o server/assets/fonts/persian-font-bold.ttf 2>/dev/null || true
-fi
-
-# ۳. نصب و به‌روزرسانی وابستگی‌ها
-echo "--> ۳. نصب پکیج‌ها (npm install)..."
-npm install --legacy-peer-deps
-
-# ۴. بیلد مجدد فرانت‌اند
-echo "--> ۴. کامپایل و ساخت فرانت‌اند نهایی بدون رفرش (npm run build)..."
-npm run build
-
-# ۵. ری‌استارت سرویس PM2 در مد پروداکشن و دائمی‌سازی سرویس Ollama
-echo "--> ۵. راه‌اندازی و دائمی‌سازی سرویس‌ها در مد Production (PM2 & Ollama)..."
-systemctl enable ollama 2>/dev/null || true
-systemctl start ollama 2>/dev/null || true
-
-export NODE_ENV=production
-pm2 restart docpersian --update-env 2>/dev/null || \
-pm2 restart Docpersian --update-env 2>/dev/null || \
-pm2 restart docushift --update-env 2>/dev/null || \
-NODE_ENV=production pm2 start "npx tsx server.ts" --name docpersian
-pm2 save
-sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || true
-
-# ۶. تنظیم و ریلود Nginx برای پشتیبانی از آپلود اسناد بدون محدودیت حجم و رفع قفل ۱ مگابایت
-if command -v nginx >/dev/null 2>&1; then
-  echo "--> ۶. پیکربندی پیشرفته Nginx و دسترسی بافر دیسک (رفع مشکل گیر کردن آپلود در ۱ مگابایت)..."
-  sudo mkdir -p /var/lib/nginx/body /var/cache/nginx/client_temp /tmp/nginx_upload
-  sudo chmod -R 777 /var/lib/nginx /tmp/nginx_upload
-  sudo chown -R www-data:www-data /var/lib/nginx /tmp/nginx_upload 2>/dev/null || true
-
-  sudo tee /etc/nginx/sites-available/docpersian >/dev/null << 'EOF'
-server {
-    listen 80;
-    server_name _;
-
-    client_max_body_size 0;
-    client_body_buffer_size 32M;
-    client_body_temp_path /tmp/nginx_upload 1 2;
-    client_body_timeout 600s;
-    client_header_timeout 600s;
-    send_timeout 600s;
-    keepalive_timeout 600s;
-
-    location ~* ^/api/(upload|jobs) {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_request_buffering off;
-        proxy_buffering off;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-        client_max_body_size 0;
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_request_buffering off;
-        proxy_buffering off;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-    }
-}
-EOF
-  sudo cp /etc/nginx/sites-available/docpersian /etc/nginx/sites-available/docushift 2>/dev/null || true
-  sudo ln -sf /etc/nginx/sites-available/docpersian /etc/nginx/sites-enabled/docpersian 2>/dev/null || true
-  sudo ln -sf /etc/nginx/sites-available/docushift /etc/nginx/sites-enabled/docushift 2>/dev/null || true
-  sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
-  sudo nginx -t >/dev/null 2>&1 && sudo systemctl reload nginx 2>/dev/null || true
-
-  # اطمینان از باز بودن پورت ۳۰۰۰ جهت اتصال مستقیم بدون واسطه Nginx در فایروال
-  if command -v ufw >/dev/null 2>&1; then
-    sudo ufw allow 80/tcp 2>/dev/null || true
-    sudo ufw allow 3000/tcp 2>/dev/null || true
-  fi
-  if command -v iptables >/dev/null 2>&1; then
-    sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
-    sudo iptables -I INPUT -p tcp --dport 3000 -j ACCEPT 2>/dev/null || true
-  fi
-fi
-
-# ۷. اعمال بهینه‌سازی شبکه لینوکس جهت پایداری آپلود در حضور تونل‌های VPN (WireGuard, WARP, OpenVPN)
-echo "--> ۷. بهینه‌سازی شبکه سرور و جلوگیری از قطع آپلود در اثر اتصال VPN (rp_filter & MSS Clamping)..."
-sudo sysctl -w net.ipv4.conf.all.rp_filter=2 >/dev/null 2>&1 || true
-sudo sysctl -w net.ipv4.conf.default.rp_filter=2 >/dev/null 2>&1 || true
-
-if command -v iptables >/dev/null 2>&1; then
-  sudo iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
-  sudo iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
-  sudo iptables -t mangle -D OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
-  sudo iptables -t mangle -A OUTPUT -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
-fi
-
-# اجرای اسکریپت تخصصی رفع تداخل روتینگ VPN در صورت وجود
-if [ -f "./fix_server_vpn_network.sh" ]; then
-  sudo bash ./fix_server_vpn_network.sh 2>/dev/null || true
+  
+  echo "  • دریافت آخرین تغییرات از گیت‌هاب (git fetch)..."
+  git fetch --all --prune
+  
+  BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+  [ "$BRANCH" = "HEAD" ] || [ -z "$BRANCH" ] && BRANCH="main"
+  
+  echo "  • بازنشانی و اعمال قطعی کدهای جدید روی شاخه $BRANCH..."
+  git reset --hard "origin/$BRANCH" 2>/dev/null || git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || git pull origin "$BRANCH" || true
+  
+  echo "  ✓ کدها با موفقیت به آخرین کامیت گیت‌هاب همگام شدند:"
+  git log -1 --oneline || true
+else
+  echo "⚠️ در این پوشه مخزن گیت (.git) شناسایی نشد."
 fi
 
 echo ""
-echo "============================================================"
-echo "  ✅ به‌روزرسانی سرور و بهینه‌سازی شبکه VPN با موفقیت انجام شد!"
-echo "============================================================"
-pm2 status docushift 2>/dev/null || pm2 status || true
-systemctl is-active ollama 2>/dev/null && echo "  ✅ سرویس مدل محلی (Ollama) دائمی و فعال است." || true
+echo "=========================================================="
+echo "⚙️ گام ۳: تنظیم فایل محیطی (.env) با مدل پایدار و بدون وقفه..."
+echo "=========================================================="
+
+if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+  cp .env.example .env
+fi
+
+if [ -f ".env" ]; then
+  # مدل سریع و کم‌مصرف gemini-3.5-flash-lite
+  if grep -q "GEMINI_MODEL=" .env; then
+    sed -i 's/GEMINI_MODEL=.*/GEMINI_MODEL=gemini-3.5-flash-lite/' .env
+  else
+    echo "GEMINI_MODEL=gemini-3.5-flash-lite" >> .env
+  fi
+
+  # غیرفعال کردن بررسی معطل‌کننده تصاویر و دیاگرام‌ها
+  if grep -q "DIAGRAM_INPAINTING_ENABLED=" .env; then
+    sed -i 's/DIAGRAM_INPAINTING_ENABLED=.*/DIAGRAM_INPAINTING_ENABLED=false/' .env
+  else
+    echo "DIAGRAM_INPAINTING_ENABLED=false" >> .env
+  fi
+
+  # پورت پیش‌فرض ۳۰۰۰
+  if grep -q "PORT=" .env; then
+    sed -i 's/PORT=.*/PORT=3000/' .env
+  else
+    echo "PORT=3000" >> .env
+  fi
+  echo "  ✓ فایل .env با موفقیت با تنظیمات پایدار به‌روز شد."
+fi
+
+echo ""
+echo "=========================================================="
+echo "📦 گام ۴: نصب وابستگی‌ها و بیلد فرانت‌اند (Build)..."
+echo "=========================================================="
+npm install --legacy-peer-deps
+npm run build
+echo "  ✓ فایل‌های کامپایل‌شده فرانت‌اند در پوشه dist با موفقیت ساخته شدند."
+
+echo ""
+echo "=========================================================="
+echo "🚀 گام ۵: ری‌استارت سرویس سرور در PM2..."
+echo "=========================================================="
+export NODE_ENV=production
+pm2 restart docushift --update-env 2>/dev/null || \
+pm2 restart docpersian --update-env 2>/dev/null || \
+pm2 restart all --update-env 2>/dev/null || \
+pm2 start "npx tsx server.ts" --name docushift
+
+pm2 save
+
+# فعال‌سازی و استارت Ollama در صورت نصب بودن
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl enable ollama 2>/dev/null || true
+  systemctl start ollama 2>/dev/null || true
+fi
+
+echo ""
+echo "=========================================================="
+echo "🩺 گام ۶: تست سلامت و تایید سرویس‌های سرور..."
+echo "=========================================================="
+sleep 2
+
+pm2 status
+
+echo -n "  • وضعیت سرور DocuShift: "
+HEALTH=$(curl -s --connect-timeout 4 http://127.0.0.1:3000/api/health || echo "error")
+if echo "$HEALTH" | grep -q "ok"; then
+  echo "✅ آنلاین و فعال (پورت ۳۰۰۰)"
+else
+  echo "⚠️ وضعیت: $HEALTH"
+fi
+
+echo -n "  • وضعیت مدل محلی (Ollama): "
+OLLAMA=$(curl -s --connect-timeout 4 http://127.0.0.1:11434/api/tags || echo "error")
+if echo "$OLLAMA" | grep -q "models"; then
+  MODELS=$(echo "$OLLAMA" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | tr '\n' ' ')
+  echo "✅ فعال (مدل‌های موجود: ${MODELS:-ندارد})"
+else
+  echo "⚠️ سرویس Ollama در حال اجرا نیست یا آفلاین است."
+fi
+
+echo -n "  • وضعیت مدل آنلاین Gemini: "
+GEMINI=$(curl -s --connect-timeout 6 -X POST http://127.0.0.1:3000/api/settings/test-gemini || echo "error")
+if echo "$GEMINI" | grep -q '"success":true'; then
+  echo "✅ ارتباط برقرار و سالم است."
+else
+  echo "⚠️ وضعیت: $(echo "$GEMINI" | grep -o '"error":"[^"]*"' | head -n1 || echo "$GEMINI")"
+fi
+
+echo ""
+echo "=========================================================="
+echo "🎉 به‌روزرسانی سرور با موفقیت به پایان رسید!"
+echo "=========================================================="
