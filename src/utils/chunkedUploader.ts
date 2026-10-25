@@ -507,7 +507,8 @@ export async function uploadFileInParallelChunks(
     }
   }
 
-  const retryDelays = [1500, 3000, 6000, 10000];
+  // Resilient retry backoff for fluctuating mobile/VPN network connections (up to 8 attempts)
+  const retryDelays = [1000, 2000, 3500, 5000, 8000, 12000, 16000, 20000];
 
   for (const chunkIndex of pendingIndices) {
     if (signal?.aborted) throw new Error('آپلود توسط کاربر لغو گردید.');
